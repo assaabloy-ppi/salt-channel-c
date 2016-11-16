@@ -2,6 +2,7 @@
 #include "binson_light.h"
 
 #include <string.h>
+#include <sys/types.h>
 
 //=====================================================================
 // Local Macro Definitions
@@ -30,20 +31,6 @@
 #define SALT_STATE_SIGNATURE_SET             (1U)
 #define SALT_STATE_SESSION_INITIATED         (2U)
 #define SALT_STATE_SESSION_ESTABLISHED       (10U)
-
-#if BYTE_ORDER == BIG_ENDIAN
-   #define HTONU32(n) (n)
-   #define NTOHU32(n) (n)
-#else
-   #define HTONU32(n) (((((n) & 0xFFU)) << 24U) |        \
-                        ((((n) & 0xFF00U)) << 8U) |      \
-                        ((((n) & 0xFF0000U)) >> 8U) |    \
-                        ((((n) & 0xFF000000U)) >> 24U))
-   #define NTOHU32(n) (((((n) & 0xFFU)) << 24U) |        \
-                        ((((n) & 0xFF00U)) << 8U) |      \
-                        ((((n) & 0xFF0000U)) >> 8U) |    \
-                        ((((n) & 0xFF000000U)) >> 24U))
-#endif
 
 #define SALT_WRITE_NONCE_INCR_SERVER         (2U)
 #define SALT_WRITE_NONCE_INCR_CLIENT         (2U)
@@ -480,9 +467,14 @@ static void salti_init_write_channel(salt_io_channel_t *p_io_channel, salt_mode_
 
 static void salti_increase_nonce(salt_io_channel_t *p_io_channel)
 {
-    uint64_t *tmp = (uint64_t *) p_io_channel->nonce;
-    (*tmp) += p_io_channel->nonce_increment;
-    /* TODO: Make this function work for both little and big endian */
+   uint_fast16_t c = p_io_channel->nonce_increment;
+
+   for (size_t i = 0; i < crypto_box_NONCEBYTES; i++) {
+      c += (uint_fast16_t) p_io_channel->nonce[i];
+      p_io_channel->nonce[i] = (uint8_t) c;
+      c >>= 8;
+   }
+
 }
 
 static salt_ret_t salti_io_read(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t *p_recv_size, uint32_t max_size, uint8_t decrypt)
@@ -511,7 +503,7 @@ static salt_ret_t salti_io_read(salt_channel_t *p_channel, uint8_t *p_buffer, ui
                sizeof(pr_channel->size));
             if (ret_code == SALT_SUCCESS)
             {
-               pr_channel->size = NTOHU32(pr_channel->size);
+               //pr_channel->size = __ntohl(pr_channel->size);
                ASSERT(pr_channel->size <= max_size, SALT_ERROR_MSG_TO_LONG);
                pr_channel->state = 2;
                proceed = 1;
@@ -522,6 +514,7 @@ static salt_ret_t salti_io_read(salt_channel_t *p_channel, uint8_t *p_buffer, ui
                pr_channel->p_context,
                pr_channel->p_data,
                pr_channel->size);
+
             if (ret_code == SALT_SUCCESS)
             {
                *p_recv_size = pr_channel->size;
@@ -566,7 +559,7 @@ static salt_ret_t salti_io_write(salt_channel_t *p_channel, uint8_t *p_buffer, u
                   &pw_channel->size);
             }
             pw_channel->p_data = p_buffer;
-            pw_channel->size = NTOHU32(pw_channel->size);
+            //pw_channel->size = __ntohl(pw_channel->size);
             pw_channel->state = 1;
             proceed = 1;
             break;
@@ -598,6 +591,7 @@ static salt_ret_t salti_io_write(salt_channel_t *p_channel, uint8_t *p_buffer, u
             break;
       }
    }
+
    return ret_code;
 
 }
@@ -614,6 +608,7 @@ static salt_ret_t salti_encrypt(salt_channel_t *p_channel, uint8_t *p_msg, uint3
       p_channel->write_channel.nonce,
       p_channel->ek_common
    );
+
    ASSERT(ret == 0, SALT_ERROR_ENCRYPTION_FAILED);
 
    *enc_size = size + crypto_secretbox_BOXZEROBYTES;
@@ -688,7 +683,7 @@ static salt_ret_t salti_parse_m1(salt_channel_t *p_channel, uint8_t *p_buf, uint
    /* Calculate shared key. */
    int ret = crypto_box_beforenm(p_channel->ek_common, p_channel->peer_ek_pub, p_channel->my_ek_sec);
    ASSERT(ret == 0, SALT_ERROR);
-   
+
    return SALT_SUCCESS;
 }
 

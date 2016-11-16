@@ -218,10 +218,6 @@ salt_ret_t salt_read(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t *p_r
       p_buffer,
       p_recv_size,
       max_size, 1);
-   if (ret == SALT_SUCCESS)
-   {
-      memcpy(p_buffer, &p_buffer[crypto_secretbox_ZEROBYTES], *p_recv_size);
-   }
 
    return ret;
 
@@ -315,6 +311,12 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                p_channel,
                &p_channel->p_buffer[256],
                size, 1);
+            if (ret_code == SALT_SUCCESS)
+            {
+               p_channel->state = 8;
+               proceed = 1;
+            }
+            break;
          case 8:
             ret_code = salti_io_read(
                p_channel,
@@ -538,7 +540,6 @@ static salt_ret_t salti_io_read(salt_channel_t *p_channel, uint8_t *p_buffer, ui
             break;
       }
    }
-
    return ret_code;
 }
 
@@ -597,7 +598,6 @@ static salt_ret_t salti_io_write(salt_channel_t *p_channel, uint8_t *p_buffer, u
             break;
       }
    }
-
    return ret_code;
 
 }
@@ -621,11 +621,12 @@ static salt_ret_t salti_encrypt(salt_channel_t *p_channel, uint8_t *p_msg, uint3
    memcpy(&p_channel->p_buffer[crypto_secretbox_ZEROBYTES], &p_msg[crypto_secretbox_BOXZEROBYTES], *enc_size);
 
    binson_writer w;
-   binson_writer_init(&w, p_msg, size+23);
+   binson_writer_init(&w, p_msg, size+SALT_OVERHEAD);
    binson_write_object_begin(&w);
    binson_write_name(&w, "b");
    binson_write_bytes(&w, &p_channel->p_buffer[crypto_secretbox_ZEROBYTES], *enc_size);
    binson_write_object_end(&w);
+   ASSERT(w.error_flags == BINSON_ID_OK, SALT_ERROR_FORMAT);
 
    *enc_size = binson_writer_get_counter(&w);
 
@@ -685,8 +686,9 @@ static salt_ret_t salti_parse_m1(salt_channel_t *p_channel, uint8_t *p_buf, uint
    ASSERT(memcmp("S1", binson_bytes->bptr, 2) == 0, SALT_ERROR_PROT_VERSION);
 
    /* Calculate shared key. */
-   crypto_box_beforenm(p_channel->ek_common, p_channel->peer_ek_pub, p_channel->my_ek_sec);
-
+   int ret = crypto_box_beforenm(p_channel->ek_common, p_channel->peer_ek_pub, p_channel->my_ek_sec);
+   ASSERT(ret == 0, SALT_ERROR);
+   
    return SALT_SUCCESS;
 }
 
@@ -721,13 +723,15 @@ static salt_ret_t salti_parse_m2(salt_channel_t *p_channel, uint8_t *p_buf, uint
    memcpy(p_channel->peer_ek_pub, binson_bytes->bptr, crypto_box_PUBLICKEYBYTES);
 
    /* Calculate shared key. */
-   crypto_box_beforenm(p_channel->ek_common, p_channel->peer_ek_pub, p_channel->my_ek_sec);
+   int ret = crypto_box_beforenm(p_channel->ek_common, p_channel->peer_ek_pub, p_channel->my_ek_sec);
+   ASSERT(ret == 0, SALT_ERROR);
 
    return SALT_SUCCESS;
 }
 
 static salt_ret_t salti_create_m2(salt_channel_t *p_channel, uint8_t *p_buf, uint32_t max_size, uint32_t *size)
 {
+
    binson_writer w;
    binson_writer_init(&w, p_buf, max_size);
 

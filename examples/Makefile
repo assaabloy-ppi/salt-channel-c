@@ -1,5 +1,5 @@
 
-C_FLAGS = -Wall -Wextra -Wpedantic -g -ggdb -DSALT_DEBUG=1
+C_FLAGS = -Wall -Wextra -Wpedantic -g -ggdb -DSALT_DEBUG=1 -I.
 
 salt.o: ../salt.c ../salt.h
 	$(CC) -c $(C_FLAGS) -DSALT_DEBUG -c -o $@ ../salt.c

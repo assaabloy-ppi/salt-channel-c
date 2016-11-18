@@ -53,7 +53,7 @@ void intHandler(int dummy) {
    exit(0);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
 
    m_sockfd = 0;
@@ -72,7 +72,16 @@ int main(void)
    serv_addr.sin_family = AF_INET;
    serv_addr.sin_port = htons(port);
 
-   char ip_addr[] = "127.0.0.1";
+   char *ip_addr;
+   char localhost[] = "127.0.0.1";
+   if (argc > 1)
+   {
+      ip_addr = argv[1];
+   } else {
+      ip_addr = localhost;
+   }
+
+   
 
    if(inet_pton(AF_INET, ip_addr, &serv_addr.sin_addr) <= 0)
    {

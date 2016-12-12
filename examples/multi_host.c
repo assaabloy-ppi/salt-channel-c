@@ -5,7 +5,7 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "../salt.h"
+#include "../src/salt.h"
 
 void handle_connection(int sock);
 void error(const char *msg)

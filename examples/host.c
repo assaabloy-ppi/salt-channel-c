@@ -10,7 +10,7 @@
 #include <sys/time.h>
 #include <string.h>
 #include <assert.h>
-#include "../salt.h"
+#include "../src/salt.h"
 
 static int m_sockfd;
 static int m_connfd;

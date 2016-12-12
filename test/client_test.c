@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include "../salt.h"
+#include "../src/salt.h"
 
 void randombytes(uint8_t *p_bytes, uint64_t length)
 {

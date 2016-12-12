@@ -1,19 +1,19 @@
 
 C_FLAGS = -I. -Wall -Wextra -Wpedantic -g -ggdb -DSALT_DEBUG=1 -Werror
 
-salt.o: ../salt.c ../salt.h
-	$(CC) -c $(C_FLAGS) -DSALT_DEBUG -c -o $@ ../salt.c
+salt.o: ../src/salt.c ../src/salt.h
+	$(CC) -c $(C_FLAGS) -DSALT_DEBUG -c -o $@ ../src/salt.c
 
-binson_light.o:
-	$(CC) -c -o $@ ../binson_light.c
+binson_light.o: ../src/external/binson-c-light/binson_light.c
+	$(CC) -c -o $@ ../src/external/binson-c-light/binson_light.c
 
-tweetnacl.o:
-	$(CC) -c -o $@ ../tweetnacl.c
+tweetnacl.o: ../src/external/tweetnacl/tweetnacl.c
+	$(CC) -c -o $@ ../src/external/tweetnacl/tweetnacl.c
 
-host_test.o: host_test.c ../salt.h
+host_test.o: host_test.c ../src/salt.h
 	$(CC) -c $(C_FLAGS) -c -o $@ host_test.c
 
-client_test.o: client_test.c ../salt.h
+client_test.o: client_test.c ../src/salt.h
 	$(CC) -c $(C_FLAGS) -c -o $@ client_test.c
 
 host_test: host_test.o salt.o tweetnacl.o binson_light.o

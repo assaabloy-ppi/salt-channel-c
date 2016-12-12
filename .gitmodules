@@ -1,0 +1,3 @@
+[submodule "src/external/binson-c-light"]
+	path = src/external/binson-c-light
+	url = https://github.com/assaabloy-ppi/binson-c-light

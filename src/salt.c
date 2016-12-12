@@ -1,5 +1,5 @@
 #include "salt.h"
-#include "binson_light.h"
+#include "external/binson-c-light/binson_light.h"
 
 #include <string.h>
 #include <sys/types.h>

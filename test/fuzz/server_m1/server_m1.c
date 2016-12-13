@@ -3,7 +3,8 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
-#include "../../src/salt.h"
+#include <assert.h>
+#include "../../../src/salt.h"
 
 static uint8_t rx_buffer[2052];
 uint32_t revc_size;
@@ -46,16 +47,18 @@ int crypto_box_beforenm(unsigned char *k, const unsigned char *pk,
     return 0;
 }
 
-
-void my_logf(char *format, ...)
+int crypto_box_afternm(unsigned char *c,const unsigned char *m,unsigned long long d,const unsigned char *n,const unsigned char *k)
 {
-  va_list args;
-  va_start(args, format);
-  vprintf(format, args);
-  va_end(args);
+    return 0;
 }
 
-uint8_t my_read(uint8_t *p_data, uint16_t length)
+int crypto_box_open_afternm(unsigned char *m,const unsigned char *c,unsigned long long d,const unsigned char *n,const unsigned char *k)
+{
+    return 0;
+}
+
+
+salt_ret_t my_read(void *p_context, uint8_t *p_data, uint32_t length)
 {
     switch (state)
     {
@@ -74,7 +77,7 @@ uint8_t my_read(uint8_t *p_data, uint16_t length)
     return SALT_SUCCESS;
 }
 
-uint8_t my_write(uint8_t *p_data, uint16_t length)
+salt_ret_t my_write(void *p_context, uint8_t *p_data, uint32_t length)
 {
     return SALT_ERROR;
 }
@@ -85,22 +88,32 @@ int main(void)
 {
 
     int ret_code = 0;
+    salt_ret_t ret;
    
-    ssize_t size = read(0, rx_buffer, sizeof(rx_buffer));
+    uint32_t size = read(0, rx_buffer, sizeof(rx_buffer));
 
     if (size < 4)
     {
         return ret_code;
     }
 
-    static salt_channel_t *channel;
-    SALT_CHANNEL_CREATE(&channel, 2048, my_read, my_write, my_logf);
+    memcpy(rx_buffer, &size, 4);
 
-    salt_init_session(channel);
-    while (salt_handshake(channel) != SALT_ERROR)
-    {
+    uint8_t buffer[2048];
 
-    }
+    salt_channel_t channel;
+
+
+    ret = salt_init(&channel, buffer, sizeof(buffer), my_read, my_write);
+    assert(ret == SALT_SUCCESS);
+
+    uint8_t host_sec_key[64] = {0};
+    salt_set_signature(&channel, host_sec_key);
+
+    ret = salt_init_session(&channel, SALT_SERVER);
+    assert(ret == SALT_SUCCESS);
+
+    ret = salt_handshake(&channel);
 
     return ret_code;
 

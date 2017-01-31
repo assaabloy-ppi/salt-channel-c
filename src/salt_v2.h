@@ -8,18 +8,19 @@
  *
  */
 
-/*======= Includes ==========================================================*/
+/*======= Includes ============================================================*/
 #include <stdint.h>
 #include "salt_crypto_wrapper.h"
 
 /*======= Public macro definitions ==========================================*/
-#define SALT_OVERHEAD_SIZE (32U)    /**< Encryption buffer overhead size. */
+#define SALT_OVERHEAD_SIZE          (32U)       /**< Encryption buffer overhead size. */
+#define SALT_HNDSHK_BUFFER_SIZE     (200U)      /**< Buffer used for handshake. */
 
-/*======= Type Definitions and declarations =================================*/
+
+/*======= Type Definitions and declarations ===================================*/
 
 /* Forward type declarations */
-typedef struct salt_write_channel_s salt_write_channel_t;
-typedef struct salt_read_channel_s salt_read_channel_t;
+typedef struct salt_io_channel_s salt_io_channel_t;
 
 /**
  * @brief Salt channel return codes.
@@ -38,25 +39,58 @@ typedef enum salt_ret_s {
  */
 typedef enum salt_err_e {
     SALT_ERR_NONE = 0,              /**< No error. */
-    SALT_ERR_NULL_PTR               /**< Null pointer error. */
+    SALT_ERR_NULL_PTR,              /**< Null pointer error. */
+    SALT_ERR_NOT_SUPPORTED,         /**< Not supported mode error. */
+    SALT_ERR_NO_SIGNATURE,          /**< No signature set error. */
+    SALT_ERR_SESSION_NOT_INITIATED, /**< Session not initiated when handshaking error. */
+    SALT_ERR_INVALID_STATE,         /**< Invalid state error. */
+    SALT_ERR_M1_TOO_SMALL,          /**< Size of M1 message to small. */
+    SALT_ERR_M2_TOO_SMALL,
+    SALT_ERR_BAD_PROTOCOL,          /**< Bad protocol in M1 message. */
+    SALT_ERR_BAD_M1_HEADER,         /**< Bad header in M1 message. */
+    SALT_ERR_COMMON_KEY,            /**< Common key calculation error. */
+    SALT_ERR_SIGNING,               /**< Signing error. */
+    SALT_ERR_ENCRYPTION,            /**< Encryption error. */
+    SALT_ERR_DECRYPTION,            /**< Decryption error. */
+    SALT_ERR_BAD_SIGNATURE
 } salt_err_t;
 
 /**
  * @brief Salt channel modes.
  *
  * The salt channel can be used as either server (host) or client.
+ *
+ * If stream mode is used, a four byte size array is serialized and
+ * put into the array passed to the I/O implementations.
+ *
  */
 typedef enum salt_mode_e {
-    SALT_SERVER,                    /**< Server/host mode. */
-    SALT_CLIENT                     /**< Client mode. */
+    SALT_SERVER = 0,                    /**< Server/host mode. */
+    SALT_SERVER_STREAM,             /**< Server/host stream mode. */
+    SALT_CLIENT,                    /**< Client mode. */
+    SALT_CLIENT_STREAM              /**< Client stream mode. */
 } salt_mode_t;
 
 /**
  * @brief Salt channel state.
  */
 typedef enum salt_state_e {
-    SALT_CREATED,
-    SALT_INITIATED
+    SALT_CREATED = 0,
+    SALT_SIGNATURE_SET,
+    SALT_SESSION_INITIATED,
+    SALT_M1_INIT,
+    SALT_M1_IO,
+    SALT_M1_VERIFY,
+    SALT_M2_INIT,
+    SALT_M2_IO,
+    SALT_M2_VERIFY,
+    SALT_M3_INIT,
+    SALT_M3_IO,
+    SALT_M3_VERIFY,
+    SALT_M4_INIT,
+    SALT_M4_IO,
+    SALT_M4_VERIFY,
+    SALT_SESSION_ESTABLISHED,
 } salt_state_t;
 
 /**
@@ -77,43 +111,15 @@ typedef enum salt_state_e {
  * @return SALT_ERROR   The data could not be written. Error code is reported
  *                      in p_wchannel->err_code.
  */
-typedef salt_ret_t (*salt_write_impl)(salt_write_channel_t *p_wchannel);
+typedef salt_ret_t (*salt_io_impl)(salt_io_channel_t *p_channel);
 
-struct salt_write_channel_s {
-    void                *p_context;                     /**< Pointer to write channel context. */
-    uint8_t             state;                          /**< Write channel state. */    
-    const void          *p_data;                        /**< Pointer to data to write. */
-    uint32_t            size;                           /**< Size of data to write. */
-    salt_err_t          err_code;                       /**< Error code. */
-};
-
-/**
- * @brief Function for dependency injection to make the salt channel available for
- * Any I/O channel.
- *
- * The I/O channel may be blockable or non-blockable. If using a non-blockable
- * I/O channel the implementations of the channels must return SALT_PENDING
- * until all bytes are transfered. Then, the function must return SALT_SUCCESS.
- *
- * If any error occurs the function must return SALT_ERROR and the error code
- * must be reported in p_rchannel->err_code.
- *
- * @param p_rchannel    Pointer to I/O channel structure.
- *
- * @return SALT_SUCCESS The data was successfully read.
- * @return SALT_PENDING The reading process is still pending.
- * @return SALT_ERROR   The data could not be read. Error code is reported
- *                      in p_rchannel->err_code.
- */
-typedef salt_ret_t (*salt_read_impl)(salt_read_channel_t *p_rchannel);
-
-struct salt_read_channel_s {
-    void                *p_context;                     /**< Pointer to read channel context. */
-    uint8_t             state;                          /**< read channel state. */    
-    void                *p_data;                        /**< Pointer to where to put received data. */
-    uint32_t            size;                           /**< Size of data to read. */
-    salt_err_t          err_code;                       /**< Error code. */
-    
+struct salt_io_channel_s {
+    void        *p_context;                             /**< Pointer to I/O channel context. */
+    uint8_t     state;                                  /**< I/O channel state. */    
+    uint8_t     *p_data;                                /**< Pointer to data to read/write. */
+    uint32_t    size;                                   /**< Size of data to write or size of data read. */
+    uint32_t    max_size;                               /**< Maximum size of data to read. */
+    salt_err_t  err_code;                               /**< Error code. */
 };
 
 /**
@@ -123,24 +129,30 @@ struct salt_read_channel_s {
 typedef struct salt_channel_s {
     salt_mode_t     mode;                               /**< Salt channel mode. */
     salt_state_t    state;                              /**< Salt channel state. */
+    salt_err_t      err_code;                           /**< Latest error code. */
 
     /* Encryption and signature stuff */
     uint8_t     my_ek_sec[crypto_box_SECRETKEYBYTES];   /**< Ephemeral secret encryption key. */
     uint8_t     my_ek_pub[crypto_box_PUBLICKEYBYTES];   /**< Ephemeral public encrypion key. */
+    uint8_t     peer_ek_pub[crypto_box_PUBLICKEYBYTES]; /**< Peer public encryption key. */
     uint8_t     ek_common[crypto_box_BEFORENMBYTES];    /**< Symmetric session encryption key. */
-    uint8_t     peer_ek_pub[crypto_sign_PUBLICKEYBYTES];/**< Peer public signature key. */
+    uint8_t     peer_sk_pub[crypto_sign_PUBLICKEYBYTES];/**< Peer public signature key. */
     uint8_t     my_sk_sec[crypto_sign_SECRETKEYBYTES];  /**< My secret signature key. */
-    uint8_t     *my_sk_pub;                             /**< My public signature key. */
+    uint8_t     *my_sk_pub;                             /**< My public signature key, points to &my_sk_sec[32]. */
     uint8_t     write_nonce[crypto_box_NONCEBYTES];     /**< Write nonce. */
     uint8_t     read_nonce[crypto_box_NONCEBYTES];      /**< Read nonce. */
+    uint8_t     write_nonce_incr;                       /**< Write nonce increment. */
+    uint8_t     read_nonce_incr;                        /**< Read nonce increment. */
 
-    salt_write_channel_t    write_channel;               /**< Write channel structure. */
-    salt_write_impl         impl;                        /**< Function pointer to write implementation. */
-    salt_read_channel_t     read_channel;                /**< Read channel structure. */
-    salt_read_impl          read_impl;                   /**< Function pointer to read implementation. */
+    salt_io_channel_t   write_channel;                  /**< Write channel structure. */
+    salt_io_impl        write_impl;                     /**< Function pointer to write implementation. */
+    salt_io_channel_t   read_channel;                   /**< Read channel structure. */
+    salt_io_impl        read_impl;                      /**< Function pointer to read implementation. */
+
+    uint8_t     hdshk_buffer[SALT_HNDSHK_BUFFER_SIZE];  /**< Buffer used for handshake. TODO: Put on stack in handshake instead? */
 } salt_channel_t;
 
-/*======= Public function declarations ======================================*/
+/*======= Public function declarations ========================================*/
 
 /**
  * @brief Creates a new salt channel.
@@ -158,8 +170,8 @@ typedef struct salt_channel_s {
 salt_ret_t salt_create(
    salt_channel_t *p_channel,
    salt_mode_t mode,
-   salt_write_impl write_impl,
-   salt_read_impl read_impl);
+   salt_io_impl write_impl,
+   salt_io_impl read_impl);
 
 /**
  * @brief Sets the context passed to the user injected read implementation.
@@ -256,9 +268,16 @@ salt_ret_t salt_read(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t *p_r
  *
  * The message must have the following format:
  *
- * p_buffer: |<- Reserved [32] >|<- Clear text data [size] ->|
+ * p_buffer: |<- Reserved [SALT_OVERHEAD_SIZE] >|<- Clear text data [size] ->|
  *
  * I.e, the length of p_buffer must be size + SALT_OVERHEAD_SIZE bytes long.
+ *
+ * Example codeö:
+ *
+ *      char buffer[256];
+ *      size_t size;
+ *      size = sprintf(&buffer[SALT_OVERHEAD_SIZE], "This is an encrypted message!");
+ *      salt_write(&channel, (uint8_t *) buffer, size);
  *
  * The user is however not required to memset the 32 bytes to 0, this
  * is done by the salt channel.

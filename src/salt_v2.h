@@ -52,7 +52,8 @@ typedef enum salt_err_e {
     SALT_ERR_SIGNING,               /**< Signing error. */
     SALT_ERR_ENCRYPTION,            /**< Encryption error. */
     SALT_ERR_DECRYPTION,            /**< Decryption error. */
-    SALT_ERR_BAD_SIGNATURE
+    SALT_ERR_BAD_SIGNATURE,         /**< Signature verification failed. */
+    SALT_ERR_BUFF_TO_SMALL          /**< I/O Buffer to small. */
 } salt_err_t;
 
 /**
@@ -78,9 +79,13 @@ typedef enum salt_state_e {
     SALT_CREATED = 0,
     SALT_SIGNATURE_SET,
     SALT_SESSION_INITIATED,
+    SALT_WAIT_FOR_INCOMING_MSG_INIT,
+    SALT_WAIT_FOR_INCOMING_MSG_IO,
+    SALT_WAIT_FOR_OUTGOING_MSG_INIT,
+    SALT_WAIT_FOR_OUTGOING_MSG_IO,
     SALT_M1_INIT,
     SALT_M1_IO,
-    SALT_M1_VERIFY,
+    SALT_M1_HANDLE,
     SALT_M2_INIT,
     SALT_M2_IO,
     SALT_M2_VERIFY,
@@ -91,6 +96,7 @@ typedef enum salt_state_e {
     SALT_M4_IO,
     SALT_M4_VERIFY,
     SALT_SESSION_ESTABLISHED,
+    SALT_ERROR_STATE
 } salt_state_t;
 
 /**
@@ -149,7 +155,8 @@ typedef struct salt_channel_s {
     salt_io_channel_t   read_channel;                   /**< Read channel structure. */
     salt_io_impl        read_impl;                      /**< Function pointer to read implementation. */
 
-    uint8_t     hdshk_buffer[SALT_HNDSHK_BUFFER_SIZE];  /**< Buffer used for handshake. TODO: Put on stack in handshake instead? */
+    uint8_t     *hdshk_buffer;
+    uint32_t    hdshk_buffer_size;
 } salt_channel_t;
 
 /*======= Public function declarations ========================================*/
@@ -215,13 +222,16 @@ salt_ret_t salt_create_signature(salt_channel_t *p_channel);
  * A new ephemeral key pair is generated and the read and write nonce
  * is reseted.
  *
- * @param p_channel Pointer to channel handle.
+ * @param p_channel         Pointer to channel handle.
+ * @param hdshk_buffer      Pointer to buffer used for handsize. Must be at least 
+ *                          SALT_HNDSHK_BUFFER_SIZE bytes large.
+ * @param hdshk_buffer_size Size of the handshake buffer.
  *
  * @return SALT_SUCCESS The session was successfully initiated.
  * @return SALT_ERROR   The channel handle was a NULL pointer.
  *
  */
-salt_ret_t salt_init_session(salt_channel_t *p_channel);
+salt_ret_t salt_init_session(salt_channel_t *p_channel, uint8_t *hdshk_buffer, uint32_t hdshk_buffer_size);
 
 /**
  * @brief Salt handshake process.
@@ -272,7 +282,7 @@ salt_ret_t salt_read(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t *p_r
  *
  * I.e, the length of p_buffer must be size + SALT_OVERHEAD_SIZE bytes long.
  *
- * Example codeö:
+ * Example code:
  *
  *      char buffer[256];
  *      size_t size;

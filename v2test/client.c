@@ -20,12 +20,14 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
     static uint8_t i = 0;
-    PRINT_BYTES(p_wchannel->p_data, p_wchannel->size);
+    PRINT_BYTES_C(p_wchannel->p_data, p_wchannel->size);
+
     switch (i)
     {
         case 0:
-            assert(p_wchannel->size == 36);
-            assert(memcmp(&p_wchannel->p_data[4], client_ek_pub, 32) == 0);
+            PRINT_BYTES_C(m1, sizeof(m1));
+            assert(p_wchannel->size == sizeof(m1));
+            assert(memcmp(p_wchannel->p_data, m1, sizeof(m1)) == 0);
             break;
         case 1:
             assert(p_wchannel->size == 114);
@@ -70,11 +72,14 @@ int main(void)
 
     salt_channel_t channel;
     salt_ret_t ret;
+    uint8_t hndsk_buffer[512];
 
     ret = salt_create(&channel, SALT_CLIENT, my_write, my_read);
     ret = salt_set_signature(&channel, host_sk_sec);
-    ret = salt_init_session(&channel);
+    ret = salt_init_session(&channel, hndsk_buffer, 512);
     ret = salt_handshake(&channel);
+
+    printf("channel.err_code: 0x%02x\r\n", channel.err_code);
 
     assert(ret == SALT_SUCCESS);
 

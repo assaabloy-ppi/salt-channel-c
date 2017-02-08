@@ -16,7 +16,8 @@ extern uint8_t *host_sk_pub;
 
 extern uint8_t common_ek[32];
 
-extern uint8_t m2[34];
+extern uint8_t m1[35];
+extern uint8_t m2[33];
 extern uint8_t m3[114];
 
 #endif

@@ -18,6 +18,8 @@ extern uint8_t common_ek[32];
 
 extern uint8_t m1[35];
 extern uint8_t m2[33];
-extern uint8_t m3[114];
+extern uint8_t m3[113];
+extern uint8_t m4[113];
+
 
 #endif

@@ -14,7 +14,7 @@
 
 /*======= Public macro definitions ==========================================*/
 #define SALT_OVERHEAD_SIZE          (32U)       /**< Encryption buffer overhead size. */
-#define SALT_HNDSHK_BUFFER_SIZE     (200U)      /**< Buffer used for handshake. */
+#define SALT_HNDSHK_BUFFER_SIZE     (322U)      /**< Buffer used for handshake. */
 
 
 /*======= Type Definitions and declarations ===================================*/
@@ -83,18 +83,20 @@ typedef enum salt_state_e {
     SALT_WAIT_FOR_INCOMING_MSG_IO,
     SALT_WAIT_FOR_OUTGOING_MSG_INIT,
     SALT_WAIT_FOR_OUTGOING_MSG_IO,
+    SALT_CALCULATE_ENC_KEY,
     SALT_M1_INIT,
     SALT_M1_IO,
     SALT_M1_HANDLE,
     SALT_M2_INIT,
     SALT_M2_IO,
-    SALT_M2_VERIFY,
+    SALT_M2_HANDLE,
     SALT_M3_INIT,
     SALT_M3_IO,
-    SALT_M3_VERIFY,
+    SALT_M3_HANDLE,
     SALT_M4_INIT,
     SALT_M4_IO,
     SALT_M4_VERIFY,
+    SALT_M4_HANDLE,
     SALT_SESSION_ESTABLISHED,
     SALT_ERROR_STATE
 } salt_state_t;
@@ -135,6 +137,7 @@ struct salt_io_channel_s {
 typedef struct salt_channel_s {
     salt_mode_t     mode;                               /**< Salt channel mode. */
     salt_state_t    state;                              /**< Salt channel state. */
+    salt_state_t    next_state;
     salt_err_t      err_code;                           /**< Latest error code. */
 
     /* Encryption and signature stuff */

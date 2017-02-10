@@ -108,7 +108,14 @@ static void *connection_handler(void *context)
     struct clientInfo *client = (struct clientInfo *) context;
     int sock = client->sock_fd;
     int n;
+    salt_channel_t channel;
+    salt_ret_t ret;
+    uint8_t hndsk_buffer[400];
+    memset(hndsk_buffer, 0xcc, 400);
 
+    ret = salt_create(&channel, SALT_SERVER, my_write, my_read);
+    ret = salt_set_signature(&channel, host_sk_sec);
+    ret = salt_init_session(&channel, hndsk_buffer, 322);
     char client_message[2000];
 
     while((n = read(sock, client_message, 2000)) > 0)

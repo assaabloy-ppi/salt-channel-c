@@ -23,7 +23,7 @@ client_prog: client.o salt_2.o tweetnacl.o randombytes_linux.o
 	$(CC) $(LD_FLAGS) -lm $^ -o client_prog.out
 
 host_prog: host.o salt_2.o tweetnacl.o randombytes_linux.o
-	$(CC) $(LD_FLAGS) -lm $^ -o client_prog.out
+	$(CC) $(LD_FLAGS) -lm $^ -o host_prog.out
 
 clean:
 	rm -f *.o

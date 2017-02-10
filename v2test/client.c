@@ -20,8 +20,6 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
     static uint8_t i = 0;
-    PRINT_BYTES_C(p_wchannel->p_data, p_wchannel->size);
-
     switch (i)
     {
         case 0:
@@ -80,7 +78,6 @@ int main(void)
     ret = salt_init_session(&channel, hndsk_buffer, 322);
     ret = salt_handshake(&channel);
     assert(ret == SALT_SUCCESS);
-    PRINT_BYTES(&hndsk_buffer[322], 400-322);
 
     return 0;
 }

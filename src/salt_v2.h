@@ -13,7 +13,8 @@
 #include "salt_crypto_wrapper.h"
 
 /*======= Public macro definitions ==========================================*/
-#define SALT_OVERHEAD_SIZE          (32U)       /**< Encryption buffer overhead size. */
+#define SALT_READ_OVERHEAD_SIZE     (16U)       /**< Encryption buffer overhead size. */
+#define SALT_WRITE_OVERHEAD_SIZE    (32U)       /**< Encryption buffer overhead size. */
 #define SALT_HNDSHK_BUFFER_SIZE     (322U)      /**< Buffer used for handshake. */
 
 
@@ -46,6 +47,7 @@ typedef enum salt_err_e {
     SALT_ERR_INVALID_STATE,         /**< Invalid state error. */
     SALT_ERR_M1_TOO_SMALL,          /**< Size of M1 message to small. */
     SALT_ERR_M2_TOO_SMALL,
+    SALT_ERR_M3M4_WRONG_SIZE,
     SALT_ERR_BAD_PROTOCOL,          /**< Bad protocol in M1 message. */
     SALT_ERR_BAD_M1_HEADER,         /**< Bad header in M1 message. */
     SALT_ERR_COMMON_KEY,            /**< Common key calculation error. */
@@ -53,7 +55,8 @@ typedef enum salt_err_e {
     SALT_ERR_ENCRYPTION,            /**< Encryption error. */
     SALT_ERR_DECRYPTION,            /**< Decryption error. */
     SALT_ERR_BAD_SIGNATURE,         /**< Signature verification failed. */
-    SALT_ERR_BUFF_TO_SMALL          /**< I/O Buffer to small. */
+    SALT_ERR_BUFF_TO_SMALL,         /**< I/O Buffer to small. */
+    SALT_ERR_IO_WRITE
 } salt_err_t;
 
 /**
@@ -101,6 +104,11 @@ typedef enum salt_state_e {
     SALT_ERROR_STATE
 } salt_state_t;
 
+typedef enum salt_io_state_e {
+    SALT_IO_READY,
+    SALT_IO_PENDING
+} salt_io_state_t;
+
 /**
  * @brief Function for dependency injection to make the salt channel available for
  * Any I/O channel.
@@ -122,12 +130,12 @@ typedef enum salt_state_e {
 typedef salt_ret_t (*salt_io_impl)(salt_io_channel_t *p_channel);
 
 struct salt_io_channel_s {
-    void        *p_context;                             /**< Pointer to I/O channel context. */
-    uint8_t     state;                                  /**< I/O channel state. */    
-    uint8_t     *p_data;                                /**< Pointer to data to read/write. */
-    uint32_t    size;                                   /**< Size of data to write or size of data read. */
-    uint32_t    max_size;                               /**< Maximum size of data to read. */
-    salt_err_t  err_code;                               /**< Error code. */
+    void            *p_context;                         /**< Pointer to I/O channel context. */
+    salt_io_state_t state;                              /**< I/O channel state. */    
+    uint8_t         *p_data;                            /**< Pointer to data to read/write. */
+    uint32_t        size;                               /**< Size of data to write or size of data read. */
+    uint32_t        max_size;                           /**< Maximum size of data to read. */
+    salt_err_t      err_code;                           /**< Error code. */
 };
 
 /**
@@ -259,6 +267,26 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel);
  *
  * Reads and decrypts an encrypted message into the buffer p_buffer.
  * The maximum length of the clear text message will be max_size - SALT_OVERHEAD_SIZE.
+ * The decryption process requires SALT_READ_OVERHEAD_SIZE bytes to be 0 (zero) padded
+ * before encryption. This is handeled by salt_read(), but the clear text data starts at
+ * an offset of SALT_READ_OVERHEAD_SIZE after decryption. The returned size in p_recv_size
+ * will be the size of the clear text data.
+ *
+ * Depending on implementation of the used injected I/O function, the salt_read function
+ * is blocking or non-blocking. If the reading is in process the return code will be SALT_PENDING.
+ *
+ * Example code:
+ *
+ *      char buffer[256];
+ *      uint32_t clear_text_size;
+ *      salt_ret_t ret_code = salt_read(&channel, buffer, &clear_text_size, 256);
+ *      if (ret_code == SALT_SUCCESS)
+ *      {
+ *          printf("%*.*s\r\n", 0, clear_text_size);
+ *      }
+ *      else {
+ *          prtinf("Salt read error: 0x%x\r\n", channel.err_code);
+ *      }
  *
  * @param p_channel     Pointer to salt channel handle.
  * @param p_buffer      Pointer where to store received (clear text) data.
@@ -279,9 +307,12 @@ salt_ret_t salt_read(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t *p_r
  * to be 0 (zero) padded. I.e, the user MUST NOT put any of the clear text data into the first
  * SALT_OVERHEAD_SIZE bytes.
  *
+ * Depending on implementation of the used injected I/O function, the salt_write function
+ * is blocking or non-blocking. If the writing is in process the return code will be SALT_PENDING.
+ *
  * The message must have the following format:
  *
- * p_buffer: |<- Reserved [SALT_OVERHEAD_SIZE] >|<- Clear text data [size] ->|
+ * p_buffer: |<- Reserved [SALT_WRITE_OVERHEAD_SIZE] >|<- Clear text data [size] ->|
  *
  * I.e, the length of p_buffer must be size + SALT_OVERHEAD_SIZE bytes long.
  *
@@ -290,7 +321,10 @@ salt_ret_t salt_read(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t *p_r
  *      char buffer[256];
  *      size_t size;
  *      size = sprintf(&buffer[SALT_OVERHEAD_SIZE], "This is an encrypted message!");
- *      salt_write(&channel, (uint8_t *) buffer, size);
+ *      salt_ret_t ret_code = salt_write(&channel, (uint8_t *) buffer, size);
+ *      if (ret_code != SALT_SUCCESS) {
+ *          prtinf("Salt read error: 0x%x\r\n", channel.err_code);
+ *      }
  *
  * The user is however not required to memset the 32 bytes to 0, this
  * is done by the salt channel.

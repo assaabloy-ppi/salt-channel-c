@@ -1,5 +1,4 @@
-C_FLAGS = -Wall -Wextra -Wpedantic -g -ggdb -DSALT_DEBUG=1 -I. -I../examples -I../src
-
+C_FLAGS = -Wall -Wextra -Werror -fno-stack-protector -Wpedantic -g -ggdb -DSALT_DEBUG=1 -I. -I../examples -I../src
 
 test_data.o: test_data.c
 	$(CC) -c -o $@ test_data.c
@@ -26,3 +25,7 @@ client_test: util.o tweetnacl.o salt_2.o client.o test_data.o
 
 host_test: util.o tweetnacl.o salt_2.o host.o test_data.o
 	$(CC) -lm $^ -o host_test.out
+
+test: host_test client_test
+	./host_test.out
+	./client_test.out

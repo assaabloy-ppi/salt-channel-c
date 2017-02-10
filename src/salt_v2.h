@@ -181,6 +181,16 @@ typedef struct salt_channel_s {
  * @param read_impl     User injected read implementation.
  * @param write_impl    Used injected write implementation.
  *
+ *
+ * If mode is SALT_SERVER_STREAM or SALT_CLIENT_STREAM the size of the package will be included
+ * in the byte stream to the used injected write implementation. I.e., if an encrypted message of
+ * length 32 is sent to the write implementation, the data will look like:
+ *
+ * salt_ret_t my_write(salt_io_channel_t *p_channel) {
+ *     p_channel->size = 4 + 32
+ *     p_channel->p_data = { 0x20, 0x00, 0x00, 0x00, data[0], ... , data[32-1] }
+ * }
+ *
  * @return SALT_SUCCESS The salt channel was successfully initiated.
  * @return SALT_ERROR   Any input pointer was a NULL pointer or invalid salt mode.
  *

@@ -217,7 +217,7 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel)
 {
     SALT_ASSERT_VALID_CHANNEL(p_channel);
 
-    if (p_channel->mode == SALT_SERVER)
+    if (p_channel->mode == SALT_SERVER || p_channel->mode == SALT_SERVER_STREAM)
     {
         return salti_handshake_server(p_channel);
     }
@@ -225,6 +225,17 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel)
     {
         return salti_handshake_client(p_channel);
     }
+}
+
+salt_ret_t salt_read(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t *p_recv_size, uint32_t max_size)
+{
+    *p_recv_size = max_size;
+    return salti_read(p_channel, p_buffer, p_recv_size, SALT_ENCRYPTED);
+}
+
+salt_ret_t salt_write(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t size)
+{
+    return salti_write(p_channel, p_buffer, size, SALT_ENCRYPTED);
 }
 
 /*======= Local function implementations ======================================*/
@@ -237,6 +248,7 @@ static salt_ret_t salti_read(salt_channel_t *p_channel, uint8_t *p_data, uint32_
         case SALT_IO_READY:
             p_channel->read_channel.p_data = p_data;
             p_channel->read_channel.max_size = *size;
+            (*size) = 0;
             if (encrypted)
             {
                 p_channel->read_channel.p_data += crypto_secretbox_BOXZEROBYTES;
@@ -252,6 +264,7 @@ static salt_ret_t salti_read(salt_channel_t *p_channel, uint8_t *p_data, uint32_
                 {
                     p_channel->read_channel.p_data -= crypto_secretbox_BOXZEROBYTES;
                     p_channel->read_channel.size += crypto_secretbox_BOXZEROBYTES;
+                    memset(p_data, 0x00U, crypto_secretbox_BOXZEROBYTES);
                     ret_code = salti_decrypt(p_channel,
                         p_channel->read_channel.p_data,
                         p_channel->read_channel.size);
@@ -279,12 +292,17 @@ static salt_ret_t salti_write(salt_channel_t *p_channel, uint8_t *p_data, uint32
             
             if (encrypted)
             {
-                SALT_ASSERT(salti_encrypt(p_channel,
-                    p_data, size) == SALT_SUCCESS, SALT_ERR_ENCRYPTION);
+                memset(p_data, 0x00U, crypto_secretbox_ZEROBYTES);
+                ret_code = salti_encrypt(p_channel, p_data, size);
+                if (ret_code != SALT_SUCCESS)
+                {
+                    p_channel->err_code = SALT_ERR_ENCRYPTION;
+                    return ret_code;
+                }
                 p_channel->write_channel.size -= crypto_secretbox_BOXZEROBYTES;
                 p_channel->write_channel.p_data += crypto_secretbox_BOXZEROBYTES;
 
-                if (p_channel->mode == SALT_SERVER_STREAM)
+                if (p_channel->mode == SALT_SERVER_STREAM || p_channel->mode == SALT_CLIENT_STREAM)
                 {
                     memcpy(&p_data[crypto_secretbox_BOXZEROBYTES-sizeof(p_channel->write_channel.size)],
                         &p_channel->write_channel.size,
@@ -395,6 +413,7 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                 &p_channel->hdshk_buffer[crypto_secretbox_ZEROBYTES],
                 size, SALT_M4_HEADER_VALUE);
             SALT_ASSERT(ret_code == SALT_SUCCESS, p_channel->err_code);
+            memset(p_channel->hdshk_buffer, 0x00, p_channel->hdshk_buffer_size);
             p_channel->state = SALT_SESSION_ESTABLISHED;
         case SALT_SESSION_ESTABLISHED:
             break;
@@ -442,7 +461,6 @@ static salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
             SALT_ASSERT(crypto_box_beforenm(p_channel->ek_common,
                 p_channel->peer_ek_pub,
                 p_channel->my_ek_sec) == 0, SALT_ERR_COMMON_KEY);
-            memset(&p_channel->hdshk_buffer[193], 0, 32);
             ret_code = salti_create_m3m4(p_channel,
                 &p_channel->hdshk_buffer[193],
                 &size,
@@ -474,9 +492,9 @@ static salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
             {
                 break;
             }
+            memset(p_channel->hdshk_buffer, 0x00, p_channel->hdshk_buffer_size);
             p_channel->state = SALT_SESSION_ESTABLISHED;
-        case SALT_SESSION_ESTABLISHED:
-            ret_code = SALT_SUCCESS;
+        case SALT_SESSION_ESTABLISHED: 
             break;
         default:
             SALT_ERROR(SALT_ERR_INVALID_STATE);
@@ -494,7 +512,7 @@ static salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
 static salt_ret_t salti_create_m1(salt_channel_t *p_channel, uint8_t *p_data, uint32_t *size)
 {
 
-    uint8_t offset = (p_channel->mode == SALT_SERVER_STREAM) ? SALT_LENGTH_SIZE : 0U;
+    uint8_t offset = (p_channel->mode == SALT_CLIENT_STREAM) ? SALT_LENGTH_SIZE : 0U;
 
     p_data[0 + offset] = SALT_M1_HEADER_VALUE;
     p_data[1 + offset] = 'S';
@@ -502,7 +520,7 @@ static salt_ret_t salti_create_m1(salt_channel_t *p_channel, uint8_t *p_data, ui
 
     memcpy(&p_data[3 + offset], p_channel->my_ek_pub, crypto_box_PUBLICKEYBYTES);
     (*size) = 35U;
-    memcpy(p_data, p_data, offset);
+    memcpy(p_data, size, offset);
     (*size) += offset;
 
     return SALT_SUCCESS;

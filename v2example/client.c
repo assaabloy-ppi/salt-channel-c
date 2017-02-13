@@ -106,6 +106,7 @@ static void *connection_handler(void *context)
 
     do
     {
+        memset(hndsk_buffer, 0, sizeof(hndsk_buffer));
         ret = salt_read(&channel, hndsk_buffer, &size, SALT_HNDSHK_BUFFER_SIZE-16);
         if (ret == SALT_SUCCESS)
         {

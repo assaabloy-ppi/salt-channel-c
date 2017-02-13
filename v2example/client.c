@@ -7,11 +7,19 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <assert.h>
+
+#include "util.h"
+#include "salt_v2.h"
+#include "../v2test/test_data.c"
+#include "salt_io.h"
 
 static void *connection_handler(void *context);
+static void *write_handler(void *context);
 
 int main()
 {
+    //test();
     int sock_desc;
     struct sockaddr_in serv_addr;
     setbuf(stdout, NULL);
@@ -39,17 +47,15 @@ int main()
     }
 
     printf("Connected successfully - Please enter string\n");
-    int tx_size;
-    char tx_buffer[256];
 
     while (1)
     {
-        printf("Enter message: ");
+        /*printf("Enter message: ");
         tx_size = read(0, tx_buffer, sizeof(tx_buffer));
         if (tx_size > 0) {
             printf("\033[A\33[2K\rclient: %*.*s", 0, tx_size, tx_buffer);
             write(sock_desc, tx_buffer, tx_size);
-        }
+        }*/
     }
 
     close(sock_desc);
@@ -60,13 +66,79 @@ int main()
 
 static void *connection_handler(void *context)
 {
-    char client_message[2000];
-    int n;
     int sock = *(int*) context;
-    while((n = read(sock, client_message, 2000)) > 0)
+    salt_channel_t channel;
+    salt_ret_t ret;
+    uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
+    uint32_t size;
+
+    ret = salt_create(&channel, SALT_CLIENT, my_write, my_read);
+    assert(ret == SALT_SUCCESS);
+    ret = salt_create_signature(&channel); /* Creates a new signature. */
+    assert(ret == SALT_SUCCESS);
+    ret = salt_init_session(&channel, hndsk_buffer, sizeof(hndsk_buffer));
+    assert(ret == SALT_SUCCESS);
+
+    ret = salt_set_context(&channel, &sock, &sock);
+    assert(ret == SALT_SUCCESS);
+
+    ret = salt_handshake(&channel);
+
+    while (ret != SALT_SUCCESS) {
+
+        if (ret == SALT_ERROR) {
+            printf("Salt error: 0x%02x\r\n", channel.err_code);
+        }
+
+        assert(ret != SALT_ERROR);
+
+        salt_handshake(&channel);
+
+    }
+
+    printf("Salt handshake succeeded.\r\n");
+    pthread_t write_thread;
+    if(pthread_create(&write_thread, NULL,  write_handler, (void*) &channel) < 0)
     {
-        printf("\33[2K\rhost: %*.*s", 0, n, client_message);
-        printf("Enter message: ");    }
+        puts("could not create write thread");
+        pthread_exit(NULL);
+    }
+
+    do
+    {
+        ret = salt_read(&channel, hndsk_buffer, &size, SALT_HNDSHK_BUFFER_SIZE-16);
+        if (ret == SALT_SUCCESS)
+        {
+            printf("\33[2K\rhost: %*.*s", 0, SALT_HNDSHK_BUFFER_SIZE-32, &hndsk_buffer[32]);
+            printf("Enter message: ");
+        }
+    } while(ret == SALT_SUCCESS);
+
+
     close(sock);
+
+    printf("Connection closed.\r\n");
+
     return 0;
+}
+
+static void *write_handler(void *context)
+{
+    salt_channel_t *channel = (salt_channel_t *) context;
+    int tx_size;
+    char tx_buffer[256];
+    salt_ret_t ret_code;
+
+    do
+    {
+        printf("Enter message: ");
+        tx_size = read(0, &tx_buffer[32], sizeof(tx_buffer)-32);
+        if (tx_size > 0) {
+            printf("\033[A\33[2K\rclient: %*.*s", 0, tx_size, &tx_buffer[32]);
+            ret_code = salt_write(channel, (uint8_t*) tx_buffer, tx_size + 32);
+        }
+    } while (ret_code == SALT_SUCCESS);
+
+
+    pthread_exit(NULL);
 }

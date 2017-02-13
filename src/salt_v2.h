@@ -15,7 +15,7 @@
 /*======= Public macro definitions ==========================================*/
 #define SALT_READ_OVERHEAD_SIZE     (16U)       /**< Encryption buffer overhead size. */
 #define SALT_WRITE_OVERHEAD_SIZE    (32U)       /**< Encryption buffer overhead size. */
-#define SALT_HNDSHK_BUFFER_SIZE     (322U)      /**< Buffer used for handshake. */
+#define SALT_HNDSHK_BUFFER_SIZE     (386U)      /**< Buffer used for handshake. */
 
 
 /*======= Type Definitions and declarations ===================================*/
@@ -56,8 +56,10 @@ typedef enum salt_err_e {
     SALT_ERR_DECRYPTION,            /**< Decryption error. */
     SALT_ERR_BAD_SIGNATURE,         /**< Signature verification failed. */
     SALT_ERR_BUFF_TO_SMALL,         /**< I/O Buffer to small. */
-    SALT_ERR_IO_WRITE
+    SALT_ERR_IO_WRITE,
+    SALT_ERR_CONNECTION_CLOSED,
 } salt_err_t;
+
 
 /**
  * @brief Salt channel modes.
@@ -69,10 +71,8 @@ typedef enum salt_err_e {
  *
  */
 typedef enum salt_mode_e {
-    SALT_SERVER = 0,                    /**< Server/host mode. */
-    SALT_SERVER_STREAM,             /**< Server/host stream mode. */
+    SALT_SERVER = 0,                /**< Server/host mode. */
     SALT_CLIENT,                    /**< Client mode. */
-    SALT_CLIENT_STREAM              /**< Client stream mode. */
 } salt_mode_t;
 
 /**
@@ -106,6 +106,7 @@ typedef enum salt_state_e {
 
 typedef enum salt_io_state_e {
     SALT_IO_READY,
+    SALT_IO_SIZE,
     SALT_IO_PENDING
 } salt_io_state_t;
 
@@ -118,9 +119,9 @@ typedef enum salt_io_state_e {
  * until all bytes are transfered. Then, the function must return SALT_SUCCESS.
  *
  * If any error occurs the function must return SALT_ERROR and the error code
- * must be reported in p_wchannel->err_code.
+ * must be reported in p_channel->err_code.
  *
- * @param p_wchannel    Pointer to I/O channel structure.
+ * @param p_channel    Pointer to I/O channel structure.
  *
  * @return SALT_SUCCESS The data was successfully written.
  * @return SALT_PENDING The writing process is still pending.

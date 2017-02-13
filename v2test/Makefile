@@ -1,8 +1,5 @@
 C_FLAGS = -Wall -Wextra -Werror -fno-stack-protector -Wpedantic -g -ggdb -DSALT_DEBUG=1 -I. -I../examples -I../src
 
-test_data.o: test_data.c
-	$(CC) -c -o $@ test_data.c
-
 util.o: ../test/util.c
 	$(CC) -c -o $@ ../test/util.c
 
@@ -14,16 +11,16 @@ tweetnacl.o: ../src/external/tweetnacl/tweetnacl.c
 salt_2.o: ../src/salt_v2.c ../src/salt_v2.h
 	gcc $(C_FLAGS) -c ../src/salt_v2.c -o salt_2.o
 
-host.o: host.c
+host.o: host.c test_data.c
 	gcc $(C_FLAGS) -c host.c -o host.o
 
-client.o: client.c
+client.o: client.c test_data.c
 	gcc $(C_FLAGS) -c client.c -o client.o
 
-client_test: util.o tweetnacl.o salt_2.o client.o test_data.o
+client_test: util.o tweetnacl.o salt_2.o client.o
 	$(CC) -lm $^ -o client_test.out
 
-host_test: util.o tweetnacl.o salt_2.o host.o test_data.o
+host_test: util.o tweetnacl.o salt_2.o host.o
 	$(CC) -lm $^ -o host_test.out
 
 test: host_test client_test

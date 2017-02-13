@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "test_data.h"
+#include "test_data.c"
 
 #include "../test/util.h"
 #include "salt_v2.h"
@@ -19,54 +19,36 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
 
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
-    static uint8_t i = 0;
-    switch (i)
-    {
-        case 0:
-            assert(p_wchannel->size == sizeof(m1));
-            assert(memcmp(p_wchannel->p_data, m1, sizeof(m1)) == 0);
-            break;
-        case 1:
-            assert(p_wchannel->size == sizeof(m4));
-            assert(memcmp(p_wchannel->p_data, m4, sizeof(m4)) == 0);
-            break;
-        default:
-            assert(0);
-            break;
+    assert(client_write_counter + p_wchannel->size <= sizeof(client_write_buffer));
 
+    if (memcmp(&client_write_buffer[client_write_counter], p_wchannel->p_data, p_wchannel->size) != 0)
+    {
+        PRINT_BYTES_C(p_wchannel->p_data, p_wchannel->size);
+        PRINT_BYTES_C(&client_write_buffer[client_write_counter], p_wchannel->size);
+        assert(0);
     }
     
-    i++;
+    client_write_counter += p_wchannel->size;
     
     return SALT_SUCCESS;
 }
 
 salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 {
-    static uint8_t i = 0;
-    switch (i)
-    {
-        case 0:
-            memcpy(p_rchannel->p_data, m2, sizeof(m2));
-            p_rchannel->size = sizeof(m2);
-            break;
-        case 1:
-            memcpy(p_rchannel->p_data, m3, sizeof(m3));
-            p_rchannel->size = sizeof(m3);
-            break;
-        default:
-            assert(0);
-            break;
-    }
 
-    i++;
+    assert(p_rchannel->size <= (sizeof(client_read_buffer) - client_read_counter));
+    memcpy(p_rchannel->p_data, &client_read_buffer[client_read_counter], p_rchannel->size);
+    client_read_counter += p_rchannel->size;
 
     return SALT_SUCCESS;
 }
 
 
+
 int main(void)
 {
+
+    init_salt_test_data();
 
     salt_channel_t channel;
     salt_ret_t ret;
@@ -75,9 +57,14 @@ int main(void)
 
     ret = salt_create(&channel, SALT_CLIENT, my_write, my_read);
     ret = salt_set_signature(&channel, client_sk_sec);
-    ret = salt_init_session(&channel, hndsk_buffer, 322);
+    ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);
     ret = salt_handshake(&channel);
     assert(ret == SALT_SUCCESS);
+    PRINT_BYTES(&hndsk_buffer[386], 400-386);
+    for (uint32_t i = 390; i < sizeof(hndsk_buffer); i++)
+    {
+        assert(hndsk_buffer[i] == 0xcc);
+    }
 
     return 0;
 }

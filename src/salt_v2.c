@@ -402,14 +402,15 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                 break;
             }
         case SALT_M2_IO:
-            ret_code = SALT_PENDING;
-            if (ret_code != SALT_SUCCESS && salti_write(p_channel,
-                &p_channel->hdshk_buffer[129],
-                size, SALT_CLEAR) != SALT_SUCCESS)
+            if (ret_code != SALT_SUCCESS)
             {
-                break;
+                ret_code = salti_write(p_channel,
+                                &p_channel->hdshk_buffer[129],
+                                size, SALT_CLEAR);
+                if (ret_code != SALT_SUCCESS) {
+                    break;
+                }
             }
-            ret_code = SALT_SUCCESS;
             p_channel->state = SALT_M3_INIT;
         case SALT_M3_INIT:
             ret_code = salti_create_m3m4(p_channel,

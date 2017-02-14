@@ -7,8 +7,8 @@
 
 /*======= Includes ============================================================*/
 #include "salt_v2.h"
-#include "../test/util.h"
 
+/* C Library includes */
 #include <string.h> /* memcpy, memset */
 
 /*======= Local Macro Definitions =============================================*/
@@ -30,7 +30,7 @@
     do {                                                                        \
         if (!(x)) {                                                             \
             p_channel->err_code = error_code;                                   \
-            return salt_error;                                                  \
+            return SALT_ERROR;                                                  \
         }                                                                       \
     } while (0)
 #endif
@@ -42,9 +42,9 @@
 #define SALT_ASSERT_VALID_CHANNEL(x) if ((x) == NULL_PTR) return SALT_ERROR
 #define SALT_TRIGGER_ERROR                      (0x00U)
 #define SALT_ERROR(err_code) SALT_ASSERT(SALT_TRIGGER_ERROR, err_code)
-
 #define MEMSET_ZERO(x) memset((x), 0, sizeof((x)))
 
+/* Nonce initial values and increments */
 #define SALT_WRITE_NONCE_INCR_SERVER            (2U)
 #define SALT_WRITE_NONCE_INCR_CLIENT            (2U)
 #define SALT_WRITE_NONCE_INIT_SERVER            (2U)
@@ -54,31 +54,32 @@
 #define SALT_READ_NONCE_INIT_SERVER             (1U)
 #define SALT_READ_NONCE_INIT_CLIENT             (2U)
 
-#define SALT_M1_RESUME_BYTE                     (0x00U)
-
+/* Various defines */
 #define SALT_CLEAR                              (0U)
 #define SALT_ENCRYPTED                          (1U)
 #define SALT_LENGTH_SIZE                        (4U)
-
 #define SALT_HEADER_SIZE                        (0x01U)
 #define SALT_HEADER_TYPE_FLAG                   (0x0FU)
-#define SALT_HANDSHAKE_MAX_MSG_SIZE             (200U)
 
+/* M1 Message defines */
 #define SALT_M1_HEADER_VALUE                    (0x01U)
 #define SALT_M1_SIG_KEY_INCLUDED_FLAG           (0x10U)
 #define SALT_M1_TICKED_INCLUDED_FLAG            (0x20U)
 #define SALT_M1_TICKED_REQUEST_FLAG             (0x40U)
 
+/* M2 Message defines */
 #define SALT_M2_HEADER_VALUE                    (0x02U)
 #define SALT_M2_ENC_KEY_INCLUDED_FLAG           (0x10U)
 #define SALT_M2_RESUME_SUPPORTED_FLAG           (0x20U)
 #define SALT_M2_NO_SUCH_SERVER_FLAG             (0x40U)
 #define SALT_M2_BAD_TICKET_FLAG                 (0x80U)
 
+/* M3 Message defines */
 #define SALT_M3_MAX_SIZE                        (131U)
 #define SALT_M3_HEADER_VALUE                    (0x03U)
 #define SALT_M3_SIG_KEY_INCLUDED_FLAG           (0x10U)
 
+/* M4 Message defines */
 #define SALT_M4_HEADER_VALUE                    (0x04U)
 
 /*======= Type Definitions ====================================================*/
@@ -86,7 +87,7 @@
 /*======= Local variable declarations =========================================*/
 
 /*======= Local function prototypes ===========================================*/
-static salt_ret_t salti_read(salt_channel_t *p_channel, uint8_t *p_data, uint32_t *size, uint8_t encrypted);
+static salt_ret_t salti_read(salt_channel_t *p_channel,uint8_t *p_data, uint32_t *size, uint8_t encrypted);
 static salt_ret_t salti_write(salt_channel_t *p_channel, uint8_t *p_data, uint32_t size, uint8_t encrypted);
 static salt_ret_t salti_handshake_server(salt_channel_t *p_channel);
 static salt_ret_t salti_handshake_client(salt_channel_t *p_channel);
@@ -253,7 +254,8 @@ static salt_ret_t salti_read(salt_channel_t *p_channel, uint8_t *p_data, uint32_
         case SALT_IO_READY:
             p_channel->read_channel.p_data = p_data;
             p_channel->read_channel.max_size = *size;
-            p_channel->read_channel.size = SALT_LENGTH_SIZE;
+            p_channel->read_channel.size_expected = SALT_LENGTH_SIZE;
+            p_channel->read_channel.size = 0;
             p_channel->read_channel.state = SALT_IO_SIZE;
         case SALT_IO_SIZE:
             ret_code = p_channel->read_impl(&p_channel->read_channel);
@@ -263,9 +265,9 @@ static salt_ret_t salti_read(salt_channel_t *p_channel, uint8_t *p_data, uint32_
                 break;
             }
 
-            p_channel->read_channel.size = salti_bytes_to_size(p_data);
+            p_channel->read_channel.size_expected = salti_bytes_to_size(p_data);
 
-            if (p_channel->read_channel.size > p_channel->read_channel.max_size)
+            if (p_channel->read_channel.size_expected > p_channel->read_channel.max_size)
             {
                 p_channel->err_code = SALT_ERR_BUFF_TO_SMALL;
                 ret_code = SALT_ERROR;
@@ -277,7 +279,7 @@ static salt_ret_t salti_read(salt_channel_t *p_channel, uint8_t *p_data, uint32_
                 p_channel->read_channel.p_data += crypto_secretbox_BOXZEROBYTES;
             }
             p_channel->read_channel.state = SALT_IO_PENDING;
-
+            p_channel->read_channel.size = 0;
         case SALT_IO_PENDING:
             ret_code = p_channel->read_impl(&p_channel->read_channel);
             if (ret_code == SALT_SUCCESS)
@@ -320,7 +322,8 @@ static salt_ret_t salti_write(salt_channel_t *p_channel, uint8_t *p_data, uint32
     {
         case SALT_IO_READY:
             p_channel->write_channel.p_data = p_data;
-            p_channel->write_channel.size = size;
+            p_channel->write_channel.size = 0;
+            p_channel->write_channel.size_expected = size;
             
             if (encrypted)
             {
@@ -333,11 +336,11 @@ static salt_ret_t salti_write(salt_channel_t *p_channel, uint8_t *p_data, uint32
                     return ret_code;
                 }
 
-                p_channel->write_channel.size -= crypto_secretbox_BOXZEROBYTES;
+                p_channel->write_channel.size_expected -= crypto_secretbox_BOXZEROBYTES;
                 p_channel->write_channel.p_data += crypto_secretbox_BOXZEROBYTES;
 
-                salti_size_to_bytes(&p_data[crypto_secretbox_BOXZEROBYTES-SALT_LENGTH_SIZE], p_channel->write_channel.size);
-                p_channel->write_channel.size += SALT_LENGTH_SIZE;
+                salti_size_to_bytes(&p_data[crypto_secretbox_BOXZEROBYTES-SALT_LENGTH_SIZE], p_channel->write_channel.size_expected);
+                p_channel->write_channel.size_expected += SALT_LENGTH_SIZE;
                 p_channel->write_channel.p_data -= SALT_LENGTH_SIZE;
 
             }
@@ -399,12 +402,14 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                 break;
             }
         case SALT_M2_IO:
+            ret_code = SALT_PENDING;
             if (ret_code != SALT_SUCCESS && salti_write(p_channel,
                 &p_channel->hdshk_buffer[129],
                 size, SALT_CLEAR) != SALT_SUCCESS)
             {
                 break;
             }
+            ret_code = SALT_SUCCESS;
             p_channel->state = SALT_M3_INIT;
         case SALT_M3_INIT:
             ret_code = salti_create_m3m4(p_channel,

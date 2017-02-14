@@ -20,14 +20,16 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
 
-    assert(host_write_counter + p_wchannel->size <= sizeof(host_write_buffer));
+    assert(host_write_counter + p_wchannel->size_expected <= sizeof(host_write_buffer));
 
-    if (memcmp(&host_write_buffer[host_write_counter], p_wchannel->p_data, p_wchannel->size) != 0)
+    if (memcmp(&host_write_buffer[host_write_counter], p_wchannel->p_data, p_wchannel->size_expected) != 0)
     {
-        PRINT_BYTES_C(p_wchannel->p_data, p_wchannel->size);
+        PRINT_BYTES_C(p_wchannel->p_data, p_wchannel->size_expected);
+        PRINT_BYTES_C(&host_write_buffer[host_write_counter], p_wchannel->size_expected);
         assert(0);
     }
     
+    p_wchannel->size = p_wchannel->size_expected;
     host_write_counter += p_wchannel->size;
     
     return SALT_SUCCESS;
@@ -36,8 +38,9 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 {
 
-    assert(p_rchannel->size <= (sizeof(host_read_buffer) - host_read_counter));
-    memcpy(p_rchannel->p_data, &host_read_buffer[host_read_counter], p_rchannel->size);
+    assert(p_rchannel->size_expected <= (sizeof(host_read_buffer) - host_read_counter));
+    memcpy(p_rchannel->p_data, &host_read_buffer[host_read_counter], p_rchannel->size_expected);
+    p_rchannel->size = p_rchannel->size_expected;
     host_read_counter += p_rchannel->size;
 
     return SALT_SUCCESS;

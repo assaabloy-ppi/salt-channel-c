@@ -15,7 +15,7 @@
 /*======= Public macro definitions ==========================================*/
 #define SALT_READ_OVERHEAD_SIZE     (16U)       /**< Encryption buffer overhead size. */
 #define SALT_WRITE_OVERHEAD_SIZE    (32U)       /**< Encryption buffer overhead size. */
-#define SALT_HNDSHK_BUFFER_SIZE     (386U)      /**< Buffer used for handshake. */
+#define SALT_HNDSHK_BUFFER_SIZE     (400U)      /**< Buffer used for handshake. */
 
 
 /*======= Type Definitions and declarations ===================================*/
@@ -118,8 +118,13 @@ typedef enum salt_io_state_e {
  * I/O channel the implementations of the channels must return SALT_PENDING
  * until all bytes are transfered. Then, the function must return SALT_SUCCESS.
  *
+ * p_channel->size_expected     <- Number of bytes expected
+ * p_channel->size              <- Number of bytes written/read
+ *
  * If any error occurs the function must return SALT_ERROR and the error code
- * must be reported in p_channel->err_code.
+ * must be reported in p_channel->err_code. When implementing the read channel,
+ * the function must only return SALT_SUCCESS when p_channel->size_expected == p_channel.size.
+ *
  *
  * @param p_channel    Pointer to I/O channel structure.
  *
@@ -134,8 +139,9 @@ struct salt_io_channel_s {
     void            *p_context;                         /**< Pointer to I/O channel context. */
     salt_io_state_t state;                              /**< I/O channel state. */    
     uint8_t         *p_data;                            /**< Pointer to data to read/write. */
-    uint32_t        size;                               /**< Size of data to write or size of data read. */
-    uint32_t        max_size;                           /**< Maximum size of data to read. */
+    uint32_t        size;                               /**< Size of data written or size of data read. */
+    uint32_t        size_expected;                      /**< Expected size to read or be written. */
+    uint32_t        max_size;                           /**< Maximum size of data to read (used internally). */
     salt_err_t      err_code;                           /**< Error code. */
 };
 

@@ -19,15 +19,16 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
 
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
-    assert(client_write_counter + p_wchannel->size <= sizeof(client_write_buffer));
+    assert(client_write_counter + p_wchannel->size_expected <= sizeof(client_write_buffer));
 
-    if (memcmp(&client_write_buffer[client_write_counter], p_wchannel->p_data, p_wchannel->size) != 0)
+    if (memcmp(&client_write_buffer[client_write_counter], p_wchannel->p_data, p_wchannel->size_expected) != 0)
     {
-        PRINT_BYTES_C(p_wchannel->p_data, p_wchannel->size);
-        PRINT_BYTES_C(&client_write_buffer[client_write_counter], p_wchannel->size);
+        PRINT_BYTES_C(p_wchannel->p_data, p_wchannel->size_expected);
+        PRINT_BYTES_C(&client_write_buffer[client_write_counter], p_wchannel->size_expected);
         assert(0);
     }
     
+    p_wchannel->size = p_wchannel->size_expected;
     client_write_counter += p_wchannel->size;
     
     return SALT_SUCCESS;
@@ -36,8 +37,9 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 {
 
-    assert(p_rchannel->size <= (sizeof(client_read_buffer) - client_read_counter));
-    memcpy(p_rchannel->p_data, &client_read_buffer[client_read_counter], p_rchannel->size);
+    assert(p_rchannel->size_expected <= (sizeof(client_read_buffer) - client_read_counter));
+    memcpy(p_rchannel->p_data, &client_read_buffer[client_read_counter], p_rchannel->size_expected);
+    p_rchannel->size = p_rchannel->size_expected;
     client_read_counter += p_rchannel->size;
 
     return SALT_SUCCESS;
@@ -60,8 +62,7 @@ int main(void)
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);
     ret = salt_handshake(&channel);
     assert(ret == SALT_SUCCESS);
-    PRINT_BYTES(&hndsk_buffer[386], 400-386);
-    for (uint32_t i = 390; i < sizeof(hndsk_buffer); i++)
+    for (uint32_t i = SALT_HNDSHK_BUFFER_SIZE; i < sizeof(hndsk_buffer); i++)
     {
         assert(hndsk_buffer[i] == 0xcc);
     }

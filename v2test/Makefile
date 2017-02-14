@@ -23,6 +23,16 @@ client_test: util.o tweetnacl.o salt_2.o client.o
 host_test: util.o tweetnacl.o salt_2.o host.o
 	$(CC) -lm $^ -o host_test.out
 
-test: host_test client_test
+hostclient.o: hostclient.c
+	gcc $(C_FLAGS) -c hostclient.c -o hostclient.o
+
+hostclient_test: util.o tweetnacl.o salt_2.o hostclient.o
+	$(CC) -lm $^ -o hostclient_test.out
+
+test: clean host_test client_test hostclient_test
 	./host_test.out
 	./client_test.out
+	./hostclient_test.out
+
+clean:
+	rm -f *.o

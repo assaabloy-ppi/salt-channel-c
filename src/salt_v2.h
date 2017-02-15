@@ -46,10 +46,12 @@ typedef enum salt_err_e {
     SALT_ERR_SESSION_NOT_INITIATED, /**< Session not initiated when handshaking error. */
     SALT_ERR_INVALID_STATE,         /**< Invalid state error. */
     SALT_ERR_M1_TOO_SMALL,          /**< Size of M1 message to small. */
-    SALT_ERR_M2_TOO_SMALL,
-    SALT_ERR_M3M4_WRONG_SIZE,
-    SALT_ERR_BAD_PROTOCOL,          /**< Bad protocol in M1 message. */
-    SALT_ERR_BAD_M1_HEADER,         /**< Bad header in M1 message. */
+    SALT_ERR_M1_BAD_PROTOCOL,       /**< Bad protocol in M1 message. */
+    SALT_ERR_M1_BAD_HEADER,         /**< Bad header in M1 message. */
+    SALT_ERR_NO_SUCH_SERVER,        /**< Client included an invalid public signature key. */
+    SALT_ERR_M2_TOO_SMALL,          /**< Size of M2 message to small. */
+    SALT_ERR_M2_BAD_HEADER,         /**< Vad header in M2 message. */
+    SALT_ERR_M3M4_WRONG_SIZE,       /**< Bad size of M3/M4 message. */
     SALT_ERR_COMMON_KEY,            /**< Common key calculation error. */
     SALT_ERR_SIGNING,               /**< Signing error. */
     SALT_ERR_ENCRYPTION,            /**< Encryption error. */
@@ -278,6 +280,77 @@ salt_ret_t salt_init_session(salt_channel_t *p_channel, uint8_t *hdshk_buffer, u
  *
  */
 salt_ret_t salt_handshake(salt_channel_t *p_channel);
+
+/**
+ * @brief Salt request resume ticket.
+ *
+ * If the client at some later point want to resume the session, a resume ticket could be requested.
+ * The client must store the resume ticket along with the session key and with knowledge of the host.
+ *
+ *
+ * Example code: Request a ticket and store it along with the session key and identity of the host.
+ *
+ *      uint8_t ticket[200];
+ *      uint32_t ticket_size;
+ *      salt_ret_t ret_code = salt_request_ticket(&channel, ticket, &ticket_size, sizeof(sicket));
+ *      if (ret_code == SALT_SUCCESS) {
+ *          // Application specific storage of ticket
+ *          store_ticket(ticket, ticket_size, channel.peer_sk_pub, channel.ek_common):
+ *      }
+ *      else {
+ *          // The server does not support resume feature or any other error. See channel.err_code.
+ *      }
+ *
+ * Later when the ticket is to be reused on the host with a specific identity (public sign key):
+ *
+ *      See salt_resume.
+ *
+ * @param p_channel     Pointer to salt channel handle.
+ * @param p_ticket      Pointer where to store the received ticket.
+ * @param p_ticket_size Pointer where to store size of received ticket.
+ * @param max_size      Maxiumum allowed size of ticket.
+ *
+ * @return SALT_SUCCESS A resume ticket was successfully received.
+ * @return SALT_PENDING The receive process is still pending.
+ * @return SALT_ERROR   If any error occured.
+ *
+ */
+salt_ret_t salt_request_ticket(salt_channel_t *p_channel, uint8_t *p_ticket, uint32_t *p_ticket_size, uint32_t max_size);
+
+/**
+ * @brief Salt resume process using a ticket.
+ *
+ * If the client at a previous point has requested a resume ticket, we could try to
+ * resume the session using this. The resume ticket must be stored along with the
+ * symmetric session encryption key.. The client does not need to know anything specific
+ * about the ticket (except whom it belongs to). This is only supported in SALT_CLIENT mode.
+ *
+ * Example code:
+ *
+ *      uint8_t host_identity[32];
+ *      uint8_t *p_ticket;
+ *      uint32_t ticket_size;
+ *      uint8_t *session_key;
+ *      load_ticket(host_identity, &p_ticket, &ticket_size, &session_key);
+ *      salt_ret_t = salt_resume(&channel, host_identity, p_ticket, ticket_size, session_key);
+ *      if (salt_ret_t == SALT_ERROR)
+ *      {
+ *          // Wrong host, bad ticket or any other error. See channel.err_code.
+ *      }
+ *      // Do read and write stuff
+ *
+ * @param p_channel     Pointer to salt channel handle.
+ * @param p_host        Pointer to host public sign key (identity).
+ * @param p_ticket      Pointer to ticket to use.
+ * @param ticket_size   Size of ticket.
+ * @param session_key   Pointer to symmetric session key.
+ *
+ * @return SALT_SUCCESS A resume ticket was successfully received.
+ * @return SALT_PENDING The receive process is still pending.
+ * @return SALT_ERROR   If any error occured.
+ *
+ */
+salt_ret_t salt_resume(salt_channel_t *p_channel, uint8_t *p_host, uint8_t *p_ticket, uint32_t ticket_size, uint8_t *session_key);
 
 /**
  * @brief Read an encrypted message.

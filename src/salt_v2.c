@@ -35,11 +35,10 @@
     } while (0)
 #endif
 
-#define NULL_PTR ( (void *) 0)
 #define SALT_ASSERT_NOT_NULL(x)                                                 \
-    SALT_ASSERT(((x) != NULL_PTR), SALT_ERR_NULL_PTR)
+    SALT_ASSERT(((x) != NULL), SALT_ERR_NULL_PTR)
 
-#define SALT_ASSERT_VALID_CHANNEL(x) if ((x) == NULL_PTR) return SALT_ERROR
+#define SALT_ASSERT_VALID_CHANNEL(x) if ((x) == NULL) return SALT_ERROR
 #define SALT_TRIGGER_ERROR                      (0x00U)
 #define SALT_ERROR(err_code) SALT_ASSERT(SALT_TRIGGER_ERROR, err_code)
 #define MEMSET_ZERO(x) memset((x), 0, sizeof((x)))
@@ -268,6 +267,18 @@ salt_ret_t salt_write(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t siz
 }
 
 /*======= Local function implementations ======================================*/
+
+/*
+ * Internal read process state machine.
+ *      1. Read the four bytes size.
+ *      2. Read the message with the specific size that was read.
+ *      3. Decrypt if necessary.
+ *
+ * If reading encrypted data, the first crypto_secretbox_BOXZEROBYTES of the clear text data will be 0x00.
+ * The maximum length of the message to be read is put in *size.
+ * The actual length of the read message is returned in *size.
+ *
+ */
 static salt_ret_t salti_read(salt_channel_t *p_channel, uint8_t *p_data, uint32_t *size, uint8_t encrypted)
 {
     /* Maximum size is stored in *size */
@@ -276,16 +287,19 @@ static salt_ret_t salti_read(salt_channel_t *p_channel, uint8_t *p_data, uint32_
     switch (p_channel->read_channel.state)
     {
         case SALT_IO_READY:
+
             p_channel->read_channel.p_data = p_data;
             p_channel->read_channel.max_size = *size;
             p_channel->read_channel.size_expected = SALT_LENGTH_SIZE;
             p_channel->read_channel.size = 0;
             p_channel->read_channel.state = SALT_IO_SIZE;
+
         case SALT_IO_SIZE:
             ret_code = p_channel->read_impl(&p_channel->read_channel);
 
             if (SALT_SUCCESS != ret_code)
             {
+                /* Pending or error. */
                 break;
             }
 
@@ -297,17 +311,24 @@ static salt_ret_t salti_read(salt_channel_t *p_channel, uint8_t *p_data, uint32_
                 ret_code = SALT_ERROR;
                 break;
             }
-            p_channel->read_channel.p_data = p_data;
+
             if (encrypted)
             {
+                /*
+                 * If we read encrypted, we must ensure that the first crypto_secretbox_BOXZEROBYTES is 0x00.
+                 * These bytes are not sent by the other side.
+                 */
                 p_channel->read_channel.p_data += crypto_secretbox_BOXZEROBYTES;
             }
+
             p_channel->read_channel.state = SALT_IO_PENDING;
             p_channel->read_channel.size = 0;
+
         case SALT_IO_PENDING:
             ret_code = p_channel->read_impl(&p_channel->read_channel);
             if (SALT_SUCCESS == ret_code)
             {
+                /* The actual size received is put in p_channel->read_channel.size. */
                 *size = p_channel->read_channel.size;
                 if (encrypted)
                 {
@@ -329,8 +350,14 @@ static salt_ret_t salti_read(salt_channel_t *p_channel, uint8_t *p_data, uint32_
             SALT_ERROR(SALT_ERR_INVALID_STATE);
     }
 
-    if (SALT_ERROR == ret_code)
+    if (SALT_PENDING != ret_code)
     {
+        /*
+         * TODO: What do actually do when there is any error?
+         * Can we continue if there was I/O error?
+         * If decryption failed, have we lost any message and need to
+         * reinitate the session?
+         */
         p_channel->read_channel.state = SALT_IO_READY;
     }
 
@@ -351,15 +378,18 @@ static salt_ret_t salti_write(salt_channel_t *p_channel, uint8_t *p_data, uint32
             
             if (encrypted)
             {
+                /*
+                 * Crypto library requires the first crypto_secretbox_ZEROBYTES to be
+                 * 0x00 before encryption.
+                 */
                 memset(p_data, 0x00U, crypto_secretbox_ZEROBYTES);
 
-                ret_code = salti_encrypt(p_channel, p_data, size);
-                if (SALT_SUCCESS != ret_code)
-                {
-                    p_channel->err_code = SALT_ERR_ENCRYPTION;
-                    return ret_code;
-                }
+                SALT_ASSERT(salti_encrypt(p_channel, p_data, size) == SALT_SUCCESS, SALT_ERR_ENCRYPTION);
 
+                /*
+                 * After encryption, the first crypto_secretbox_BOXZEROBYTES will be 0x00.
+                 * This is know by the other side, i.e, we dont need to send this.
+                 */
                 p_channel->write_channel.size_expected -= crypto_secretbox_BOXZEROBYTES;
                 p_channel->write_channel.p_data += crypto_secretbox_BOXZEROBYTES;
 
@@ -380,7 +410,7 @@ static salt_ret_t salti_write(salt_channel_t *p_channel, uint8_t *p_data, uint32
             SALT_ERROR(SALT_ERR_INVALID_STATE); 
     }
 
-    if (SALT_ERROR == ret_code)
+    if (SALT_PENDING != ret_code)
     {
         p_channel->read_channel.state = SALT_IO_READY;
     }

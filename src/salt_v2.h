@@ -27,7 +27,7 @@ typedef struct salt_io_channel_s salt_io_channel_t;
  * @brief Salt channel return codes.
  *
  */
-typedef enum salt_ret_s {
+typedef enum salt_ret_e {
     SALT_SUCCESS,                   /**< Success. */
     SALT_PENDING,                   /**< Process is pending. */
     SALT_ERROR                      /**< Any error occurred. */
@@ -139,12 +139,12 @@ typedef salt_ret_t (*salt_io_impl)(salt_io_channel_t *p_channel);
 
 struct salt_io_channel_s {
     void            *p_context;                         /**< Pointer to I/O channel context. */
-    salt_io_state_t state;                              /**< I/O channel state. */    
     uint8_t         *p_data;                            /**< Pointer to data to read/write. */
     uint32_t        size;                               /**< Size of data written or size of data read. */
     uint32_t        size_expected;                      /**< Expected size to read or be written. */
     uint32_t        max_size;                           /**< Maximum size of data to read (used internally). */
     salt_err_t      err_code;                           /**< Error code. */
+    salt_io_state_t state;                              /**< I/O channel state. */
 };
 
 /**
@@ -189,16 +189,6 @@ typedef struct salt_channel_s {
  * @param mode          Salt channel mode { SALT_SERVER, SALT_HOST }
  * @param read_impl     User injected read implementation.
  * @param write_impl    Used injected write implementation.
- *
- *
- * If mode is SALT_SERVER_STREAM or SALT_CLIENT_STREAM the size of the package will be included
- * in the byte stream to the used injected write implementation. I.e., if an encrypted message of
- * length 32 is sent to the write implementation, the data will look like:
- *
- * salt_ret_t my_write(salt_io_channel_t *p_channel) {
- *     p_channel->size = 4 + 32
- *     p_channel->p_data = { 0x20, 0x00, 0x00, 0x00, data[0], ... , data[32-1] }
- * }
  *
  * @return SALT_SUCCESS The salt channel was successfully initiated.
  * @return SALT_ERROR   Any input pointer was a NULL pointer or invalid salt mode.
@@ -372,7 +362,7 @@ salt_ret_t salt_resume(salt_channel_t *p_channel, uint8_t *p_host, uint8_t *p_ti
  *      salt_ret_t ret_code = salt_read(&channel, buffer, &clear_text_size, 256);
  *      if (ret_code == SALT_SUCCESS)
  *      {
- *          printf("%*.*s\r\n", 0, clear_text_size);
+ *          printf("%*.*s\r\n", 0, clear_text_size, &buffer[SALT_OVERHEAD_SIZE]);
  *      }
  *      else {
  *          prtinf("Salt read error: 0x%x\r\n", channel.err_code);
@@ -410,10 +400,10 @@ salt_ret_t salt_read(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t *p_r
  *
  *      char buffer[256];
  *      size_t size;
- *      size = sprintf(&buffer[SALT_OVERHEAD_SIZE], "This is an encrypted message!");
- *      salt_ret_t ret_code = salt_write(&channel, (uint8_t *) buffer, size);
+ *      size = sprintf(&buffer[SALT_WRITE_OVERHEAD_SIZE], "This is an encrypted message!");
+ *      salt_ret_t ret_code = salt_write(&channel, (uint8_t *) buffer, size + SALT_WRITE_OVERHEAD_SIZE);
  *      if (ret_code != SALT_SUCCESS) {
- *          prtinf("Salt read error: 0x%x\r\n", channel.err_code);
+ *          prtinf("Salt write error: 0x%x\r\n", channel.err_code);
  *      }
  *
  * The user is however not required to memset the 32 bytes to 0, this

@@ -17,12 +17,19 @@
 static void *connection_handler(void *context);
 static void *write_handler(void *context);
 
-int main()
+int main(int argc, char **argv)
 {
     //test();
     int sock_desc;
     struct sockaddr_in serv_addr;
     setbuf(stdout, NULL);
+    char localhost[] = "127.0.0.1";
+    char *addr = localhost;
+
+    if (argc > 1)
+    {
+        addr = argv[1];
+    }
 
     if((sock_desc = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         printf("Failed creating socket\n");
@@ -30,9 +37,10 @@ int main()
     bzero((char *) &serv_addr, sizeof (serv_addr));
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    serv_addr.sin_addr.s_addr = inet_addr(addr);
     serv_addr.sin_port = htons(3000);
 
+    printf("Connection to %s\r\n", addr);
     if (connect(sock_desc, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         printf("Failed to connect to server\n");
         return -1;

@@ -88,6 +88,8 @@ static void *connection_handler(void *context)
 
         if (ret == SALT_ERROR) {
             printf("Salt error: 0x%02x\r\n", channel.err_code);
+            printf("Salt error read: 0x%02x\r\n", channel.read_channel.err_code);
+            printf("Salt error write: 0x%02x\r\n", channel.write_channel.err_code);
         }
 
         assert(ret != SALT_ERROR);

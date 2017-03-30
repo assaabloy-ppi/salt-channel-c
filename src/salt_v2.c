@@ -26,6 +26,16 @@
         }                                                                       \
     } while (0)
 
+    #define SALT_HEXDUMP(ptr, size)                                             \
+    do {                                                                        \
+        uint32_t i;                                                             \
+        uint8_t *iptr = (uint8_t *) ptr;                                        \
+        printf("%s: ", #ptr);                                                   \
+        for (i = 0; i < (size); i++) {                                          \
+            printf("%02x", iptr[i]);                                            \
+        } printf("\r\n");                                                       \
+    } while(0)
+
 #else
     #define SALT_VERIFY(x, error_code)                                          \
     do {                                                                        \
@@ -566,6 +576,7 @@ static salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
             ret_code = salti_read(p_channel,
                 &p_channel->hdshk_buffer[crypto_secretbox_ZEROBYTES],
                 &size, SALT_CLEAR);
+            SALT_HEXDUMP(&p_channel->hdshk_buffer[crypto_secretbox_ZEROBYTES], size);
             if (SALT_SUCCESS != ret_code)
             {
                 break;
@@ -631,12 +642,20 @@ static salt_ret_t salti_create_m1(salt_channel_t *p_channel, uint8_t *p_data, ui
 {
 
     /* First 4 bytes is reserved for size. */
-    p_data[SALT_LENGTH_SIZE]     = SALT_M1_HEADER_VALUE;
-    p_data[SALT_LENGTH_SIZE + 1] = 'S';
-    p_data[SALT_LENGTH_SIZE + 2] = '2';
 
-    memcpy(&p_data[SALT_LENGTH_SIZE + 3], p_channel->my_ek_pub, crypto_box_PUBLICKEYBYTES);
-    (*size) = 35U;
+    /* Protocol indicator */
+    p_data[SALT_LENGTH_SIZE + 0] = 'S';
+    p_data[SALT_LENGTH_SIZE + 1] = 'C';
+    p_data[SALT_LENGTH_SIZE + 2] = 'v';
+    p_data[SALT_LENGTH_SIZE + 3] = '2';
+    p_data[SALT_LENGTH_SIZE + 4] = SALT_M1_HEADER_VALUE;
+    p_data[SALT_LENGTH_SIZE + 5] = 0x00U; /* No tickets */
+
+    /* Time is in p_data[6:10], TODO: Handle */
+    memset(&p_data[SALT_LENGTH_SIZE + 6], 0x00U, 4U);
+
+    memcpy(&p_data[SALT_LENGTH_SIZE + 10], p_channel->my_ek_pub, crypto_box_PUBLICKEYBYTES);
+    (*size) = 42U;
 
     salti_size_to_bytes(&p_data[0], (*size));
     (*size) += SALT_LENGTH_SIZE;
@@ -647,16 +666,19 @@ static salt_ret_t salti_create_m1(salt_channel_t *p_channel, uint8_t *p_data, ui
 
 static salt_ret_t salti_handle_m1(salt_channel_t *p_channel, uint8_t *p_data, uint32_t size)
 {
-    SALT_VERIFY(size >= 35,
+    SALT_VERIFY(size >= 42,
         SALT_ERR_M1_TOO_SMALL);
 
-    SALT_VERIFY((p_data[0] & SALT_HEADER_TYPE_FLAG) == SALT_M1_HEADER_VALUE,
-        SALT_ERR_M1_BAD_HEADER);
-
-    SALT_VERIFY(p_data[1] == 'S' && p_data[2] == '2',
+    /* Protocol indicator should be "SCv2" */
+    SALT_VERIFY(memcmp(p_data, "SCv2", 4) == 0,
         SALT_ERR_M1_BAD_PROTOCOL);
 
-    if ((p_data[0] & SALT_M1_SIG_KEY_INCLUDED_FLAG) > 0U)
+    SALT_VERIFY((p_data[4] & SALT_HEADER_TYPE_FLAG) == SALT_M1_HEADER_VALUE,
+        SALT_ERR_M1_BAD_HEADER);
+
+    /* Time is in p_data[6:10], TODO: Handle */
+
+    if (((p_data[2] & SALT_M1_SIG_KEY_INCLUDED_FLAG) > 0U) && (size >= 74U))
     {
         /*
          * The client included a public signature key. I.e., the client
@@ -669,7 +691,7 @@ static salt_ret_t salti_handle_m1(salt_channel_t *p_channel, uint8_t *p_data, ui
          * Due to this, we does not need to store the client ephemeral public encryption
          * key.
          */
-        if (!(size >= 67U && memcmp(&p_data[35], p_channel->my_sk_pub, crypto_sign_PUBLICKEYBYTES)) == 0)
+        if (memcmp(&p_data[42], p_channel->my_sk_pub, crypto_sign_PUBLICKEYBYTES) != 0)
         {
             p_channel->err_code = SALT_ERR_NO_SUCH_SERVER;
         }
@@ -690,7 +712,7 @@ static salt_ret_t salti_handle_m1(salt_channel_t *p_channel, uint8_t *p_data, ui
     }
 
     /* Copy the clients public ephemeral encryption key. */
-    memcpy(p_channel->peer_ek_pub, &p_data[3], crypto_box_PUBLICKEYBYTES);
+    memcpy(p_channel->peer_ek_pub, &p_data[10], crypto_box_PUBLICKEYBYTES);
 
     return SALT_SUCCESS;
 
@@ -702,20 +724,25 @@ static salt_ret_t salti_create_m2(salt_channel_t *p_channel, uint8_t *p_data, ui
      * Depending on how M1 was handeled, we will have the error code in
      * p_channel->err_code.
      */
+
+    /* Time is in p_data[6:10], TODO: Handle */
+    memset(&p_data[SALT_LENGTH_SIZE + 2], 0x00U, 4U);
+    p_data[SALT_LENGTH_SIZE + 1] = 0x00U;
+
     switch(p_channel->err_code)
     {
         case SALT_ERR_NONE:
             /* First four bytes are reserved for size */
             p_data[SALT_LENGTH_SIZE] = SALT_M2_HEADER_VALUE | SALT_M2_ENC_KEY_INCLUDED_FLAG;
-            memcpy(&p_data[SALT_LENGTH_SIZE + 1], p_channel->my_ek_pub, crypto_box_PUBLICKEYBYTES);
-            (*size) = 33U;
+            memcpy(&p_data[SALT_LENGTH_SIZE + 6], p_channel->my_ek_pub, crypto_box_PUBLICKEYBYTES);
+            (*size) = 38U;
             /* Write 4 byte size */
             salti_size_to_bytes(&p_data[0], (*size));
             (*size) += SALT_LENGTH_SIZE;
             break;
         case SALT_ERR_NO_SUCH_SERVER:
             p_data[SALT_LENGTH_SIZE] = SALT_M2_HEADER_VALUE | SALT_M2_NO_SUCH_SERVER_FLAG;
-            (*size) = 1U;
+            (*size) = 6U;
             salti_size_to_bytes(&p_data[0], (*size));
             (*size) += SALT_LENGTH_SIZE;
             break;
@@ -723,12 +750,15 @@ static salt_ret_t salti_create_m2(salt_channel_t *p_channel, uint8_t *p_data, ui
             return SALT_ERROR;
     }
 
+    SALT_HEXDUMP(p_data, *size);
+
     return SALT_SUCCESS;
 }
 
 static salt_ret_t salti_handle_m2(salt_channel_t *p_channel, uint8_t *p_data, uint32_t size)
 {
-    SALT_VERIFY(size >= 33U,
+    SALT_HEXDUMP(p_data, size);
+    SALT_VERIFY(size >= 38U,
         SALT_ERR_M2_TOO_SMALL);
 
     SALT_VERIFY((p_data[0] & SALT_HEADER_TYPE_FLAG) == SALT_M2_HEADER_VALUE,
@@ -745,7 +775,7 @@ static salt_ret_t salti_handle_m2(salt_channel_t *p_channel, uint8_t *p_data, ui
     SALT_VERIFY((p_data[0] & SALT_M2_ENC_KEY_INCLUDED_FLAG) > 0U,
         SALT_ERR_NOT_SUPPORTED);
 
-    memcpy(p_channel->peer_ek_pub, &p_data[1], crypto_box_PUBLICKEYBYTES);
+    memcpy(p_channel->peer_ek_pub, &p_data[6], crypto_box_PUBLICKEYBYTES);
 
     return SALT_SUCCESS;
 }

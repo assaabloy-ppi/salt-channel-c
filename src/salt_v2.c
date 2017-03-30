@@ -428,7 +428,7 @@ static salt_ret_t salti_write(salt_channel_t *p_channel, uint8_t *p_data, uint32
 static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
 {
 
-    uint32_t size;
+    uint32_t size = 0;
     salt_ret_t ret_code = SALT_ERROR;
 
     switch (p_channel->state)
@@ -543,7 +543,7 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
 
 static salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
 {
-    uint32_t size;
+    uint32_t size = 0;
     salt_ret_t ret_code = SALT_ERROR;
 
     switch (p_channel->state)

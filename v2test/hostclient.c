@@ -2,19 +2,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "test_data.c"
 
-#include "../test/util.h"
+#include "cfifo.h"
 #include "salt_v2.h"
+#include "salt_util.h"
 
-typedef struct salt_test_s salt_test_t;
-
-struct salt_test_s {
-    uint8_t     *buffer;
-    uint32_t    pointer;
-    uint32_t    buffer_size;
-    salt_test_t *next;
-};
+typedef struct salt_test_s {
+    salt_channel_t  *channel;
+    cfifo_t         *write_queue;
+    cfifo_t         *read_queue;
+} salt_test_t;
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
@@ -26,34 +23,17 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
 
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
-    static uint8_t i;
-    if (i < 30) {
-        /* Simulate some polling */
-        i++;
-        return SALT_PENDING;
-    }
-    i = 0;
-    assert(p_wchannel != 0);
-    assert(p_wchannel->p_data != 0);
 
-    salt_test_t **pp_write_queue = (salt_test_t **) p_wchannel->p_context;
-    salt_test_t *write_queue = *pp_write_queue;
+    salt_test_t *context = (salt_test_t *) p_wchannel->p_context;
+    cfifo_t *write_queue = context->write_queue;
+    uint32_t size = p_wchannel->size_expected;
 
-    if (write_queue != 0)
-    {
-        write_queue->next = malloc(sizeof(salt_test_t));
-        write_queue = write_queue->next;
-    }
-    else {
-        write_queue = malloc(sizeof(salt_test_t));
-        *pp_write_queue = write_queue;
-    }
-    
-    write_queue->pointer = 0;
-    write_queue->next = 0;
-    write_queue->buffer = malloc(p_wchannel->size_expected);
-    write_queue->buffer_size = p_wchannel->size_expected;
-    memcpy(write_queue->buffer, p_wchannel->p_data, p_wchannel->size_expected);
+    printf("%s - ", mode2str(context->channel->mode));
+    SALT_HEXDUMP(p_wchannel->p_data, p_wchannel->size_expected);
+
+    assert(cfifo_write(write_queue, p_wchannel->p_data,
+        &size) == CFIFO_SUCCESS);
+    assert(size == p_wchannel->size_expected);
     p_wchannel->size = p_wchannel->size_expected;
 
     return SALT_SUCCESS;
@@ -61,46 +41,24 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 
 salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 {
-    static uint8_t i;
-    if (i < 30) {
-        /* Simulate some polling */
-        i++;
-        return SALT_PENDING;
-    }
-    i = 0;
-    uint32_t bytes_left;
-    uint32_t to_copy;
+    salt_test_t *context = (salt_test_t *) p_rchannel->p_context;
+    cfifo_t *read_queue = context->read_queue;
+    uint32_t size = p_rchannel->size_expected;
 
-    assert(p_rchannel != 0);
-    assert(p_rchannel->p_data != 0);
-
-    salt_test_t **pp_read_queue = (salt_test_t **) p_rchannel->p_context;
-    salt_test_t *read_queue = *pp_read_queue;
-
-    if (read_queue == 0)
-    {
+    if (cfifo_size(context->read_queue) < size) {
         return SALT_PENDING;
     }
 
-    bytes_left = p_rchannel->size_expected-p_rchannel->size;
-    to_copy = (bytes_left <= (read_queue->buffer_size-read_queue->pointer)) ? bytes_left : read_queue->buffer_size;
-    memcpy(&p_rchannel->p_data[p_rchannel->size], &read_queue->buffer[read_queue->pointer], to_copy);
-    p_rchannel->size += to_copy;
-    read_queue->pointer += to_copy;
+    assert(cfifo_read(read_queue, p_rchannel->p_data,
+        &size) == CFIFO_SUCCESS);
 
-    if (read_queue->pointer == read_queue->buffer_size)
-    {
-        *pp_read_queue = read_queue->next;
-        free(read_queue->buffer);
-        free(read_queue);
-    }
+    printf("%s - ", mode2str(context->channel->mode));
+    SALT_HEXDUMP(p_rchannel->p_data, p_rchannel->size_expected);
 
-    if (p_rchannel->size == p_rchannel->size_expected)
-    {
-        return SALT_SUCCESS;
-    }
+    assert(size == p_rchannel->size_expected);
+    p_rchannel->size = p_rchannel->size_expected;
 
-    return SALT_PENDING;
+    return SALT_SUCCESS;
 }
 
 
@@ -108,29 +66,48 @@ int main(void)
 {
 
     uint32_t size;
-    salt_channel_t  host_channel, client_channel;
-    salt_ret_t      host_ret, client_ret;
-    salt_test_t     *write_message = 0;
-    salt_test_t     *read_message = 0;
+    salt_channel_t  host_channel;
+    salt_channel_t  client_channel;
+    salt_ret_t      host_ret;
+    salt_ret_t      client_ret;
+    cfifo_t         *host_fifo;
+    cfifo_t         *client_fifo;
+    salt_test_t     host_context;
+    salt_test_t     client_context;
 
-    uint8_t host_buffer[SALT_HNDSHK_BUFFER_SIZE], client_buffer[SALT_HNDSHK_BUFFER_SIZE];
+    uint8_t host_buffer[SALT_HNDSHK_BUFFER_SIZE];
+    uint8_t host_buffer_tmp[SALT_HNDSHK_BUFFER_SIZE];
+    uint8_t client_buffer[SALT_HNDSHK_BUFFER_SIZE];
+    uint8_t client_buffer_tmp[SALT_HNDSHK_BUFFER_SIZE];
+
+    memset(host_buffer, 0xCC, sizeof(host_buffer));
+    memset(client_buffer, 0xEE, sizeof(client_buffer));
+
+    CFIFO_CREATE(client_fifo, 1, 1024);
+    CFIFO_CREATE(host_fifo, 1, 1024);
 
     host_ret = salt_create(&host_channel, SALT_SERVER, my_write, my_read);
+    host_context.channel = &host_channel;
+    host_context.write_queue = host_fifo;
+    host_context.read_queue = client_fifo;
     assert(host_ret == SALT_SUCCESS);
     host_ret = salt_create_signature(&host_channel);
     assert(host_ret == SALT_SUCCESS);
     host_ret = salt_init_session(&host_channel, host_buffer, sizeof(host_buffer));
     assert(host_ret == SALT_SUCCESS);
-    host_ret = salt_set_context(&host_channel, &write_message, &read_message); /* Write, read */
+    host_ret = salt_set_context(&host_channel, &host_context, &host_context); /* Write, read */
     assert(host_ret == SALT_SUCCESS);
 
     client_ret = salt_create(&client_channel, SALT_CLIENT, my_write, my_read);
+    client_context.channel = &client_channel;
+    client_context.write_queue = client_fifo;
+    client_context.read_queue = host_fifo;
     assert(client_ret == SALT_SUCCESS);
     client_ret = salt_create_signature(&client_channel);
     assert(client_ret == SALT_SUCCESS);
     client_ret = salt_init_session(&client_channel, client_buffer, sizeof(client_buffer));
     assert(client_ret == SALT_SUCCESS);
-    client_ret = salt_set_context(&client_channel, &read_message, &write_message); /* Write, read */
+    client_ret = salt_set_context(&client_channel, &client_context, &client_context); /* Write, read */
     assert(client_ret == SALT_SUCCESS);
 
     host_ret = SALT_PENDING;
@@ -138,9 +115,15 @@ int main(void)
 
     while ((host_ret | client_ret) != SALT_SUCCESS)
     {
+        memcpy(host_buffer_tmp, host_buffer, sizeof(host_buffer));
         client_ret = salt_handshake(&client_channel);
+        assert(memcmp(host_buffer_tmp, host_buffer, sizeof(client_buffer)) == 0);
         assert(client_ret != SALT_ERROR);
+
+        
+        memcpy(client_buffer_tmp, client_buffer, sizeof(client_buffer));
         host_ret = salt_handshake(&host_channel);
+        assert(memcmp(client_buffer_tmp, client_buffer, sizeof(client_buffer)) == 0);
         assert(host_ret != SALT_ERROR);
     }
 

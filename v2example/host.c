@@ -27,8 +27,6 @@ static uint8_t host_sk_sec[64] = {
     0x73, 0x41, 0x3b, 0x37, 0x3d, 0x36, 0x16, 0x8b
 };
 
-sem_t connected;
-
 struct clientInfo {
     int sock_fd;
     char ip_addr[16];
@@ -107,7 +105,6 @@ int main(int argc , char *argv[])
         }
 
         printf("Waiting for client to disconnect.\r\n");
-        sem_wait(&connected);
 
     }
 
@@ -179,7 +176,6 @@ static void *connection_handler(void *context)
     printf("Connection closed.\r\n");
 
     free(client);
-    sem_post(&connected);
 
     pthread_exit(NULL);
 }

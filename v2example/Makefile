@@ -1,4 +1,4 @@
-C_FLAGS = -Weverything -Wno-objc-missing-property-synthesis  -Wall -Wextra -Werror -fno-stack-protector -Wpedantic -g -ggdb -DSALT_DEBUG=1 -I. -I../examples -I../src -I../test
+C_FLAGS = -Wall -Wextra -Werror -fno-stack-protector -Wpedantic -g -ggdb -DSALT_DEBUG=1 -I. -I../examples -I../src -I../test
 LD_FLAGS = -pthread
 
 util.o: ../test/util.c

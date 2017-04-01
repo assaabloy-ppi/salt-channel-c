@@ -15,7 +15,7 @@
 /*======= Public macro definitions ==========================================*/
 #define SALT_READ_OVERHEAD_SIZE     (16U)       /**< Encryption buffer overhead size. */
 #define SALT_WRITE_OVERHEAD_SIZE    (32U)       /**< Encryption buffer overhead size. */
-#define SALT_HNDSHK_BUFFER_SIZE     (400U)      /**< Buffer used for handshake. */
+#define SALT_HNDSHK_BUFFER_SIZE     (636U)      /**< Buffer used for handshake. */
 
 
 /*======= Type Definitions and declarations ===================================*/
@@ -224,7 +224,8 @@ salt_ret_t salt_set_context(
  * @return SALT_SUCCESS The signature was successfully set.
  * @return SALT_ERROR Any input pointer was a NULL pointer.
  */
-salt_ret_t salt_set_signature(salt_channel_t *p_channel, const uint8_t *p_signature);
+salt_ret_t salt_set_signature(salt_channel_t *p_channel,
+                              const uint8_t *p_signature);
 
 /**
  * @brief Creates and sets the signature used for the salt channel.
@@ -251,7 +252,9 @@ salt_ret_t salt_create_signature(salt_channel_t *p_channel);
  * @return SALT_ERROR   The channel handle was a NULL pointer.
  *
  */
-salt_ret_t salt_init_session(salt_channel_t *p_channel, uint8_t *hdshk_buffer, uint32_t hdshk_buffer_size);
+salt_ret_t salt_init_session(salt_channel_t *p_channel,
+                             uint8_t *hdshk_buffer,
+                             uint32_t hdshk_buffer_size);
 
 /**
  * @brief Salt handshake process.
@@ -305,7 +308,10 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel);
  * @return SALT_ERROR   If any error occured.
  *
  */
-salt_ret_t salt_request_ticket(salt_channel_t *p_channel, uint8_t *p_ticket, uint32_t *p_ticket_size, uint32_t max_size);
+salt_ret_t salt_request_ticket(salt_channel_t *p_channel,
+                               uint8_t *p_ticket,
+                               uint32_t *p_ticket_size,
+                               uint32_t max_size);
 
 /**
  * @brief Salt resume process using a ticket.
@@ -340,7 +346,11 @@ salt_ret_t salt_request_ticket(salt_channel_t *p_channel, uint8_t *p_ticket, uin
  * @return SALT_ERROR   If any error occured.
  *
  */
-salt_ret_t salt_resume(salt_channel_t *p_channel, uint8_t *p_host, uint8_t *p_ticket, uint32_t ticket_size, uint8_t *session_key);
+salt_ret_t salt_resume(salt_channel_t *p_channel,
+                       uint8_t *p_host,
+                       uint8_t *p_ticket,
+                       uint32_t ticket_size,
+                       uint8_t *session_key);
 
 /**
  * @brief Read an encrypted message.
@@ -378,7 +388,10 @@ salt_ret_t salt_resume(salt_channel_t *p_channel, uint8_t *p_host, uint8_t *p_ti
  * @return SALT_ERROR   If any error occured during the read.
  *
  */
-salt_ret_t salt_read(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t *p_recv_size, uint32_t max_size);
+salt_ret_t salt_read(salt_channel_t *p_channel,
+                     uint8_t *p_buffer,
+                     uint32_t *p_recv_size,
+                     uint32_t max_size);
 
 /**
  * @brief Write an encrypten message.
@@ -418,6 +431,8 @@ salt_ret_t salt_read(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t *p_r
  * @return SALT_ERROR   If any error occured during the sending process.
  *
  */
-salt_ret_t salt_write(salt_channel_t *p_channel, uint8_t *p_buffer, uint32_t size);
+salt_ret_t salt_write(salt_channel_t *p_channel,
+                      uint8_t *p_buffer,
+                      uint32_t size);
 
 #endif /* _SALT_V2_H_ */

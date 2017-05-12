@@ -13,8 +13,8 @@
 #include "salt_crypto_wrapper.h"
 
 /*======= Public macro definitions ==========================================*/
-#define SALT_READ_OVERHEAD_SIZE     (16U)       /**< Encryption buffer overhead size. */
-#define SALT_WRITE_OVERHEAD_SIZE    (32U)       /**< Encryption buffer overhead size. */
+#define SALT_READ_OVERHEAD_SIZE     (22U)       /**< Encryption buffer overhead size. */
+#define SALT_WRITE_OVERHEAD_SIZE    (38U)       /**< Encryption buffer overhead size. */
 #define SALT_HNDSHK_BUFFER_SIZE     (636U)      /**< Buffer used for handshake. */
 
 
@@ -58,6 +58,7 @@ typedef enum salt_err_e {
     SALT_ERR_DECRYPTION,            /**< Decryption error. */
     SALT_ERR_BAD_SIGNATURE,         /**< Signature verification failed. */
     SALT_ERR_BUFF_TO_SMALL,         /**< I/O Buffer to small. */
+    SALT_ERR_BAD_PROTOCOL,
     SALT_ERR_IO_WRITE,
     SALT_ERR_CONNECTION_CLOSED,
 } salt_err_t;
@@ -195,10 +196,10 @@ typedef struct salt_channel_s {
  *
  */
 salt_ret_t salt_create(
-   salt_channel_t *p_channel,
-   salt_mode_t mode,
-   salt_io_impl write_impl,
-   salt_io_impl read_impl);
+    salt_channel_t *p_channel,
+    salt_mode_t mode,
+    salt_io_impl write_impl,
+    salt_io_impl read_impl);
 
 /**
  * @brief Sets the context passed to the user injected read implementation.
@@ -244,7 +245,7 @@ salt_ret_t salt_create_signature(salt_channel_t *p_channel);
  * is reseted.
  *
  * @param p_channel         Pointer to channel handle.
- * @param hdshk_buffer      Pointer to buffer used for handsize. Must be at least 
+ * @param hdshk_buffer      Pointer to buffer used for handsize. Must be at least
  *                          SALT_HNDSHK_BUFFER_SIZE bytes large.
  * @param hdshk_buffer_size Size of the handshake buffer.
  *
@@ -356,7 +357,7 @@ salt_ret_t salt_resume(salt_channel_t *p_channel,
  * @brief Read an encrypted message.
  *
  * Reads and decrypts an encrypted message into the buffer p_buffer.
- * The maximum length of the clear text message will be max_size - SALT_OVERHEAD_SIZE.
+ * The maximum length of the clear text message will be max_size - SALT_READ_OVERHEAD_SIZE.
  * The decryption process requires SALT_READ_OVERHEAD_SIZE bytes to be 0 (zero) padded
  * before encryption. This is handeled by salt_read(), but the clear text data starts at
  * an offset of SALT_READ_OVERHEAD_SIZE after decryption. The returned size in p_recv_size
@@ -372,7 +373,7 @@ salt_ret_t salt_resume(salt_channel_t *p_channel,
  *      salt_ret_t ret_code = salt_read(&channel, buffer, &clear_text_size, 256);
  *      if (ret_code == SALT_SUCCESS)
  *      {
- *          printf("%*.*s\r\n", 0, clear_text_size, &buffer[SALT_OVERHEAD_SIZE]);
+ *          printf("%*.*s\r\n", 0, clear_text_size, &buffer[SALT_READ_OVERHEAD_SIZE]);
  *      }
  *      else {
  *          prtinf("Salt read error: 0x%x\r\n", channel.err_code);

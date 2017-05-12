@@ -24,41 +24,57 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
 
-    salt_test_t *context = (salt_test_t *) p_wchannel->p_context;
-    cfifo_t *write_queue = context->write_queue;
-    uint32_t size = p_wchannel->size_expected;
+    static uint8_t i = 0;
 
-    printf("%s - ", mode2str(context->channel->mode));
-    SALT_HEXDUMP(p_wchannel->p_data, p_wchannel->size_expected);
+    i++;
+    /* Simulate polling and slow I/O */
+    if (i > 10) {
+        salt_test_t *context = (salt_test_t *) p_wchannel->p_context;
+        cfifo_t *write_queue = context->write_queue;
+        uint32_t size = p_wchannel->size_expected;
 
-    assert(cfifo_write(write_queue, p_wchannel->p_data,
-        &size) == CFIFO_SUCCESS);
-    assert(size == p_wchannel->size_expected);
-    p_wchannel->size = p_wchannel->size_expected;
+        //printf("%s - ", mode2str(context->channel->mode));
+        //SALT_HEXDUMP(p_wchannel->p_data, p_wchannel->size_expected);
 
-    return SALT_SUCCESS;
+        assert(cfifo_write(write_queue, p_wchannel->p_data,
+            &size) == CFIFO_SUCCESS);
+        assert(size == p_wchannel->size_expected);
+        p_wchannel->size = p_wchannel->size_expected;
+        return SALT_SUCCESS;
+        i = 0;
+    }
+
+    return SALT_PENDING;
+    
 }
 
 salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 {
-    salt_test_t *context = (salt_test_t *) p_rchannel->p_context;
-    cfifo_t *read_queue = context->read_queue;
-    uint32_t size = p_rchannel->size_expected;
+    static uint8_t i = 0;
 
-    if (cfifo_size(context->read_queue) < size) {
-        return SALT_PENDING;
+    i++;
+    /* Simulate polling and slow I/O */
+    if (i > 10) {
+        salt_test_t *context = (salt_test_t *) p_rchannel->p_context;
+        cfifo_t *read_queue = context->read_queue;
+        uint32_t size = p_rchannel->size_expected;
+
+        if (cfifo_size(context->read_queue) < size) {
+            return SALT_PENDING;
+        }
+
+        assert(cfifo_read(read_queue, p_rchannel->p_data,
+            &size) == CFIFO_SUCCESS);
+
+        //printf("%s - ", mode2str(context->channel->mode));
+        //SALT_HEXDUMP(p_rchannel->p_data, p_rchannel->size_expected);
+
+        assert(size == p_rchannel->size_expected);
+        p_rchannel->size = p_rchannel->size_expected;
+
+        return SALT_SUCCESS;
     }
-
-    assert(cfifo_read(read_queue, p_rchannel->p_data,
-        &size) == CFIFO_SUCCESS);
-
-    printf("%s - ", mode2str(context->channel->mode));
-    SALT_HEXDUMP(p_rchannel->p_data, p_rchannel->size_expected);
-
-    assert(size == p_rchannel->size_expected);
-    p_rchannel->size = p_rchannel->size_expected;
-
-    return SALT_SUCCESS;
+    return SALT_PENDING;
 }
 
 

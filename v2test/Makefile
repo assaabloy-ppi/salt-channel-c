@@ -14,7 +14,7 @@ tweetnacl.o: ../src/external/tweetnacl/tweetnacl.c
 salt_2.o: ../src/salt_v2.c ../src/salt_v2.h
 	gcc $(C_FLAGS) -c ../src/salt_v2.c -o salt_2.o
 
-hostclient.o: hostclient.c
+hostclient.o: hostclient.c ../src/salt_v2.h
 	$(CC) $(C_FLAGS) -c hostclient.c -o hostclient.o
 
 hostclient_test: cfifo.o tweetnacl.o salt_2.o hostclient.o salt_util.o

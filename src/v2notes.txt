@@ -7,7 +7,7 @@
 
 This goal requires the API to be a little more complex than just reading writing. The application message have an overhead of 6 bytes (App message header + time). The encryption requires 16 bytes of authentication. This results in a overhead that requires that the application neglects the first 22 (SALT_READ_OVERHEAD_SIZE) bytes when reading an ecrypted message.
 
-When writing a message, the TweetNaCl API requires the first 32 bytes of the message to be zero padded. Also the application message structure is included. This requires the application to neglect the first 38 (SALT_WRITE_OVERHEAD_SIZE) bytes of the clear text message when writing an encrypted message.
+When writing a message, the TweetNaCl API requires the first 32 bytes of the message to be zero padded. Also the application message structure is included. This requires the application to neglect the first 38 (SALT_OVERHEAD_SIZE) bytes of the clear text message when writing an encrypted message.
 
 Further, when doing the handshake, this goal also requires the application to provice a buffer that is used during the handshake.
 

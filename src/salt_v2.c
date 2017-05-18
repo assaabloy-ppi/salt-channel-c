@@ -4,6 +4,7 @@
  * Salt channel version 2 implementation.
  *
  * See v2notes.txt for implementation details.
+ * 
  */
 
 /*======= Includes ============================================================*/
@@ -325,7 +326,7 @@ salt_ret_t salt_read(salt_channel_t *p_channel,
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
 
-    *p_recv_size = max_size;
+    *p_recv_size = max_size - 14U;
 
     SALT_VERIFY(SALT_SUCCESS == salti_read(p_channel, p_buffer, p_recv_size, SALT_ENCRYPTED),
                 p_channel->err_code);
@@ -420,7 +421,7 @@ static salt_ret_t salti_read(salt_channel_t *p_channel,
                 /*
                  * Msg structure:
                  *      2   Header
-                 *          { 0x06, 0x00}
+                 *          { 0x06, 0x00 }
                  *
                  *      N   Encrypted data
                  *

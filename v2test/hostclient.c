@@ -145,31 +145,55 @@ int main(void)
     assert(memcmp(host_channel.my_sk_pub, client_channel.peer_sk_pub, 32) == 0);
     assert(memcmp(host_channel.peer_sk_pub, client_channel.my_sk_pub, 32) == 0);
 
-    size = sprintf((char*) &host_buffer[SALT_WRITE_OVERHEAD_SIZE], "This is a secret message from host!");
+    uint8_t host_new_buffer[65];
+    uint8_t client_new_buffer[65];
+
+    memset(&host_new_buffer[SALT_OVERHEAD_SIZE], 0x13, sizeof(host_new_buffer) - SALT_OVERHEAD_SIZE);
+
     do {
-        host_ret = salt_write(&host_channel, host_buffer, size + SALT_WRITE_OVERHEAD_SIZE);
+        host_ret = salt_write(&host_channel, host_new_buffer, sizeof(host_new_buffer));
         assert(host_ret != SALT_ERROR);    
     } while (host_ret != SALT_SUCCESS);
 
-    size = sprintf((char*) &client_buffer[SALT_WRITE_OVERHEAD_SIZE], "This is a secret message from client!");
+    memset(&client_new_buffer[SALT_OVERHEAD_SIZE], 0x23, sizeof(client_new_buffer) - SALT_OVERHEAD_SIZE);
+
     do {
-        client_ret = salt_write(&client_channel, client_buffer, size + SALT_WRITE_OVERHEAD_SIZE);
+        client_ret = salt_write(&client_channel, client_new_buffer, sizeof(host_new_buffer));
         assert(client_ret != SALT_ERROR);    
     } while (client_ret != SALT_SUCCESS);
 
     do {
-        client_ret = salt_read(&client_channel, client_buffer, &size, sizeof(client_buffer) - SALT_READ_OVERHEAD_SIZE);
+        client_ret = salt_read(&client_channel, client_new_buffer, &size, sizeof(client_new_buffer));
         assert(client_ret != SALT_ERROR);    
     } while (client_ret != SALT_SUCCESS);
 
-    assert(memcmp("This is a secret message from host!", &client_buffer[SALT_WRITE_OVERHEAD_SIZE], size) == 0);
+    assert(size == sizeof(client_new_buffer) - SALT_OVERHEAD_SIZE);
+
+    for (uint32_t i = 0; i < size; i++) {
+        assert(client_new_buffer[SALT_OVERHEAD_SIZE+i] == 0x13);
+    }
 
     do {
-        host_ret = salt_read(&host_channel, host_buffer, &size, sizeof(host_buffer) - SALT_READ_OVERHEAD_SIZE);
+        host_ret = salt_read(&host_channel, host_new_buffer, &size, sizeof(host_new_buffer));
         assert(host_ret != SALT_ERROR);    
     } while (host_ret != SALT_SUCCESS);
 
-    assert(memcmp("This is a secret message from client!", &host_buffer[SALT_WRITE_OVERHEAD_SIZE], size) == 0);
+    assert(size == sizeof(client_new_buffer) - SALT_OVERHEAD_SIZE);
+
+    for (uint32_t i = 0; i < size; i++) {
+        assert(host_new_buffer[SALT_OVERHEAD_SIZE+i] == 0x23);
+    }
+
+    /* To big msg test */
+    do {
+        host_ret = salt_write(&host_channel, host_buffer, sizeof(client_new_buffer) + 1);
+        assert(host_ret != SALT_ERROR);    
+    } while (host_ret != SALT_SUCCESS);
+
+    do {
+        client_ret = salt_read(&client_channel, client_new_buffer, &size, sizeof(client_new_buffer));
+    } while (client_ret == SALT_PENDING);
+    assert(client_ret == SALT_ERROR);    
 
     printf("=== Salt v2 test succeeded ===\r\n");
 

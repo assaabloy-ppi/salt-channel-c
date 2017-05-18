@@ -162,10 +162,10 @@ static void *connection_handler(void *context)
     do
     {
         memset(hndsk_buffer, 0, sizeof(hndsk_buffer));
-        ret = salt_read(&client->channel, hndsk_buffer, &size, SALT_HNDSHK_BUFFER_SIZE-16);
+        ret = salt_read(&client->channel, hndsk_buffer, &size, SALT_HNDSHK_BUFFER_SIZE);
         if (ret == SALT_SUCCESS)
         {
-            printf("\33[2K\rclient (%s): %*.*s", client->ip_addr, 0, SALT_HNDSHK_BUFFER_SIZE-32, &hndsk_buffer[32]);
+            printf("\33[2K\rclient (%s): %*.*s", client->ip_addr, 0, SALT_HNDSHK_BUFFER_SIZE-SALT_OVERHEAD_SIZE, &hndsk_buffer[SALT_OVERHEAD_SIZE]);
             printf("Enter message: ");
         }
     } while(ret == SALT_SUCCESS);
@@ -190,10 +190,10 @@ static void *write_handler(void *context)
     do
     {
         printf("Enter message: ");
-        tx_size = read(0, &tx_buffer[32], sizeof(tx_buffer)-32);
+        tx_size = read(0, &tx_buffer[SALT_OVERHEAD_SIZE], sizeof(tx_buffer)-SALT_OVERHEAD_SIZE);
         if (tx_size > 0) {
-            printf("\033[A\33[2K\rhost: %*.*s", 0, tx_size, &tx_buffer[32]);
-            ret_code = salt_write(&client->channel, (uint8_t*) tx_buffer, tx_size + 32);
+            printf("\033[A\33[2K\rhost: %*.*s", 0, tx_size, &tx_buffer[SALT_OVERHEAD_SIZE]);
+            ret_code = salt_write(&client->channel, (uint8_t*) tx_buffer, tx_size + SALT_OVERHEAD_SIZE);
         }
     } while (ret_code == SALT_SUCCESS);
 

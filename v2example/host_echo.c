@@ -155,19 +155,19 @@ static void *connection_handler(void *context)
     do
     {
         memset(hndsk_buffer, 0, sizeof(hndsk_buffer));
-        ret = salt_read(&client->channel, hndsk_buffer, &size, SALT_HNDSHK_BUFFER_SIZE-SALT_READ_OVERHEAD_SIZE);
+        ret = salt_read(&client->channel, hndsk_buffer, &size, SALT_HNDSHK_BUFFER_SIZE);
         while (ret == SALT_PENDING) {
-            ret = salt_read(&client->channel, hndsk_buffer, &size, SALT_HNDSHK_BUFFER_SIZE-SALT_READ_OVERHEAD_SIZE);
+            ret = salt_read(&client->channel, hndsk_buffer, &size, SALT_HNDSHK_BUFFER_SIZE);
         }
         if (ret != SALT_SUCCESS) {
             break;
         }
-        assert(hndsk_buffer[SALT_WRITE_OVERHEAD_SIZE] == 0x01);
+        assert(hndsk_buffer[SALT_OVERHEAD_SIZE] == 0x01);
         if (ret == SALT_SUCCESS)
         {
-            ret = salt_write(&client->channel, hndsk_buffer, size + SALT_WRITE_OVERHEAD_SIZE);
+            ret = salt_write(&client->channel, hndsk_buffer, size + SALT_OVERHEAD_SIZE);
             while (ret == SALT_PENDING) {
-                ret = salt_write(&client->channel, hndsk_buffer, size + SALT_WRITE_OVERHEAD_SIZE);
+                ret = salt_write(&client->channel, hndsk_buffer, size + SALT_OVERHEAD_SIZE);
             }
             if (ret != SALT_SUCCESS) {
                 break;

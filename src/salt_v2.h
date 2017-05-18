@@ -13,8 +13,7 @@
 #include "salt_crypto_wrapper.h"
 
 /*======= Public macro definitions ==========================================*/
-#define SALT_READ_OVERHEAD_SIZE     (22U)       /**< Encryption buffer overhead size. */
-#define SALT_WRITE_OVERHEAD_SIZE    (38U)       /**< Encryption buffer overhead size. */
+#define SALT_OVERHEAD_SIZE          (38U)       /**< Encryption buffer overhead size. */
 #define SALT_HNDSHK_BUFFER_SIZE     (486U)      /**< Buffer used for handshake. */
 
 
@@ -351,11 +350,8 @@ salt_ret_t salt_resume(salt_channel_t *p_channel,
  * @brief Read an encrypted message.
  *
  * Reads and decrypts an encrypted message into the buffer p_buffer.
- * The maximum length of the clear text message will be max_size - SALT_READ_OVERHEAD_SIZE.
- * The decryption process requires SALT_READ_OVERHEAD_SIZE bytes to be 0 (zero) padded
- * before encryption. This is handeled by salt_read(), but the clear text data starts at
- * an offset of SALT_READ_OVERHEAD_SIZE after decryption. The returned size in p_recv_size
- * will be the size of the clear text data.
+ * The maximum length of the clear text message will be max_size - SALT_OVERHEAD_SIZE.
+ * The returned size in p_recv_size will be the size of the clear text data.
  *
  * Depending on implementation of the used injected I/O function, the salt_read function
  * is blocking or non-blocking. If the reading is in process the return code will be SALT_PENDING.
@@ -367,7 +363,7 @@ salt_ret_t salt_resume(salt_channel_t *p_channel,
  *      salt_ret_t ret_code = salt_read(&channel, buffer, &clear_text_size, 256);
  *      if (ret_code == SALT_SUCCESS)
  *      {
- *          printf("%*.*s\r\n", 0, clear_text_size, &buffer[SALT_READ_OVERHEAD_SIZE]);
+ *          printf("%*.*s\r\n", 0, clear_text_size, &buffer[SALT_OVERHEAD_SIZE]);
  *      }
  *      else {
  *          prtinf("Salt read error: 0x%x\r\n", channel.err_code);
@@ -400,7 +396,7 @@ salt_ret_t salt_read(salt_channel_t *p_channel,
  *
  * The message must have the following format:
  *
- * p_buffer: |<- Reserved [SALT_WRITE_OVERHEAD_SIZE] >|<- Clear text data [size] ->|
+ * p_buffer: |<- Reserved [SALT_OVERHEAD_SIZE] >|<- Clear text data [size] ->|
  *
  * I.e, the length of p_buffer must be size + SALT_OVERHEAD_SIZE bytes long.
  *
@@ -408,8 +404,8 @@ salt_ret_t salt_read(salt_channel_t *p_channel,
  *
  *      char buffer[256];
  *      size_t size;
- *      size = sprintf(&buffer[SALT_WRITE_OVERHEAD_SIZE], "This is an encrypted message!");
- *      salt_ret_t ret_code = salt_write(&channel, (uint8_t *) buffer, size + SALT_WRITE_OVERHEAD_SIZE);
+ *      size = sprintf(&buffer[SALT_OVERHEAD_SIZE], "This is an encrypted message!");
+ *      salt_ret_t ret_code = salt_write(&channel, (uint8_t *) buffer, size + SALT_OVERHEAD_SIZE);
  *      if (ret_code != SALT_SUCCESS) {
  *          prtinf("Salt write error: 0x%x\r\n", channel.err_code);
  *      }

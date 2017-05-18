@@ -81,6 +81,8 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 int main(void)
 {
 
+    printf("=== Salt v2 test begin ===\r\n");
+
     uint32_t size;
     salt_channel_t  host_channel;
     salt_channel_t  client_channel;
@@ -91,16 +93,16 @@ int main(void)
     salt_test_t     host_context;
     salt_test_t     client_context;
 
-    uint8_t host_buffer[SALT_HNDSHK_BUFFER_SIZE];
-    uint8_t host_buffer_tmp[SALT_HNDSHK_BUFFER_SIZE];
-    uint8_t client_buffer[SALT_HNDSHK_BUFFER_SIZE];
-    uint8_t client_buffer_tmp[SALT_HNDSHK_BUFFER_SIZE];
+    uint8_t host_buffer[SALT_HNDSHK_BUFFER_SIZE + 1U];
+    uint8_t client_buffer[SALT_HNDSHK_BUFFER_SIZE + 1U];
 
     memset(host_buffer, 0xCC, sizeof(host_buffer));
     memset(client_buffer, 0xEE, sizeof(client_buffer));
 
     CFIFO_CREATE(client_fifo, 1, 1024);
     CFIFO_CREATE(host_fifo, 1, 1024);
+
+    setbuf(stdout, NULL);
 
     host_ret = salt_create(&host_channel, SALT_SERVER, my_write, my_read);
     host_context.channel = &host_channel;
@@ -109,7 +111,7 @@ int main(void)
     assert(host_ret == SALT_SUCCESS);
     host_ret = salt_create_signature(&host_channel);
     assert(host_ret == SALT_SUCCESS);
-    host_ret = salt_init_session(&host_channel, host_buffer, sizeof(host_buffer));
+    host_ret = salt_init_session(&host_channel, host_buffer, SALT_HNDSHK_BUFFER_SIZE);
     assert(host_ret == SALT_SUCCESS);
     host_ret = salt_set_context(&host_channel, &host_context, &host_context); /* Write, read */
     assert(host_ret == SALT_SUCCESS);
@@ -121,7 +123,7 @@ int main(void)
     assert(client_ret == SALT_SUCCESS);
     client_ret = salt_create_signature(&client_channel);
     assert(client_ret == SALT_SUCCESS);
-    client_ret = salt_init_session(&client_channel, client_buffer, sizeof(client_buffer));
+    client_ret = salt_init_session(&client_channel, client_buffer, SALT_HNDSHK_BUFFER_SIZE);
     assert(client_ret == SALT_SUCCESS);
     client_ret = salt_set_context(&client_channel, &client_context, &client_context); /* Write, read */
     assert(client_ret == SALT_SUCCESS);
@@ -131,15 +133,12 @@ int main(void)
 
     while ((host_ret | client_ret) != SALT_SUCCESS)
     {
-        memcpy(host_buffer_tmp, host_buffer, sizeof(host_buffer));
         client_ret = salt_handshake(&client_channel);
-        assert(memcmp(host_buffer_tmp, host_buffer, sizeof(client_buffer)) == 0);
+        assert(client_buffer[SALT_HNDSHK_BUFFER_SIZE] == 0xEE);
         assert(client_ret != SALT_ERROR);
 
-        
-        memcpy(client_buffer_tmp, client_buffer, sizeof(client_buffer));
         host_ret = salt_handshake(&host_channel);
-        assert(memcmp(client_buffer_tmp, client_buffer, sizeof(client_buffer)) == 0);
+        assert(host_buffer[SALT_HNDSHK_BUFFER_SIZE] == 0xCC);
         assert(host_ret != SALT_ERROR);
     }
 
@@ -172,6 +171,7 @@ int main(void)
 
     assert(memcmp("This is a secret message from client!", &host_buffer[SALT_WRITE_OVERHEAD_SIZE], size) == 0);
 
+    printf("=== Salt v2 test succeeded ===\r\n");
 
     return 0;
 }

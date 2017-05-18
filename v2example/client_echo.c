@@ -118,7 +118,6 @@ static void *connection_handler(void *context)
     {
         memset(hndsk_buffer, 0, sizeof(hndsk_buffer));
         ret = salt_read(&channel, hndsk_buffer, &size, SALT_HNDSHK_BUFFER_SIZE-SALT_READ_OVERHEAD_SIZE);
-        printf("size: %d.\r\n", size);
         if (ret == SALT_SUCCESS)
         {
             printf("\33[2K\rhost: %*.*s", 0, size-1, &hndsk_buffer[SALT_WRITE_OVERHEAD_SIZE+1]);
@@ -147,7 +146,7 @@ static void *write_handler(void *context)
         tx_size = read(0, &tx_buffer[SALT_WRITE_OVERHEAD_SIZE+1], sizeof(tx_buffer)-SALT_WRITE_OVERHEAD_SIZE-1);
         tx_buffer[SALT_WRITE_OVERHEAD_SIZE] = 0x01;
         if (tx_size > 0) {
-            printf("\033[A\33[2K\rclient: %*.*s", 0, tx_size-1, &tx_buffer[SALT_WRITE_OVERHEAD_SIZE+1]);
+            printf("\r\n\033[A\33[2K\rclient: %*.*s\r\n", 0, tx_size-1, &tx_buffer[SALT_WRITE_OVERHEAD_SIZE+1]);
             ret_code = salt_write(channel, (uint8_t*) tx_buffer, tx_size + SALT_WRITE_OVERHEAD_SIZE + 1);
         }
     } while (ret_code == SALT_SUCCESS);

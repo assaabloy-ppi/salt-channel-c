@@ -15,7 +15,7 @@
 /*======= Public macro definitions ==========================================*/
 #define SALT_READ_OVERHEAD_SIZE     (22U)       /**< Encryption buffer overhead size. */
 #define SALT_WRITE_OVERHEAD_SIZE    (38U)       /**< Encryption buffer overhead size. */
-#define SALT_HNDSHK_BUFFER_SIZE     (636U)      /**< Buffer used for handshake. */
+#define SALT_HNDSHK_BUFFER_SIZE     (486U)      /**< Buffer used for handshake. */
 
 
 /*======= Type Definitions and declarations ===================================*/
@@ -69,9 +69,6 @@ typedef enum salt_err_e {
  *
  * The salt channel can be used as either server (host) or client.
  *
- * If stream mode is used, a four byte size array is serialized and
- * put into the array passed to the I/O implementations.
- *
  */
 typedef enum salt_mode_e {
     SALT_SERVER = 0,                /**< Server/host mode. */
@@ -80,17 +77,14 @@ typedef enum salt_mode_e {
 
 /**
  * @brief Salt channel state.
+ * 
+ * These states are used internally during the handshake procedure.
+ * After the handshake, the state should always be SALT_SESSION_ESTABLISHED.
  */
 typedef enum salt_state_e {
     SALT_CREATED = 0,
     SALT_SIGNATURE_SET,
     SALT_SESSION_INITIATED,
-    SALT_WAIT_FOR_INCOMING_MSG_INIT,
-    SALT_WAIT_FOR_INCOMING_MSG_IO,
-    SALT_WAIT_FOR_OUTGOING_MSG_INIT,
-    SALT_WAIT_FOR_OUTGOING_MSG_IO,
-    SALT_CALCULATE_ENC_KEY,
-    SALT_M1_INIT,
     SALT_M1_IO,
     SALT_M1_HANDLE,
     SALT_M2_INIT,
@@ -99,14 +93,14 @@ typedef enum salt_state_e {
     SALT_M3_INIT,
     SALT_M3_IO,
     SALT_M3_HANDLE,
-    SALT_M4_INIT,
     SALT_M4_IO,
-    SALT_M4_VERIFY,
     SALT_M4_HANDLE,
     SALT_SESSION_ESTABLISHED,
-    SALT_ERROR_STATE
 } salt_state_t;
 
+/**
+ * Internal states used for the read and write functionality.
+ */
 typedef enum salt_io_state_e {
     SALT_IO_READY,
     SALT_IO_SIZE,

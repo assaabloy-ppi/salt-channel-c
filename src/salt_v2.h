@@ -4,18 +4,25 @@
 /**
  * @file salt_v2.h
  *
- * Salt channel version 2 header file.
+ * Salt channel version 2 header file. The salt-channel-c follows the specification:
+ * https://github.com/assaabloy-ppi/salt-channel/blob/master/files/spec/spec-salt-channel-v2-draft4.md
+ *
+ * Current state is:
+ *      - The time field is supported, but is never checked when received.
+ *      - Resume is not supported.
+ *      - Virtual hosting is not supported.
  *
  */
 
 /*======= Includes ============================================================*/
+
 #include <stdint.h>
 #include "salt_crypto_wrapper.h"
 
 /*======= Public macro definitions ==========================================*/
+
 #define SALT_OVERHEAD_SIZE          (38U)       /**< Encryption buffer overhead size. */
 #define SALT_HNDSHK_BUFFER_SIZE     (486U)      /**< Buffer used for handshake. */
-
 
 /*======= Type Definitions and declarations ===================================*/
 
@@ -57,8 +64,8 @@ typedef enum salt_err_e {
     SALT_ERR_DECRYPTION,            /**< Decryption error. */
     SALT_ERR_BAD_SIGNATURE,         /**< Signature verification failed. */
     SALT_ERR_BUFF_TO_SMALL,         /**< I/O Buffer to small. */
-    SALT_ERR_BAD_PROTOCOL,
-    SALT_ERR_IO_WRITE,
+    SALT_ERR_BAD_PROTOCOL,          /**< Package doesn't follow specification. */
+    SALT_ERR_IO_WRITE,              /**< Error occured during I/O. */
     SALT_ERR_CONNECTION_CLOSED,
 } salt_err_t;
 
@@ -76,7 +83,7 @@ typedef enum salt_mode_e {
 
 /**
  * @brief Salt channel state.
- * 
+ *
  * These states are used internally during the handshake procedure.
  * After the handshake, the state should always be SALT_SESSION_ESTABLISHED.
  */
@@ -135,20 +142,30 @@ struct salt_io_channel_s {
     void            *p_context;                         /**< Pointer to I/O channel context. */
     uint8_t         *p_data;                            /**< Pointer to data to read/write. */
     uint32_t        size;                               /**< Size of data written or size of data read. */
-    uint32_t        size_expected;                      /**< Expected size to read or be written. */
+    uint32_t        size_expected;                      /**< Expected size to read or be written. TODO: Rename to "wanted/requested" */
     uint32_t        max_size;                           /**< Maximum size of data to read (used internally). */
     salt_err_t      err_code;                           /**< Error code. */
     salt_io_state_t state;                              /**< I/O channel state. */
 };
 
 /**
+ * @brief Function to receive current time stamp implementation.
+ *
+ * If a clock is present, a get time implementation can be provided. The time returned must be in
+ * milliseconds. The time may prevents "delay"-attacks. The range of the time is [0:2^32-1].
+ *
+ * @param p_time    Pointer where current time will be copied to.
+ */
+typedef void (*salt_time_impl)(uint32_t *p_time);
+
+/**
  * @brief Salt channel structure.
  *
  */
 typedef struct salt_channel_s {
-    salt_mode_t     mode;                               /**< Salt channel mode. */
+    salt_mode_t     mode;                               /**< Salt channel mode CLIENT/HOST. */
     salt_state_t    state;                              /**< Salt channel state. */
-    salt_state_t    next_state;
+    salt_state_t    next_state;                         // TODO: Check if used
     salt_err_t      err_code;                           /**< Latest error code. */
 
     /* Encryption and signature stuff */
@@ -169,7 +186,9 @@ typedef struct salt_channel_s {
     salt_io_channel_t   read_channel;                   /**< Read channel structure. */
     salt_io_impl        read_impl;                      /**< Function pointer to read implementation. */
 
-    uint8_t     *hdshk_buffer;
+    salt_time_impl      time_impl;                      /**< Function pointer to get time implementation. */
+
+    uint8_t     *hdshk_buffer;                          /**< TODO: Consider making a struct for read- and maintainability. */
     uint32_t    hdshk_buffer_size;
 } salt_channel_t;
 
@@ -183,6 +202,7 @@ typedef struct salt_channel_s {
  * @param mode          Salt channel mode { SALT_SERVER, SALT_HOST }
  * @param read_impl     User injected read implementation.
  * @param write_impl    Used injected write implementation.
+ * @param time_impl     User injected get time implementation, may be NULL.
  *
  * @return SALT_SUCCESS The salt channel was successfully initiated.
  * @return SALT_ERROR   Any input pointer was a NULL pointer or invalid salt mode.
@@ -192,7 +212,8 @@ salt_ret_t salt_create(
     salt_channel_t *p_channel,
     salt_mode_t mode,
     salt_io_impl write_impl,
-    salt_io_impl read_impl);
+    salt_io_impl read_impl,
+    salt_time_impl time_impl);
 
 /**
  * @brief Sets the context passed to the user injected read implementation.
@@ -253,8 +274,6 @@ salt_ret_t salt_init_session(salt_channel_t *p_channel,
 /**
  * @brief Salt handshake process.
  *
- * See TODO: Address to specification
- *
  * A state matchine that excecutes the salt handshaking process. If the user injected
  * I/O methods (See @p salt_write_impl, @p read_impl) are blocking, the function will run
  * through the whole handshaking process in one call. Otherwise, the function must be polled.
@@ -274,6 +293,8 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel);
  * If the client at some later point want to resume the session, a resume ticket could be requested.
  * The client must store the resume ticket along with the session key and with knowledge of the host.
  *
+ * NOTE: Not supported yet.
+ * TODO: Maxiumum tickes size is limited by 1 byte, see specification.
  *
  * Example code: Request a ticket and store it along with the session key and identity of the host.
  *
@@ -315,6 +336,8 @@ salt_ret_t salt_request_ticket(salt_channel_t *p_channel,
  * symmetric session encryption key.. The client does not need to know anything specific
  * about the ticket (except whom it belongs to). This is only supported in SALT_CLIENT mode.
  *
+ * NOTE: Not supported yet.
+ * 
  * Example code:
  *
  *      uint8_t host_identity[32];

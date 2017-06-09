@@ -2,25 +2,39 @@ C_FLAGS := -Wall -Wextra -Werror -fno-stack-protector -Wpedantic
 C_FLAGS += -g -ggdb -DSALT_DEBUG=1
 C_FLAGS += -I. -I../examples -I../src -Icfifo
 
-salt_util.o: ../src/salt_util.c ../src/salt_util.h
-	$(CC) $(C_FLAGS) -c -o $@ ../src/salt_util.c
+DEPS := ../src/salt_v2.h Makefile test_data.c
 
-cfifo.o: cfifo/cfifo.c
-	$(CC) $(C_FLAGS) $(C_FLAGS) -c cfifo/cfifo.c -o cfifo.o
+salt_util.o: ../src/salt_util.c ../src/salt_util.h
+	$(CC) $(C_FLAGS) -c $< -o $@
+
+cfifo.o: cfifo/cfifo.c cfifo/cfifo.h
+	$(CC) $(C_FLAGS) $(C_FLAGS) -c $< -o $@
 
 tweetnacl.o: ../src/external/tweetnacl/tweetnacl.c
-	$(CC) -c ../src/external/tweetnacl/tweetnacl.c -o tweetnacl.o
+	$(CC) -c $< -o $@
 
 salt_2.o: ../src/salt_v2.c ../src/salt_v2.h
-	$(CC) $(C_FLAGS) -c ../src/salt_v2.c -o salt_2.o
+	$(CC) $(C_FLAGS) -c $< -o $@
 
-hostclient.o: hostclient.c ../src/salt_v2.h
-	$(CC) $(C_FLAGS) -c hostclient.c -o hostclient.o
+hostclient.o: hostclient.c $(DEPS)
+	$(CC) $(C_FLAGS) -c $< -o $@
 
-hostclient_test: cfifo.o tweetnacl.o salt_2.o hostclient.o salt_util.o
-	$(CC) -lm $^ -o hostclient_test.out
+client.o: client.c $(DEPS)
+	$(CC) $(C_FLAGS) -c $< -o $@
 
-test: clean host_test client_test hostclient_test
+host.o: host.c $(DEPS)
+	$(CC) $(C_FLAGS) -c $< -o $@
+
+hostclient_test.out: cfifo.o tweetnacl.o salt_2.o hostclient.o salt_util.o
+	$(CC) -lm $^ -o $@
+
+client_test.out: client.o tweetnacl.o salt_2.o salt_util.o
+	$(CC) -lm $^ -o $@
+
+host_test.out: host.o tweetnacl.o salt_2.o salt_util.o
+	$(CC) -lm $^ -o $@
+
+test: clean host_test.out client_test.out hostclient_test.out
 	./host_test.out
 	./client_test.out
 	./hostclient_test.out

@@ -5,6 +5,8 @@
  *
  * See v2notes.txt for implementation details.
  * 
+ * TODO: Refer to v2notes.txt for tricks when placing messages in hanshake buffer.
+ * 
  */
 
 /*======= Includes ============================================================*/
@@ -159,16 +161,20 @@ static salt_ret_t salti_decrypt(salt_channel_t *p_channel,
 
 static void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment);
 
-static void salti_size_to_bytes(uint8_t *dest, uint32_t size);
+static void salti_size_to_bytes(uint8_t *dest, uint32_t size); // TODO: Consider renaming to u32_to_bytes
 
-static uint32_t salti_bytes_to_size(uint8_t *src);
+static uint32_t salti_bytes_to_size(uint8_t *src); // TODO: Consider renaming to bytes_to_u32
+
+static void salti_get_time(salt_channel_t *p_channel, uint32_t *p_time);
 
 /*======= Global function implementations =====================================*/
+
 salt_ret_t salt_create(
     salt_channel_t *p_channel,
     salt_mode_t mode,
     salt_io_impl write_impl,
-    salt_io_impl read_impl)
+    salt_io_impl read_impl,
+    salt_time_impl time_impl)
 {
 
     SALT_VERIFY_VALID_CHANNEL(p_channel);
@@ -182,6 +188,7 @@ salt_ret_t salt_create(
 
     p_channel->write_impl = write_impl;
     p_channel->read_impl = read_impl;
+    p_channel->time_impl = time_impl;
     p_channel->mode = mode;
     p_channel->state = SALT_CREATED;
     p_channel->err_code = SALT_ERR_NONE;
@@ -331,6 +338,11 @@ salt_ret_t salt_read(salt_channel_t *p_channel,
     SALT_VERIFY(SALT_SUCCESS == salti_read(p_channel, p_buffer, p_recv_size, SALT_ENCRYPTED),
                 p_channel->err_code);
 
+    SALT_VERIFY(SALT_APP_PKG_MSG_HEADER_VALUE == p_buffer[32],
+        SALT_ERR_BAD_PROTOCOL);
+
+    /* TODO: Handle time in p_buffer[34] */
+
     (*p_recv_size) -= 6U;
 
     return SALT_SUCCESS;
@@ -347,8 +359,7 @@ salt_ret_t salt_write(salt_channel_t *p_channel,
     p_buffer[32] = SALT_APP_PKG_MSG_HEADER_VALUE;
     p_buffer[33] = 0x00U;
 
-    /* TODO: Time handling */
-    memset(&p_buffer[34], 0x00U, 4);
+    salti_get_time(p_channel, (uint32_t *) &p_buffer[34]);
 
     return salti_write(p_channel, p_buffer, size, SALT_ENCRYPTED);
 }
@@ -503,6 +514,7 @@ static salt_ret_t salti_write(salt_channel_t *p_channel,
 
             salti_size_to_bytes(channel->p_data, channel->size_expected);
             channel->size_expected += SALT_LENGTH_SIZE;
+
         }
         channel->state = SALT_IO_PENDING;
     /* Intentional fall-through */
@@ -804,8 +816,7 @@ static salt_ret_t salti_create_m1(salt_channel_t *p_channel,
     p_data[SALT_LENGTH_SIZE + 4] = SALT_M1_HEADER_VALUE;
     p_data[SALT_LENGTH_SIZE + 5] = 0x00U; /* No tickets */
 
-    /* Time is in p_data[6:10], TODO: Handle */
-    memset(&p_data[SALT_LENGTH_SIZE + 6], 0x00U, 4U);
+    salti_get_time(p_channel, (uint32_t *) &p_data[SALT_LENGTH_SIZE + 6]);
 
     memcpy(&p_data[SALT_LENGTH_SIZE + 10],
            p_channel->my_ek_pub,
@@ -893,8 +904,7 @@ static salt_ret_t salti_create_m2(salt_channel_t *p_channel,
     p_data[SALT_LENGTH_SIZE] = SALT_M2_HEADER_VALUE;
     p_data[SALT_LENGTH_SIZE + 1] = 0x00U; /* Flags */
 
-    /* Time is in p_data[6:10], TODO: Handle */
-    memset(&p_data[SALT_LENGTH_SIZE + 2], 0x00U, 4U);
+    salti_get_time(p_channel, (uint32_t *) &p_data[SALT_LENGTH_SIZE + 2]);
 
     memcpy(&p_data[SALT_LENGTH_SIZE + 6],
            p_channel->my_ek_pub,
@@ -966,7 +976,7 @@ static salt_ret_t salti_create_m3m4(salt_channel_t *p_channel,
     p_data[0] = header;
     p_data[1] = 0x00U;
 
-    memset(&p_data[2], 0, 4);
+    salti_get_time(p_channel, (uint32_t *) &p_data[2]);
     memcpy(&p_data[6], p_channel->my_sk_pub, 32);
 
     /*
@@ -1071,4 +1081,13 @@ static void salti_size_to_bytes(uint8_t *dest, uint32_t size)
 static uint32_t salti_bytes_to_size(uint8_t *src)
 {
     return *((uint32_t*) src);
+}
+
+static void salti_get_time(salt_channel_t *p_channel, uint32_t *p_time)
+{
+    if (p_channel->time_impl != NULL) {
+        p_channel->time_impl(p_time);
+        return;
+    }
+    memset(p_time, 0x00, 4);
 }

@@ -33,9 +33,6 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
         cfifo_t *write_queue = context->write_queue;
         uint32_t size = p_wchannel->size_expected;
 
-        //printf("%s - ", mode2str(context->channel->mode));
-        //SALT_HEXDUMP(p_wchannel->p_data, p_wchannel->size_expected);
-
         assert(cfifo_write(write_queue, p_wchannel->p_data,
             &size) == CFIFO_SUCCESS);
         assert(size == p_wchannel->size_expected);
@@ -65,9 +62,6 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 
         assert(cfifo_read(read_queue, p_rchannel->p_data,
             &size) == CFIFO_SUCCESS);
-
-        //printf("%s - ", mode2str(context->channel->mode));
-        //SALT_HEXDUMP(p_rchannel->p_data, p_rchannel->size_expected);
 
         assert(size == p_rchannel->size_expected);
         p_rchannel->size = p_rchannel->size_expected;
@@ -104,7 +98,7 @@ int main(void)
 
     setbuf(stdout, NULL);
 
-    host_ret = salt_create(&host_channel, SALT_SERVER, my_write, my_read);
+    host_ret = salt_create(&host_channel, SALT_SERVER, my_write, my_read, NULL);
     host_context.channel = &host_channel;
     host_context.write_queue = host_fifo;
     host_context.read_queue = client_fifo;
@@ -116,7 +110,7 @@ int main(void)
     host_ret = salt_set_context(&host_channel, &host_context, &host_context); /* Write, read */
     assert(host_ret == SALT_SUCCESS);
 
-    client_ret = salt_create(&client_channel, SALT_CLIENT, my_write, my_read);
+    client_ret = salt_create(&client_channel, SALT_CLIENT, my_write, my_read, NULL);
     client_context.channel = &client_channel;
     client_context.write_queue = client_fifo;
     client_context.read_queue = host_fifo;
@@ -190,10 +184,14 @@ int main(void)
         assert(host_ret != SALT_ERROR);    
     } while (host_ret != SALT_SUCCESS);
 
+    printf("Expected error message: ");
     do {
         client_ret = salt_read(&client_channel, client_new_buffer, &size, sizeof(client_new_buffer));
     } while (client_ret == SALT_PENDING);
-    assert(client_ret == SALT_ERROR);    
+
+    /* We expect an error here, not that we will get an error print out if debug mode is enabled, */
+    assert(client_ret == SALT_ERROR);
+    assert(client_channel.err_code == SALT_ERR_BUFF_TO_SMALL);
 
     printf("=== Salt v2 test succeeded ===\r\n");
 

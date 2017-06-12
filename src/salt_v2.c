@@ -17,35 +17,27 @@
 
 /*======= Local Macro Definitions =============================================*/
 #ifdef SALT_DEBUG
-#include <stdio.h>
-#include "salt_util.h"
-#define SALT_VERIFY(x, error_code)                                              \
-    do {                                                                        \
-        if (!(x)) {                                                             \
-            p_channel->err_code = error_code;                                   \
-            printf(                                                             \
-                "Runtime error (%s, %s): %s at %s:%d, %s.\r\n",                 \
-                #error_code, mode2str(p_channel->mode), #x,                     \
-                __FILE__, __LINE__, __func__);                                  \
-            return SALT_ERROR;                                                  \
-        }                                                                       \
-    } while (0)
-
-#define SALT_HEXDUMP_DEBUG(str, ptr, size)                                      \
-    do {                                                                        \
-        printf("%s: %s - ", #str, mode2str(p_channel->mode));                   \
-        SALT_HEXDUMP(ptr, size);                                                \
-    } while(0)
-
-
+    #include <stdio.h>
+    #include "salt_util.h"
+    #define SALT_VERIFY(x, error_code)                                          \
+        do {                                                                    \
+            if (!(x)) {                                                         \
+                p_channel->err_code = error_code;                               \
+                printf(                                                         \
+                    "Runtime error (%s, %s): %s at %s:%d, %s.\r\n",             \
+                    #error_code, mode2str(p_channel->mode), #x,                 \
+                    __FILE__, __LINE__, __func__);                              \
+                return SALT_ERROR;                                              \
+            }                                                                   \
+        } while (0)
 #else
-#define SALT_VERIFY(x, error_code)                                              \
-    do {                                                                        \
-        if (!(x)) {                                                             \
-            p_channel->err_code = error_code;                                   \
-            return SALT_ERROR;                                                  \
-        }                                                                       \
-    } while (0)
+    #define SALT_VERIFY(x, error_code)                                          \
+        do {                                                                    \
+            if (!(x)) {                                                         \
+                p_channel->err_code = error_code;                               \
+                return SALT_ERROR;                                              \
+            }                                                                   \
+        } while (0)
 #endif
 
 #define SALT_VERIFY_NOT_NULL(x)                                                 \
@@ -69,6 +61,7 @@
 /* Various defines */
 #define SALT_CLEAR                              (0U)
 #define SALT_ENCRYPTED                          (1U)
+#define SALT_APP_MSG                            (3U)
 #define SALT_LENGTH_SIZE                        (4U)
 #define SALT_HEADER_SIZE                        (2U)
 #define SALT_TIME_SIZE                          (4U)
@@ -110,7 +103,7 @@
 static salt_ret_t salti_read(salt_channel_t *p_channel,
                              uint8_t *p_data,
                              uint32_t *size,
-                             uint8_t encrypted);
+                             uint8_t msg_type);
 
 static salt_ret_t salti_write(salt_channel_t *p_channel,
                               uint8_t *p_data,
@@ -278,6 +271,7 @@ salt_ret_t salt_init_session(salt_channel_t *p_channel,
     /* Create ephemeral keypair used for only this session. */
     crypto_box_keypair(p_channel->my_ek_pub, p_channel->my_ek_sec);
 
+    p_channel->err_code = SALT_ERR_NONE;
     p_channel->state = SALT_SESSION_INITIATED;
 
     return SALT_SUCCESS;
@@ -333,19 +327,10 @@ salt_ret_t salt_read(salt_channel_t *p_channel,
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
 
-    *p_recv_size = max_size - 14U;
+    *p_recv_size = max_size;
 
-    SALT_VERIFY(SALT_SUCCESS == salti_read(p_channel, p_buffer, p_recv_size, SALT_ENCRYPTED),
-                p_channel->err_code);
+    return salti_read(p_channel, p_buffer, p_recv_size, SALT_APP_MSG);
 
-    SALT_VERIFY(SALT_APP_PKG_MSG_HEADER_VALUE == p_buffer[32],
-        SALT_ERR_BAD_PROTOCOL);
-
-    /* TODO: Handle time in p_buffer[34] */
-
-    (*p_recv_size) -= 6U;
-
-    return SALT_SUCCESS;
 }
 
 salt_ret_t salt_write(salt_channel_t *p_channel,
@@ -356,12 +341,7 @@ salt_ret_t salt_write(salt_channel_t *p_channel,
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
 
-    p_buffer[32] = SALT_APP_PKG_MSG_HEADER_VALUE;
-    p_buffer[33] = 0x00U;
-
-    salti_get_time(p_channel, (uint32_t *) &p_buffer[34]);
-
-    return salti_write(p_channel, p_buffer, size, SALT_ENCRYPTED);
+    return salti_write(p_channel, p_buffer, size, SALT_APP_MSG);
 }
 
 /*======= Local function implementations ======================================*/
@@ -381,7 +361,7 @@ salt_ret_t salt_write(salt_channel_t *p_channel,
 static salt_ret_t salti_read(salt_channel_t *p_channel,
                              uint8_t *p_data,
                              uint32_t *size,
-                             uint8_t encrypted)
+                             uint8_t msg_type)
 {
     /* Maximum size is stored in *size */
     salt_ret_t ret_code = SALT_ERROR;
@@ -412,7 +392,7 @@ static salt_ret_t salti_read(salt_channel_t *p_channel,
             break;
         }
 
-        if (encrypted) {
+        if (msg_type & SALT_ENCRYPTED) {
             /*
              * If we read encrypted, we must ensure that the first crypto_secretbox_BOXZEROBYTES is 0x00.
              * These bytes are not sent by the other side.
@@ -424,10 +404,12 @@ static salt_ret_t salti_read(salt_channel_t *p_channel,
         channel->size = 0;
     /* Intentional fall-through */
     case SALT_IO_PENDING:
+
         ret_code = p_channel->read_impl(&p_channel->read_channel);
+
         if (SALT_SUCCESS == ret_code) {
             /* The actual size received is put in channel->size. */
-            if (encrypted) {
+            if (msg_type & SALT_ENCRYPTED) {
 
                 /*
                  * Msg structure:
@@ -456,6 +438,18 @@ static salt_ret_t salti_read(salt_channel_t *p_channel,
 
             }
             (*size) = channel->size;
+
+            if (msg_type == SALT_APP_MSG) {
+
+                SALT_VERIFY(SALT_APP_PKG_MSG_HEADER_VALUE == p_data[32],
+                            SALT_ERR_BAD_PROTOCOL);
+
+                /* TODO: Handle time in p_data[34] */
+
+                (*size) -= 6U;
+
+            }
+
             channel->state = SALT_IO_READY;
         }
         break;
@@ -479,7 +473,7 @@ static salt_ret_t salti_read(salt_channel_t *p_channel,
 static salt_ret_t salti_write(salt_channel_t *p_channel,
                               uint8_t *p_data,
                               uint32_t size,
-                              uint8_t encrypted)
+                              uint8_t msg_type)
 {
 
     salt_ret_t ret_code = SALT_ERROR;
@@ -491,7 +485,13 @@ static salt_ret_t salti_write(salt_channel_t *p_channel,
         channel->size = 0;
         channel->size_expected = size;
 
-        if (encrypted) {
+        if (msg_type == SALT_APP_MSG) {
+            p_data[32] = SALT_APP_PKG_MSG_HEADER_VALUE;
+            p_data[33] = 0x00U;
+            salti_get_time(p_channel, (uint32_t *) &p_data[34]);
+        }
+
+        if (msg_type & SALT_ENCRYPTED) {
             /*
              * Crypto library requires the first crypto_secretbox_ZEROBYTES to be
              * 0x00 before encryption.
@@ -587,10 +587,10 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                                size, SALT_CLEAR);
         SALT_VERIFY(SALT_ERROR != ret_code, SALT_ERR_IO_WRITE);
 
-        crypto_box_beforenm(p_channel->ek_common,
+        int tmp = crypto_box_beforenm(p_channel->ek_common,
                             p_channel->peer_ek_pub,
                             p_channel->my_ek_sec);
-
+        (void) tmp; /* crypto_box_beforenm always returns 0 */
         p_channel->state = SALT_M2_IO;
     /* Intentional fall-through */
     case SALT_M2_IO:

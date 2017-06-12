@@ -67,7 +67,7 @@ int main(int argc , char *argv[])
 
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = INADDR_ANY;
-    server.sin_port = htons(3000);
+    server.sin_port = htons(2033);
 
     if(bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
     {
@@ -126,7 +126,7 @@ static void *connection_handler(void *context)
     uint32_t size;
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
 
-    ret = salt_create(&client->channel, SALT_SERVER, my_write, my_read);
+    ret = salt_create(&client->channel, SALT_SERVER, my_write, my_read, NULL);
     assert(ret == SALT_SUCCESS);
     ret = salt_set_signature(&client->channel, host_sk_sec);
     assert(ret == SALT_SUCCESS);

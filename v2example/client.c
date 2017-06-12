@@ -80,7 +80,7 @@ static void *connection_handler(void *context)
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
     uint32_t size;
 
-    ret = salt_create(&channel, SALT_CLIENT, my_write, my_read);
+    ret = salt_create(&channel, SALT_CLIENT, my_write, my_read, NULL);
     assert(ret == SALT_SUCCESS);
     ret = salt_create_signature(&channel); /* Creates a new signature. */
     assert(ret == SALT_SUCCESS);

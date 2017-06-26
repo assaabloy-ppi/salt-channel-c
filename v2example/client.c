@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(addr);
-    serv_addr.sin_port = htons(3000);
+    serv_addr.sin_port = htons(2033);
 
     printf("Connection to %s\r\n", addr);
     if (connect(sock_desc, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {

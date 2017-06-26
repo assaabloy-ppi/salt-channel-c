@@ -3,6 +3,8 @@ LD_FLAGS 	= -pthread
 
 DEPS 		= ../src/salt_v2.h
 
+all: client_prog host_prog client_echo host_echo
+
 salt_util.o: ../src/salt_util.c
 	$(CC) $(C_FLAGS) -c -o $@ ../src/salt_util.c
 

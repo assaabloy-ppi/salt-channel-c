@@ -75,7 +75,7 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 int main(void)
 {
 
-    printf("=== Salt v2 test begin ===\r\n");
+    printf("=== Salt v2 host+client test begin ===\r\n");
 
     uint32_t size;
     salt_channel_t  host_channel;
@@ -179,21 +179,26 @@ int main(void)
     }
 
     /* To big msg test */
+    memset(host_buffer, 0x2e, sizeof(host_buffer));
     do {
-        host_ret = salt_write(&host_channel, host_buffer, sizeof(client_new_buffer) + 1);
+        host_ret = salt_write(&host_channel, host_buffer, 40);
         assert(host_ret != SALT_ERROR);    
     } while (host_ret != SALT_SUCCESS);
 
-    printf("Expected error message: ");
+    memset(client_new_buffer, 0x2d, sizeof(client_new_buffer));
     do {
-        client_ret = salt_read(&client_channel, client_new_buffer, &size, sizeof(client_new_buffer));
+        client_ret = salt_read(&client_channel, client_new_buffer, &size, 39);
     } while (client_ret == SALT_PENDING);
+
+    for (uint32_t i = 0; i < sizeof(client_new_buffer)-39; i++) {
+        assert(client_new_buffer[i+39] == 0x2d);
+    }
 
     /* We expect an error here, not that we will get an error print out if debug mode is enabled, */
     assert(client_ret == SALT_ERROR);
     assert(client_channel.err_code == SALT_ERR_BUFF_TO_SMALL);
 
-    printf("=== Salt v2 test succeeded ===\r\n");
+    printf("=== Salt v2 host+client test succeeded ===\r\n");
 
     return 0;
 }

@@ -327,6 +327,9 @@ salt_ret_t salt_read(salt_channel_t *p_channel,
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
 
+    SALT_VERIFY(max_size >= SALT_OVERHEAD_SIZE, SALT_ERR_BUFF_TO_SMALL);
+
+
     *p_recv_size = max_size;
 
     return salti_read(p_channel, p_buffer, p_recv_size, SALT_APP_MSG);
@@ -386,18 +389,20 @@ static salt_ret_t salti_read(salt_channel_t *p_channel,
 
         channel->size_expected = salti_bytes_to_size(p_data);
 
-        if (channel->size_expected > channel->max_size) {
-            p_channel->err_code = SALT_ERR_BUFF_TO_SMALL;
-            ret_code = SALT_ERROR;
-            break;
-        }
-
         if (msg_type & SALT_ENCRYPTED) {
             /*
              * If we read encrypted, we must ensure that the first crypto_secretbox_BOXZEROBYTES is 0x00.
              * These bytes are not sent by the other side.
              */
             channel->p_data += crypto_secretbox_BOXZEROBYTES - 0x02U;
+            channel->max_size -= (crypto_secretbox_BOXZEROBYTES - 0x02U);
+        }
+
+        if (channel->size_expected > channel->max_size) {
+            p_channel->err_code = SALT_ERR_BUFF_TO_SMALL;
+            ret_code = SALT_ERROR;
+            *size = 0;
+            break;
         }
 
         channel->state = SALT_IO_PENDING;
@@ -627,7 +632,7 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
         size = p_channel->hdshk_buffer_size;
     /* Intentional fall-through */
     case SALT_M4_IO:
-        size = 120; /* Maximum size of M4 */
+        size = 120 + SALT_OVERHEAD_SIZE; /* Maximum size of M4 */
         ret_code = salti_read(p_channel,
                               &p_channel->hdshk_buffer[192],
                               &size, SALT_ENCRYPTED);
@@ -754,7 +759,7 @@ static salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
     /* Intentional fall-through */
     case SALT_M3_IO:
 
-        size = 120; /* Maximum size of M3 */
+        size = 120 + SALT_OVERHEAD_SIZE; /* Maximum size of M3 */
 
         ret_code = salti_read(p_channel,
                               &p_channel->hdshk_buffer[192],

@@ -91,8 +91,12 @@ typedef enum salt_state_e {
     SALT_CREATED = 0,
     SALT_SIGNATURE_SET,
     SALT_SESSION_INITIATED,
-    SALT_M1_IO,
+    SALT_A1_IO,
+    SALT_A1_HANDLE,
     SALT_M1_HANDLE,
+    SALT_A2_HANDLE,
+    SALT_A2_IO,
+    SALT_M1_IO,
     SALT_M2_INIT,
     SALT_M2_IO,
     SALT_M2_HANDLE,
@@ -159,6 +163,35 @@ struct salt_io_channel_s {
 typedef void (*salt_time_impl)(uint32_t *p_time);
 
 /**
+ * @brief Function to receive supported underlying protocols.
+ * @details The user may respond to a request of what supported underlying protocols
+ *          the host supports. The protocols supported are returned with this function.
+ * 
+ * Usage: With the assumption that two protocols are supported, Echo and Temp. This
+ *        requires 20 bytes.
+ * 
+ *  salt_ret_t my_protocols(uint8_t *p_buffer, uint32_t buffer_size, uint8_t *n_protocols)
+ *  {
+ *      if (buffer_size < 20) {
+ *          return SALT_ERROR;
+ *      }
+ *      memcpy(p_buffer, "Echo------", 10);
+ *      memcpy(&p_buffer[10], "Temp------", 10);
+ *      *n_protocols = 2;
+ *      return SALT_SUCCESS;
+ *  }
+ * 
+ * @param p_buffer      Pointer where to put the supported protocols.
+ * @param buffer_size   Size of buffer.
+ * @param n_protocols   Number of protocols supported.
+ * 
+ * @return SALT_ERROR   The protocols could not be retrieved.
+ * @return SALT_SUCCESS The protocols was sucessfully retrieved.
+ * 
+ */
+typedef salt_ret_t (*salt_protocols)(uint8_t *p_buffer, uint32_t buffer_size, uint8_t *n_protocols);
+
+/**
  * @brief Salt channel structure.
  *
  */
@@ -187,6 +220,7 @@ typedef struct salt_channel_s {
     salt_io_impl        read_impl;                      /**< Function pointer to read implementation. */
 
     salt_time_impl      time_impl;                      /**< Function pointer to get time implementation. */
+    salt_protocols      supported_protocols_impl;       /**< Function pointer to get supported protocols. */
 
     uint8_t     *hdshk_buffer;                          /**< TODO: Consider making a struct for read- and maintainability. */
     uint32_t    hdshk_buffer_size;
@@ -231,13 +265,62 @@ salt_ret_t salt_set_context(
     void *p_read_context);
 
 /**
+ * @brief Request information about protocols supported by host.
+ * @details The client may ask the host what protocols are supported by using
+ *          salt_a1a1. The A1/A2 is considered as a small session that ends
+ *          after the host has responded to the A1 request.
+ *          
+ *          The salt channel must have been created before using this command and may
+ *          only be used after a session have been initiated. When A2 have been received
+ *          the p_buffer will have data with the following format (if number of supported
+ *          protocols is 2):
+ *          protocols_size == 2
+ *          p_buffer[] = { P1[10], P2[10], P3[10], P4[10] }
+ *          
+ *          Where P1 and P2 could be (If this version of salt channel is supported), and P2
+ *          is supporting e.g. a simple echo protocol called Echo:
+ *              P1[10] = { ascii: SC2------- } = { 0x5343322d2d2d2d2d2d2d }
+ *              P2[10] = { ascii: Echo------ } = { 0x4563686f2d2d2d2d2d2d }
+ *          And P3, P4 could be (If the host also supports a future version of salt channel)
+ *          and a protocol that the host does not want to reveal.
+ *              P3[10] = { ascii: SC3------- } = { 0x5343332d2d2d2d2d2d2d }
+ *              P4[10] = { ascii: ---------- } = { 0x2d2d2d2d2d2d2d2d2d2d }    
+ *          
+ *          
+ * Usage:
+ *      uint8_t protocols_supported[400];
+ *      uint32_t protocols_size = sizeof(protocols_supported);
+ *      salt_ret_t ret_code = salt_a1a2(&channel, protocols_supported, &protocols_size);
+ *      if (ret_code == SALT_SUCCESS) {
+ *          printf("Supported protocol:\r\n");
+ *          for (uint8_t *i = protocols_supported; i < protocols_supported + protocols_size; i += 20) {
+ *              printf("Supports salt channel: %*.*s\r\n", 0, 10, (char*) &protocols_supported[i]);
+ *              printf("With underlying protocol: %*.*s\r\n", 0, 10, (char*) &protocols_supported[i+10]);
+ *          }
+ *      } else {
+ *          // Pending or error
+ *      }
+ *      
+ * 
+ * @param p_channel Pointer to channel handle.
+ * @param p_buffer  Buffer where to put the supported protocols.
+ * @param p_size    Maximum size of buffer.
+ * @return p_size   Size of supported protocols responded from host.
+ * @return [description]
+ */
+salt_ret_t salt_a1a2(salt_channel_t *p_channel,
+                     uint8_t *p_buffer,
+                     uint32_t *p_size);
+
+/**
  * @brief Sets the signature used for the salt channel.
  *
  * @param p_channel     Pointer to channel handle.
  * @param p_signature   Pointer to signature. Must be crypto_sign_SECRETKEYBYTES bytes long.
  *
- * @return SALT_SUCCESS The signature was successfully set.
- * @return SALT_ERROR Any input pointer was a NULL pointer.
+ * @return SALT_SUCCESS The A1 was sent successfully and the A2 was received successfully.
+ * @return SALT_PENDING The A1/A2 session is still pending.
+ * @return SALT_ERROR   If any error occured.
  */
 salt_ret_t salt_set_signature(salt_channel_t *p_channel,
                               const uint8_t *p_signature);
@@ -395,7 +478,7 @@ salt_ret_t salt_resume(salt_channel_t *p_channel,
  * @param p_channel     Pointer to salt channel handle.
  * @param p_buffer      Pointer where to store received (clear text) data.
  * @param p_recv_size   Pointer where to store size of received message.
- * @param max_size      Maxiumum allowed size to read.
+ * @param max_size      Size of p_buffer.
  *
  * @return SALT_SUCCESS A message was successfully received.
  * @return SALT_PENDING The receive process is still pending.

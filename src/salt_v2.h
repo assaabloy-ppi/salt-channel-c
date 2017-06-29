@@ -162,34 +162,11 @@ struct salt_io_channel_s {
  */
 typedef void (*salt_time_impl)(uint32_t *p_time);
 
-/**
- * @brief Function to receive supported underlying protocols.
- * @details The user may respond to a request of what supported underlying protocols
- *          the host supports. The protocols supported are returned with this function.
- * 
- * Usage: With the assumption that two protocols are supported, Echo and Temp. This
- *        requires 20 bytes.
- * 
- *  salt_ret_t my_protocols(uint8_t *p_buffer, uint32_t buffer_size, uint8_t *n_protocols)
- *  {
- *      if (buffer_size < 20) {
- *          return SALT_ERROR;
- *      }
- *      memcpy(p_buffer, "Echo------", 10);
- *      memcpy(&p_buffer[10], "Temp------", 10);
- *      *n_protocols = 2;
- *      return SALT_SUCCESS;
- *  }
- * 
- * @param p_buffer      Pointer where to put the supported protocols.
- * @param buffer_size   Size of buffer.
- * @param n_protocols   Number of protocols supported.
- * 
- * @return SALT_ERROR   The protocols could not be retrieved.
- * @return SALT_SUCCESS The protocols was sucessfully retrieved.
- * 
- */
-typedef salt_ret_t (*salt_protocols)(uint8_t *p_buffer, uint32_t buffer_size, uint8_t *n_protocols);
+typedef char salt_protocol_t[10];
+typedef struct salt_protocols_s {
+    uint8_t count;
+    salt_protocol_t *p_protocols;
+} salt_protocols_t;
 
 /**
  * @brief Salt channel structure.
@@ -220,7 +197,7 @@ typedef struct salt_channel_s {
     salt_io_impl        read_impl;                      /**< Function pointer to read implementation. */
 
     salt_time_impl      time_impl;                      /**< Function pointer to get time implementation. */
-    salt_protocols      supported_protocols_impl;       /**< Function pointer to get supported protocols. */
+    salt_protocols_t    *p_supported_protocols;         /**< Function pointer to get supported protocols. */
 
     uint8_t     *hdshk_buffer;                          /**< TODO: Consider making a struct for read- and maintainability. */
     uint32_t    hdshk_buffer_size;
@@ -310,7 +287,8 @@ salt_ret_t salt_set_context(
  */
 salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                      uint8_t *p_buffer,
-                     uint32_t *p_size);
+                     uint32_t *p_size,
+                     salt_protocols_t *p_protocols);
 
 /**
  * @brief Sets the signature used for the salt channel.

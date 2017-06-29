@@ -37,7 +37,7 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
             &size) == CFIFO_SUCCESS);
         assert(size == p_wchannel->size_expected);
         p_wchannel->size = p_wchannel->size_expected;
-        SALT_HEXDUMP(p_wchannel->p_data, p_wchannel->size);
+        //SALT_HEXDUMP(p_wchannel->p_data, p_wchannel->size);
         return SALT_SUCCESS;
         i = 0;
     }
@@ -67,22 +67,11 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
         assert(size == p_rchannel->size_expected);
         p_rchannel->size = p_rchannel->size_expected;
 
-        SALT_HEXDUMP(p_rchannel->p_data, p_rchannel->size);
+        //SALT_HEXDUMP(p_rchannel->p_data, p_rchannel->size);
 
         return SALT_SUCCESS;
     }
     return SALT_PENDING;
-}
-
-salt_ret_t my_protocols(uint8_t *p_buffer, uint32_t buffer_size, uint8_t *n_protocols)
-{
-    if (buffer_size < 20) {
-        return SALT_ERROR;
-    }
-    memcpy(p_buffer, "Echo------", 10);
-    memcpy(&p_buffer[10], "Temp------", 10);
-    *n_protocols = 2;
-    return SALT_SUCCESS;
 }
 
 int main(void)
@@ -123,6 +112,19 @@ int main(void)
     host_ret = salt_set_context(&host_channel, &host_context, &host_context); /* Write, read */
     assert(host_ret == SALT_SUCCESS);
 
+    salt_protocol_t supported_protocols[] = {
+        "Echo------",
+        "Temp------",
+        "Sensor----"
+    };
+
+    salt_protocols_t my_protocols = {
+        3,
+        supported_protocols
+    };
+
+    host_channel.p_supported_protocols = &my_protocols;
+
     client_ret = salt_create(&client_channel, SALT_CLIENT, my_write, my_read, NULL);
     client_context.channel = &client_channel;
     client_context.write_queue = client_fifo;
@@ -136,18 +138,19 @@ int main(void)
     assert(client_ret == SALT_SUCCESS);
 
 
-    host_channel.supported_protocols_impl = my_protocols;
+
 
     host_ret = SALT_PENDING;
     client_ret = SALT_PENDING;
 
     size = SALT_HNDSHK_BUFFER_SIZE;
+    salt_protocols_t host_protocols;
 
     /* A1 A2 */
     while (client_ret != SALT_SUCCESS)
     {
         if (client_ret != SALT_SUCCESS) {
-            client_ret = salt_a1a2(&client_channel, client_buffer, &size);
+            client_ret = salt_a1a2(&client_channel, client_buffer, &size, &host_protocols);
         }
 
         assert(client_ret != SALT_ERROR);
@@ -160,6 +163,16 @@ int main(void)
         assert(host_ret != SALT_ERROR);
     }
 
+    assert(my_protocols.count*2 == host_protocols.count);
+
+    for (uint8_t i = 0; i < host_protocols.count; i+= 2) {
+        printf("%*.*s\r\n", 0, 10, host_protocols.p_protocols[i]);
+        printf("%*.*s\r\n", 0, 10, host_protocols.p_protocols[i+1]);
+        assert(memcmp(my_protocols.p_protocols[i/2],
+            host_protocols.p_protocols[i+1], sizeof(salt_protocol_t)) == 0);
+    }
+
+    client_ret = SALT_PENDING;
 
     while ((host_ret | client_ret) != SALT_SUCCESS)
     {

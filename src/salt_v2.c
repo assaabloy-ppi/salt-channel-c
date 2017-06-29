@@ -263,7 +263,6 @@ salt_ret_t salt_set_signature(salt_channel_t *p_channel,
     SALT_VERIFY_NOT_NULL(p_signature);
 
     memcpy(p_channel->my_sk_sec, p_signature, crypto_sign_SECRETKEYBYTES);
-
     p_channel->state = SALT_SIGNATURE_SET;
 
     return SALT_SUCCESS;

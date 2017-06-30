@@ -19,11 +19,17 @@ salt_2.o: ../src/salt_v2.c ../src/salt_v2.h
 hostclient.o: hostclient.c $(DEPS)
 	$(CC) $(C_FLAGS) -c $< -o $@
 
+a1a2handshake.o: a1a2handshake.c $(DEPS)
+	$(CC) $(C_FLAGS) -c $< -o $@
+
 client.o: client.c $(DEPS)
 	$(CC) $(C_FLAGS) -c $< -o $@
 
 host.o: host.c $(DEPS)
 	$(CC) $(C_FLAGS) -c $< -o $@
+
+a1a2handshake_test.out: cfifo.o tweetnacl.o salt_2.o a1a2handshake.o salt_util.o
+	$(CC) -lm $^ -o $@
 
 hostclient_test.out: cfifo.o tweetnacl.o salt_2.o hostclient.o salt_util.o
 	$(CC) -lm $^ -o $@
@@ -34,10 +40,11 @@ client_test.out: client.o tweetnacl.o salt_2.o salt_util.o
 host_test.out: host.o tweetnacl.o salt_2.o salt_util.o
 	$(CC) -lm $^ -o $@
 
-test: clean host_test.out client_test.out hostclient_test.out
+test: host_test.out client_test.out hostclient_test.out a1a2handshake_test.out
 	./host_test.out
 	./client_test.out
 	./hostclient_test.out
+	./a1a2handshake_test.out
 
 crypt_test.o: crypt_test.c
 	$(CC) $(C_FLAGS) -I../src/external/tweetnacl -c crypt_test.c -o crypt_test.o

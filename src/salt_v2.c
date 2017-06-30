@@ -4,9 +4,9 @@
  * Salt channel version 2 implementation.
  *
  * See v2notes.txt for implementation details.
- * 
+ *
  * TODO: Refer to v2notes.txt for tricks when placing messages in hanshake buffer.
- * 
+ *
  */
 
 /*======= Includes ============================================================*/
@@ -17,9 +17,9 @@
 
 /*======= Local Macro Definitions =============================================*/
 #ifdef SALT_DEBUG
-    #include <stdio.h>
-    #include "salt_util.h"
-    #define SALT_VERIFY(x, error_code)                                          \
+#include <stdio.h>
+#include "salt_util.h"
+#define SALT_VERIFY(x, error_code)                                              \
         do {                                                                    \
             if (!(x)) {                                                         \
                 p_channel->err_code = error_code;                               \
@@ -31,7 +31,7 @@
             }                                                                   \
         } while (0)
 #else
-    #define SALT_VERIFY(x, error_code)                                          \
+#define SALT_VERIFY(x, error_code)                                              \
         do {                                                                    \
             if (!(x)) {                                                         \
                 p_channel->err_code = error_code;                               \
@@ -67,6 +67,7 @@
 #define SALT_TIME_SIZE                          (4U)
 #define SALT_TICKET_LENGTH_SIZE                 (1U)
 #define SALT_MAX_TICKET_SIZE                    (127U) /* Not supported yet */
+#define SALT_A1_HEADER                          (8U + 16U)
 
 /* M1 Message defines */
 #define SALT_M1_HEADER_VALUE                    (0x01U)
@@ -114,10 +115,18 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel);
 
 static salt_ret_t salti_handshake_client(salt_channel_t *p_channel);
 
-static salt_ret_t salti_create_m1(salt_channel_t *p_channel,
+static void salti_create_m1(salt_channel_t *p_channel,
+                            uint8_t *p_data,
+                            uint32_t *size,
+                            uint8_t *p_hash);
+
+static salt_ret_t salti_handle_a1_or_m1(salt_channel_t *p_channel,
+                                        uint8_t *p_data,
+                                        uint32_t size);
+
+static salt_ret_t salti_create_a2(salt_channel_t *p_channel,
                                   uint8_t *p_data,
-                                  uint32_t *size,
-                                  uint8_t *p_hash);
+                                  uint32_t *size);
 
 static salt_ret_t salti_handle_m1(salt_channel_t *p_channel,
                                   uint8_t *p_data,
@@ -154,9 +163,9 @@ static salt_ret_t salti_decrypt(salt_channel_t *p_channel,
 
 static void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment);
 
-static void salti_size_to_bytes(uint8_t *dest, uint32_t size); // TODO: Consider renaming to u32_to_bytes
+static void salti_u32_to_bytes(uint8_t *dest, uint32_t size); // TODO: Consider renaming to u32_to_bytes
 
-static uint32_t salti_bytes_to_size(uint8_t *src); // TODO: Consider renaming to bytes_to_u32
+static uint32_t salti_bytes_to_u32(uint8_t *src); // TODO: Consider renaming to bytes_to_u32
 
 static void salti_get_time(salt_channel_t *p_channel, uint32_t *p_time);
 
@@ -172,8 +181,7 @@ salt_ret_t salt_create(
 
     SALT_VERIFY_VALID_CHANNEL(p_channel);
 
-    SALT_VERIFY(
-        mode <= SALT_CLIENT,
+    SALT_VERIFY(mode <= SALT_CLIENT,
         SALT_ERR_NOT_SUPPORTED);
 
     SALT_VERIFY_NOT_NULL(write_impl);
@@ -202,6 +210,63 @@ salt_ret_t salt_set_context(
     return SALT_SUCCESS;
 }
 
+salt_ret_t salt_a1a2(salt_channel_t *p_channel,
+                     uint8_t *p_buffer,
+                     uint32_t size,
+                     salt_protocols_t *p_protocols)
+{
+
+    salt_ret_t ret_code = SALT_PENDING;
+    uint8_t proceed = 1;
+
+    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    SALT_VERIFY_NOT_NULL(p_buffer);
+
+    SALT_VERIFY(p_channel->state >= SALT_CREATED && p_channel->state < SALT_M1_IO,
+                SALT_ERR_INVALID_STATE);
+
+    while (proceed) {
+        proceed = 0;
+        switch (p_channel->state) {
+            case SALT_CREATED:
+            case SALT_SIGNATURE_SET:
+            case SALT_SESSION_INITIATED:
+                p_buffer[SALT_LENGTH_SIZE] = SALT_A1_HEADER;
+                p_buffer[SALT_LENGTH_SIZE + 1] = 0;
+                salti_u32_to_bytes(p_buffer, 2);
+                p_channel->state = SALT_A1_IO;
+                proceed = 1;
+                break;
+            case SALT_A1_IO:
+                ret_code = salti_write(p_channel, p_buffer, 6, SALT_CLEAR);
+                if (SALT_SUCCESS == ret_code) {
+                    proceed = 1;
+                    p_channel->state = SALT_A2_IO;
+                }
+                break;
+            case SALT_A2_IO:
+                ret_code = salti_read(p_channel, p_buffer, &size, SALT_CLEAR);
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_SESSION_INITIATED;
+                    /*
+                     * Each protocol supported should have a size of 10 bytes. The format is
+                     *  { SC2------- , Protocol1- , SC3 , Protocol2- , ... }
+                     *  Hence, the size must be n * 20 since the salt channel version is always
+                     *  followed by another protocol.
+                     */
+                    SALT_VERIFY(size % (sizeof(salt_protocol_t)*2) == 0, SALT_ERR_BAD_PROTOCOL);
+                    p_protocols->count = size / sizeof(salt_protocol_t);
+                    p_protocols->p_protocols = (salt_protocol_t *) p_buffer;
+                }
+                break;
+            default:
+                return SALT_ERROR;
+        } 
+    }
+
+    return ret_code;
+}
+
 salt_ret_t salt_set_signature(salt_channel_t *p_channel,
                               const uint8_t *p_signature)
 {
@@ -210,7 +275,6 @@ salt_ret_t salt_set_signature(salt_channel_t *p_channel,
     SALT_VERIFY_NOT_NULL(p_signature);
 
     memcpy(p_channel->my_sk_sec, p_signature, crypto_sign_SECRETKEYBYTES);
-
     p_channel->state = SALT_SIGNATURE_SET;
 
     return SALT_SUCCESS;
@@ -326,6 +390,7 @@ salt_ret_t salt_read(salt_channel_t *p_channel,
     SALT_VERIFY_VALID_CHANNEL(p_channel);
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
+    SALT_VERIFY(max_size >= SALT_OVERHEAD_SIZE, SALT_ERR_BUFF_TO_SMALL);
 
     SALT_VERIFY(max_size >= SALT_OVERHEAD_SIZE, SALT_ERR_BUFF_TO_SMALL);
 
@@ -387,7 +452,7 @@ static salt_ret_t salti_read(salt_channel_t *p_channel,
             break;
         }
 
-        channel->size_expected = salti_bytes_to_size(p_data);
+        channel->size_expected = salti_bytes_to_u32(p_data);
 
         if (msg_type & SALT_ENCRYPTED) {
             /*
@@ -517,7 +582,7 @@ static salt_ret_t salti_write(salt_channel_t *p_channel,
             channel->size_expected -= (crypto_secretbox_BOXZEROBYTES - 0x02U);
             channel->p_data -= SALT_LENGTH_SIZE;
 
-            salti_size_to_bytes(channel->p_data, channel->size_expected);
+            salti_u32_to_bytes(channel->p_data, channel->size_expected);
             channel->size_expected += SALT_LENGTH_SIZE;
 
         }
@@ -546,112 +611,142 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
 
     uint32_t size = 0;
     salt_ret_t ret_code = SALT_ERROR;
+    uint8_t proceed = 1;
 
-    switch (p_channel->state) {
-    case SALT_SESSION_INITIATED:
-        size = p_channel->hdshk_buffer_size; /* Max size */
-        p_channel->state = SALT_M1_IO;
-    /* Intentional fall-through */
-    case SALT_M1_IO:
-        size = 204; /* Maximum size of M1 */
-        ret_code = salti_read(p_channel,
-                              &p_channel->hdshk_buffer[64],
-                              &size, SALT_CLEAR);
-        if (SALT_SUCCESS != ret_code) {
-            /* Error or pending */
-            break;
-        }
-        p_channel->state = SALT_M1_HANDLE;
-    /* Intentional fall-through */
-    case SALT_M1_HANDLE:
-        ret_code = salti_handle_m1(p_channel,
-                                   &p_channel->hdshk_buffer[64],
-                                   size,
-                                   &p_channel->hdshk_buffer[64]);
-
-        SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
-
-        ret_code = salti_create_m2(p_channel,
-                                   &p_channel->hdshk_buffer[192],
-                                   &size,
-                                   &p_channel->hdshk_buffer[128]);
-
-        SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
-        /*
-         * If the client included an invalid public signature key, the
-         * SALT_ERR_NO_SUCH_SERVER error code will be set in p_channel->err_code.
-         * If this is the case, we will stop imidiately after sending M2 and do not want
-         * to calculate the symmetric ephemeral encryption key.
-         */
-
-        p_channel->state = SALT_M2_INIT;
-    /* Intentional fall-through */
-    case SALT_M2_INIT:
-        ret_code = salti_write(p_channel,
-                               &p_channel->hdshk_buffer[192],
-                               size, SALT_CLEAR);
-        SALT_VERIFY(SALT_ERROR != ret_code, SALT_ERR_IO_WRITE);
-
-        int tmp = crypto_box_beforenm(p_channel->ek_common,
-                            p_channel->peer_ek_pub,
-                            p_channel->my_ek_sec);
-        (void) tmp; /* crypto_box_beforenm always returns 0 */
-        p_channel->state = SALT_M2_IO;
-    /* Intentional fall-through */
-    case SALT_M2_IO:
-        /* Only continue I/O if the previous I/O call did not finish. */
-        if (SALT_SUCCESS != ret_code) {
-            ret_code = salti_write(p_channel,
-                                   p_channel->hdshk_buffer,
-                                   size, SALT_CLEAR);
-            if (SALT_SUCCESS != ret_code) {
-                /* Error or pending */
+    while (proceed) {
+        proceed = 0;
+        switch (p_channel->state) {
+            case SALT_SESSION_INITIATED:
+                p_channel->state = SALT_M1_IO;
+                proceed = 1;
                 break;
-            }
-        }
+            case SALT_M1_IO:
+                size = 204; /* Maximum size of M1 */
+                ret_code = salti_read(p_channel,
+                                      &p_channel->hdshk_buffer[64],
+                                      &size, SALT_CLEAR);
+                if (SALT_SUCCESS == ret_code) {
+                    ret_code = salti_handle_a1_or_m1(p_channel,
+                                                     &p_channel->hdshk_buffer[64],
+                                                     size);
+                    proceed = (SALT_SUCCESS == ret_code);
+                }
+                break;
+            case SALT_A1_HANDLE:
+                /* TODO: Create A2 */
+                ret_code = salti_create_a2(p_channel, p_channel->hdshk_buffer, &size);
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_A2_IO;
+                    proceed = 1;
+                }
+                break;
+            case SALT_A2_IO:
+                ret_code = salti_write(p_channel,
+                                       p_channel->hdshk_buffer,
+                                       size, SALT_CLEAR);
+                if (SALT_SUCCESS == ret_code) {
+                    ret_code = SALT_PENDING;
+                    p_channel->state = SALT_SESSION_INITIATED;
+                }
+                break;
+            case SALT_M1_HANDLE:
+                ret_code = salti_handle_m1(p_channel,
+                                           &p_channel->hdshk_buffer[64],
+                                           size,
+                                           &p_channel->hdshk_buffer[64]);
 
-        p_channel->state = SALT_M3_INIT;
-    /* Intentional fall-through */
-    case SALT_M3_INIT:
-        ret_code = salti_create_m3m4(p_channel,
-                                     &p_channel->hdshk_buffer[192 + 32],
-                                     &size,
-                                     SALT_M3_HEADER_VALUE);
-        SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
-        p_channel->state = SALT_M3_IO;
-    /* Intentional fall-through */
-    case SALT_M3_IO:
-        ret_code = salti_write(p_channel,
-                               &p_channel->hdshk_buffer[192],
-                               size + 32, SALT_ENCRYPTED);
-        if (SALT_SUCCESS != ret_code) {
-            /* Waiting for I/O */
-            break;
-        }
-        p_channel->state = SALT_M4_IO;
-        size = p_channel->hdshk_buffer_size;
-    /* Intentional fall-through */
-    case SALT_M4_IO:
-        size = 120 + SALT_OVERHEAD_SIZE; /* Maximum size of M4 */
-        ret_code = salti_read(p_channel,
-                              &p_channel->hdshk_buffer[192],
-                              &size, SALT_ENCRYPTED);
-        if (ret_code != SALT_SUCCESS) {
-            break;
-        }
-        p_channel->state = SALT_M4_HANDLE;
-    /* Intentional fall-through */
-    case SALT_M4_HANDLE:
-        ret_code = salti_handle_m3m4(p_channel,
-                                     &p_channel->hdshk_buffer[192 + 32],
-                                     size, SALT_M4_HEADER_VALUE);
-        SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
-        memset(p_channel->hdshk_buffer, 0x00, p_channel->hdshk_buffer_size);
-        p_channel->state = SALT_SESSION_ESTABLISHED;
-        ret_code = SALT_SUCCESS;
-        break;
-    default:
-        SALT_ERROR(SALT_ERR_INVALID_STATE);
+                SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
+                p_channel->state = SALT_M2_INIT;
+                proceed = 1;
+                break;
+            case SALT_M2_INIT:
+                ret_code = salti_create_m2(p_channel,
+                                           &p_channel->hdshk_buffer[192],
+                                           &size,
+                                           &p_channel->hdshk_buffer[128]);
+
+                SALT_VERIFY(SALT_ERROR != ret_code, p_channel->err_code);
+
+                ret_code = salti_write(p_channel,
+                                       &p_channel->hdshk_buffer[192],
+                                       size, SALT_CLEAR);
+
+                SALT_VERIFY(SALT_ERROR != ret_code, SALT_ERR_IO_WRITE);
+
+                if (SALT_ERROR != ret_code) {
+                    int tmp = crypto_box_beforenm(p_channel->ek_common,
+                                                  p_channel->peer_ek_pub,
+                                                  p_channel->my_ek_sec);
+
+                    (void) tmp; /* crypto_box_beforenm always returns 0 */
+                    p_channel->state = SALT_M2_IO;
+
+                }
+
+                if (ret_code == SALT_SUCCESS) {
+                    proceed = 1;
+                    p_channel->state = SALT_M3_INIT;
+                }
+
+                /*
+                 * If the client included an invalid public signature key, the
+                 * SALT_ERR_NO_SUCH_SERVER error code will be set in p_channel->err_code.
+                 * If this is the case, we will stop imidiately after sending M2 and do not want
+                 * to calculate the symmetric ephemeral encryption key.
+                 */
+
+                break;
+            case SALT_M2_IO:
+                ret_code = salti_write(p_channel,
+                                       &p_channel->hdshk_buffer[192],
+                                       size, SALT_CLEAR);
+                if (SALT_SUCCESS == ret_code) {
+                        p_channel->state = SALT_M3_INIT;
+                        proceed = 1;
+                }
+                break;
+            case SALT_M3_INIT:
+                ret_code = salti_create_m3m4(p_channel,
+                                             &p_channel->hdshk_buffer[192 + 32],
+                                             &size,
+                                             SALT_M3_HEADER_VALUE);
+
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_M3_IO;
+                    proceed = 1;   
+                }
+                break;
+            case SALT_M3_IO:
+                ret_code = salti_write(p_channel,
+                                       &p_channel->hdshk_buffer[192],
+                                       size + 32, SALT_ENCRYPTED);
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_M4_IO;
+                    proceed = 1;
+                }
+                break;
+            case SALT_M4_IO:
+                size = 120 + SALT_OVERHEAD_SIZE; /* Maximum size of M4 */
+                ret_code = salti_read(p_channel,
+                                      &p_channel->hdshk_buffer[192],
+                                      &size, SALT_ENCRYPTED);
+                if (ret_code == SALT_SUCCESS) {
+                    p_channel->state = SALT_M4_HANDLE;
+                    proceed = 1;
+                }
+                break;
+            case SALT_M4_HANDLE:
+                ret_code = salti_handle_m3m4(p_channel,
+                                             &p_channel->hdshk_buffer[192 + 32],
+                                             size, SALT_M4_HEADER_VALUE);
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_SESSION_ESTABLISHED;
+                }
+                memset(p_channel->hdshk_buffer, 0x00, p_channel->hdshk_buffer_size);
+                break;
+            default:
+                SALT_ERROR(SALT_ERR_INVALID_STATE);
+            }
     }
 
     return ret_code;
@@ -661,140 +756,136 @@ static salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
 {
     uint32_t size = 0;
     salt_ret_t ret_code = SALT_ERROR;
+    uint8_t proceed = 1;
+    while (proceed) {
+        proceed = 0;
+        switch (p_channel->state) {
+            case SALT_SESSION_INITIATED:
+                /*
+                 * Create the M1 message at hdshk_buffer[128] and save the hash at
+                 * p_channel->hdshk_buffer[64] (64 bytes). We save the hash so we later
+                 * can verify that the message M1 was not modified by a MITM. No
+                 * support for virtual server yet, so the size of M1 is always 42
+                 * bytes.
+                 */
+                salti_create_m1(p_channel,
+                                 &p_channel->hdshk_buffer[128],
+                                 &size,
+                                 &p_channel->hdshk_buffer[64]);
 
-    switch (p_channel->state) {
-    case SALT_SESSION_INITIATED:
-        /*
-         * Create the M1 message at hdshk_buffer[128] and save the hash at
-         * p_channel->hdshk_buffer[64] (64 bytes). We save the hash so we later
-         * can verify that the message M1 was not modified by a MITM. No
-         * support for virtual server yet, so the size of M1 is always 42
-         * bytes.
-         */
-        ret_code = salti_create_m1(p_channel,
-                                   &p_channel->hdshk_buffer[128],
-                                   &size,
-                                   &p_channel->hdshk_buffer[64]);
+                p_channel->state = SALT_M1_IO;
+                proceed = 1;
+                break;
+            case SALT_M1_IO:
 
-        SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
+                ret_code = salti_write(p_channel,
+                                       &p_channel->hdshk_buffer[128],
+                                       size, SALT_CLEAR);
 
-        p_channel->state = SALT_M1_IO;
-    /* Intentional fall-through */
-    case SALT_M1_IO:
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_M2_IO;
+                    proceed = 1;
+                }
+                break;
+            case SALT_M2_IO:
+                /*
+                 * Read the M2 message to hdshk_buffer[128]. If the message is OK the
+                 * hash is saved to hdshk_buffer[64]. Now we have the hashes of M1
+                 * and M2 in hdshk_buffer[0:127].
+                 */
+                size = 38U;
 
-        ret_code = salti_write(p_channel,
-                               &p_channel->hdshk_buffer[128],
-                               size, SALT_CLEAR);
+                ret_code = salti_read(p_channel,
+                                      &p_channel->hdshk_buffer[128],
+                                      &size, SALT_CLEAR);
 
-        if (SALT_SUCCESS != ret_code) {
-            break;
-        }
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_M2_HANDLE;
+                    proceed = 1;
+                }
+                break;
+            case SALT_M2_HANDLE:
 
-        p_channel->state = SALT_M2_IO;
-    /* Intentional fall-through */
-    case SALT_M2_IO:
-        /*
-         * Read the M2 message to hdshk_buffer[128]. If the message is OK the
-         * hash is saved to hdshk_buffer[64]. Now we have the hashes of M1
-         * and M2 in hdshk_buffer[0:127].
-         */
-        size = 38U;
+                ret_code = salti_handle_m2(p_channel,
+                                           &p_channel->hdshk_buffer[128],
+                                           size, &p_channel->hdshk_buffer[128]);
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_M3_INIT;
+                    proceed = 1;
+                }
+            case SALT_M3_INIT:
+                SALT_VERIFY(crypto_box_beforenm(p_channel->ek_common,
+                                                p_channel->peer_ek_pub,
+                                                p_channel->my_ek_sec) == 0, SALT_ERR_COMMON_KEY);
+                /*
+                 * While the server calculates / sends the M3 message we can create
+                 * the M4 message. This is good if the I/O channel is slow. Much of
+                 * the time will be waiting for I/O. The M4 message is encrypted and
+                 * the crypto library API requires that the first 32 bytes of the
+                 * clear text message is 0x00. Also 16 bytes HMAC are added for
+                 * authentication of the message. The size of the clear text M4 msg
+                 * is 102 bytes.
+                 *
+                 * Further, the API for signing a msg
+                 * will take a message m[n] and create a signed message sm[n+64].
+                 * Thus, we need a sligther larger buffer for creating the msg:
+                 * 1. M4 = { header[2] , timestamp[4] , pubSigKey[32] }
+                 * 2. Sign the hashes of M1 and M2 and put the signed message at
+                 *    the end of M4:
+                 *    M4[230] = { header[2] , timestamp[4] , pubSigKey[32] , signedMsg[192] }
+                 *    where signedMsg[192] = { sig[64] , M1Hash[64] , M2Hash[64] }.
+                 *    The peer however can will calculate these hashes so we
+                 *    don't send them. I.e.:
+                 *    M4[102] = { header[2] , timestamp[4] , pubSigKey[32] , sig[64] }
+                 *
+                 *
+                 */
+                ret_code = salti_create_m3m4(p_channel,
+                                             &p_channel->hdshk_buffer[384],
+                                             &p_channel->write_channel.size,
+                                             SALT_M4_HEADER_VALUE);
 
-        ret_code = salti_read(p_channel,
-                              &p_channel->hdshk_buffer[128],
-                              &size, SALT_CLEAR);
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_M3_IO;
+                    proceed = 1;
+                }
+                break;
+            case SALT_M3_IO:
 
-        if (SALT_SUCCESS != ret_code) {
-            break;
-        }
+                size = 120 + SALT_OVERHEAD_SIZE; /* Maximum size of M3 */
 
-        p_channel->state = SALT_M2_HANDLE;
-    /* Intentional fall-through */
-    case SALT_M2_HANDLE:
+                ret_code = salti_read(p_channel,
+                                      &p_channel->hdshk_buffer[192],
+                                      &size, SALT_ENCRYPTED);
 
-        ret_code = salti_handle_m2(p_channel,
-                                   &p_channel->hdshk_buffer[128],
-                                   size, &p_channel->hdshk_buffer[128]);
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_M3_HANDLE;
+                    proceed = 1;
+                }
+                break;
+            case SALT_M3_HANDLE:
+                ret_code = salti_handle_m3m4(p_channel,
+                                             &p_channel->hdshk_buffer[192 + 32],
+                                             size, SALT_M3_HEADER_VALUE);
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_M4_IO;
+                    proceed = 1;
+                }
+                break;
+            case SALT_M4_IO:
+                ret_code = salti_write(p_channel,
+                                       &p_channel->hdshk_buffer[384 - 32],
+                                       p_channel->write_channel.size + 32, SALT_ENCRYPTED);
 
-        SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
-        /*
-         * Directly after M2 is received we can calculate the ephemeral
-         * session key (symmetric encryption key used for the session).
-         */
-        SALT_VERIFY(crypto_box_beforenm(p_channel->ek_common,
-                                        p_channel->peer_ek_pub,
-                                        p_channel->my_ek_sec) == 0, SALT_ERR_COMMON_KEY);
-
-        /*
-         * While the server calculates / sends the M3 message we can create
-         * the M4 message. This is good if the I/O channel is slow. Much of
-         * the time will be waiting for I/O. The M4 message is encrypted and
-         * the crypto library API requires that the first 32 bytes of the
-         * clear text message is 0x00. Also 16 bytes HMAC are added for
-         * authentication of the message. The size of the clear text M4 msg
-         * is 102 bytes.
-         *
-         * Further, the API for signing a msg
-         * will take a message m[n] and create a signed message sm[n+64].
-         * Thus, we need a sligther larger buffer for creating the msg:
-         * 1. M4 = { header[2] , timestamp[4] , pubSigKey[32] }
-         * 2. Sign the hashes of M1 and M2 and put the signed message at
-         *    the end of M4:
-         *    M4[230] = { header[2] , timestamp[4] , pubSigKey[32] , signedMsg[192] }
-         *    where signedMsg[192] = { sig[64] , M1Hash[64] , M2Hash[64] }.
-         *    The peer however can will calculate these hashes so we
-         *    don't send them. I.e.:
-         *    M4[102] = { header[2] , timestamp[4] , pubSigKey[32] , sig[64] }
-         *
-         *
-         */
-        ret_code = salti_create_m3m4(p_channel,
-                                     &p_channel->hdshk_buffer[384],
-                                     &p_channel->write_channel.size,
-                                     SALT_M4_HEADER_VALUE);
-
-        SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
-
-        p_channel->state = SALT_M3_IO;
-    /* Intentional fall-through */
-    case SALT_M3_IO:
-
-        size = 120 + SALT_OVERHEAD_SIZE; /* Maximum size of M3 */
-
-        ret_code = salti_read(p_channel,
-                              &p_channel->hdshk_buffer[192],
-                              &size, SALT_ENCRYPTED);
-
-        if (SALT_SUCCESS != ret_code) {
-            break;
-        }
-        p_channel->state = SALT_M3_HANDLE;
-    /* Intentional fall-through */
-    case SALT_M3_HANDLE:
-        ret_code = salti_handle_m3m4(p_channel,
-                                     &p_channel->hdshk_buffer[192 + 32],
-                                     size, SALT_M3_HEADER_VALUE);
-        SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
-
-        p_channel->state = SALT_M4_IO;
-    /* Intentional fall-through */
-    case SALT_M4_IO:
-        ret_code = salti_write(p_channel,
-                               &p_channel->hdshk_buffer[384 - 32],
-                               p_channel->write_channel.size + 32, SALT_ENCRYPTED);
-
-        if (SALT_SUCCESS != ret_code) {
-            break;
-        }
-
-        memset(p_channel->hdshk_buffer, 0x00, p_channel->hdshk_buffer_size);
-
-        p_channel->state = SALT_SESSION_ESTABLISHED;
-        ret_code = SALT_SUCCESS;
-        break;
-    default:
-        SALT_ERROR(SALT_ERR_INVALID_STATE);
-        break;
+                if (SALT_SUCCESS == ret_code) {
+                    p_channel->state = SALT_SESSION_ESTABLISHED;
+                }
+                memset(p_channel->hdshk_buffer, 0x00, p_channel->hdshk_buffer_size);
+                break;
+            default:
+                SALT_ERROR(SALT_ERR_INVALID_STATE);
+                break;
+            }
     }
 
     return ret_code;
@@ -806,7 +897,7 @@ static salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
  * Resume feature and virtual host mode is not supported at this time.
  *
  */
-static salt_ret_t salti_create_m1(salt_channel_t *p_channel,
+static void salti_create_m1(salt_channel_t *p_channel,
                                   uint8_t *p_data,
                                   uint32_t *size,
                                   uint8_t *p_hash)
@@ -830,12 +921,43 @@ static salt_ret_t salti_create_m1(salt_channel_t *p_channel,
     (*size) = 42U;
 
     crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
-    salti_size_to_bytes(&p_data[0], (*size));
+    salti_u32_to_bytes(&p_data[0], (*size));
+
+    (*size) += SALT_LENGTH_SIZE;
+
+}
+
+static salt_ret_t salti_handle_a1_or_m1(salt_channel_t *p_channel,
+                                        uint8_t *p_data,
+                                        uint32_t size)
+{
+    SALT_VERIFY(size >= 2U, SALT_ERR_BAD_PROTOCOL);
+    if (p_data[0] == SALT_A1_HEADER && p_data[1] == 0) {
+        p_channel->state = SALT_A1_HANDLE;
+    } else {
+        p_channel->state = SALT_M1_HANDLE;
+    }
+    return SALT_SUCCESS;
+}
+
+static salt_ret_t salti_create_a2(salt_channel_t *p_channel,
+                                  uint8_t *p_data,
+                                  uint32_t *size)
+{
+    uint8_t i;
+    salt_protocols_t *protocols = p_channel->p_protocols;
+    *size = 0;
+    for (i = 0; i < protocols->count; i++) {
+        memcpy(&p_data[SALT_LENGTH_SIZE + i*20], "SC2-------", 10);
+        memcpy(&p_data[SALT_LENGTH_SIZE + i*20 + 10], protocols->p_protocols[i], 10);
+        *size += 20;
+    }
+
+    salti_u32_to_bytes(p_data, *size);
 
     (*size) += SALT_LENGTH_SIZE;
 
     return SALT_SUCCESS;
-
 }
 
 static salt_ret_t salti_handle_m1(salt_channel_t *p_channel,
@@ -934,7 +1056,7 @@ static salt_ret_t salti_create_m2(salt_channel_t *p_channel,
     p_channel->err_code = SALT_ERR_NONE;
     crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
 
-    salti_size_to_bytes(&p_data[0], (*size));
+    salti_u32_to_bytes(&p_data[0], (*size));
     (*size) += SALT_LENGTH_SIZE;
 
     return SALT_SUCCESS;
@@ -1078,12 +1200,12 @@ static void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment)
 
 }
 
-static void salti_size_to_bytes(uint8_t *dest, uint32_t size)
+static void salti_u32_to_bytes(uint8_t *dest, uint32_t size)
 {
     memcpy(dest, &size, SALT_LENGTH_SIZE);
 }
 
-static uint32_t salti_bytes_to_size(uint8_t *src)
+static uint32_t salti_bytes_to_u32(uint8_t *src)
 {
     return *((uint32_t*) src);
 }

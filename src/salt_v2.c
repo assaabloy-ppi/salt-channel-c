@@ -946,12 +946,31 @@ static salt_ret_t salti_create_a2(salt_channel_t *p_channel,
 {
     uint8_t i;
     salt_protocols_t *protocols = p_channel->p_protocols;
-    *size = 0;
-    for (i = 0; i < protocols->count; i++) {
-        memcpy(&p_data[SALT_LENGTH_SIZE + i*20], "SC2-------", 10);
-        memcpy(&p_data[SALT_LENGTH_SIZE + i*20 + 10], protocols->p_protocols[i], 10);
-        *size += 20;
+    uint8_t n_protocols = protocols->count;
+
+    if (((SALT_HNDSHK_BUFFER_SIZE-SALT_LENGTH_SIZE) / (2*sizeof(salt_protocol_t))) < n_protocols) {
+        n_protocols = (SALT_HNDSHK_BUFFER_SIZE / (2*sizeof(salt_protocol_t)));
     }
+
+    *size = 0;
+
+    if (protocols != NULL) {
+        for (i = 0; i < n_protocols; i++) {
+            memcpy(&p_data[SALT_LENGTH_SIZE + i*2*sizeof(salt_protocol_t)],
+                "SC2-------",
+                sizeof(salt_protocol_t));
+            memcpy(&p_data[SALT_LENGTH_SIZE + i*2*sizeof(salt_protocol_t) + sizeof(salt_protocol_t)],
+                protocols->p_protocols[i],
+                sizeof(salt_protocol_t));
+            *size += sizeof(salt_protocol_t)*2;
+        }
+    } else {
+        memcpy(&p_data[SALT_LENGTH_SIZE], "SC2-------", sizeof(salt_protocol_t));
+        memcpy(&p_data[SALT_LENGTH_SIZE + sizeof(salt_protocol_t)],
+            "----------", sizeof(salt_protocol_t));
+        *size += sizeof(salt_protocol_t)*2;
+    }
+
 
     salti_u32_to_bytes(p_data, *size);
 

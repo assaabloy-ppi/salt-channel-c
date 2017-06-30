@@ -19,7 +19,7 @@
 #ifdef SALT_DEBUG
 #include <stdio.h>
 #include "salt_util.h"
-#define SALT_VERIFY(x, error_code)                                          \
+#define SALT_VERIFY(x, error_code)                                              \
         do {                                                                    \
             if (!(x)) {                                                         \
                 p_channel->err_code = error_code;                               \
@@ -31,7 +31,7 @@
             }                                                                   \
         } while (0)
 #else
-#define SALT_VERIFY(x, error_code)                                          \
+#define SALT_VERIFY(x, error_code)                                              \
         do {                                                                    \
             if (!(x)) {                                                         \
                 p_channel->err_code = error_code;                               \
@@ -163,9 +163,9 @@ static salt_ret_t salti_decrypt(salt_channel_t *p_channel,
 
 static void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment);
 
-static void salti_size_to_bytes(uint8_t *dest, uint32_t size); // TODO: Consider renaming to u32_to_bytes
+static void salti_u32_to_bytes(uint8_t *dest, uint32_t size); // TODO: Consider renaming to u32_to_bytes
 
-static uint32_t salti_bytes_to_size(uint8_t *src); // TODO: Consider renaming to bytes_to_u32
+static uint32_t salti_bytes_to_u32(uint8_t *src); // TODO: Consider renaming to bytes_to_u32
 
 static void salti_get_time(salt_channel_t *p_channel, uint32_t *p_time);
 
@@ -212,7 +212,7 @@ salt_ret_t salt_set_context(
 
 salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                      uint8_t *p_buffer,
-                     uint32_t *p_size,
+                     uint32_t size,
                      salt_protocols_t *p_protocols)
 {
 
@@ -221,7 +221,6 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
 
     SALT_VERIFY_VALID_CHANNEL(p_channel);
     SALT_VERIFY_NOT_NULL(p_buffer);
-    SALT_VERIFY_NOT_NULL(p_size);
 
     SALT_VERIFY(p_channel->state >= SALT_CREATED && p_channel->state < SALT_M1_IO,
                 SALT_ERR_INVALID_STATE);
@@ -234,7 +233,7 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
             case SALT_SESSION_INITIATED:
                 p_buffer[SALT_LENGTH_SIZE] = SALT_A1_HEADER;
                 p_buffer[SALT_LENGTH_SIZE + 1] = 0;
-                salti_size_to_bytes(p_buffer, 2);
+                salti_u32_to_bytes(p_buffer, 2);
                 p_channel->state = SALT_A1_IO;
                 proceed = 1;
                 break;
@@ -246,12 +245,17 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                 }
                 break;
             case SALT_A2_IO:
-                ret_code = salti_read(p_channel, p_buffer, p_size, SALT_CLEAR);
+                ret_code = salti_read(p_channel, p_buffer, &size, SALT_CLEAR);
                 if (SALT_SUCCESS == ret_code) {
                     p_channel->state = SALT_SESSION_INITIATED;
-                    SALT_VERIFY((*p_size) % sizeof(salt_protocol_t) == 0, SALT_ERR_BAD_PROTOCOL);
-                    p_protocols->count = (*p_size) / sizeof(salt_protocol_t);
-                    printf("p_protocols->count: %d\r\n", p_protocols->count);
+                    /*
+                     * Each protocol supported should have a size of 10 bytes. The format is
+                     *  { SC2------- , Protocol1- , SC3 , Protocol2- , ... }
+                     *  Hence, the size must be n * 20 since the salt channel version is always
+                     *  followed by another protocol.
+                     */
+                    SALT_VERIFY(size % (sizeof(salt_protocol_t)*2) == 0, SALT_ERR_BAD_PROTOCOL);
+                    p_protocols->count = size / sizeof(salt_protocol_t);
                     p_protocols->p_protocols = (salt_protocol_t *) p_buffer;
                 }
                 break;
@@ -448,7 +452,7 @@ static salt_ret_t salti_read(salt_channel_t *p_channel,
             break;
         }
 
-        channel->size_expected = salti_bytes_to_size(p_data);
+        channel->size_expected = salti_bytes_to_u32(p_data);
 
         if (msg_type & SALT_ENCRYPTED) {
             /*
@@ -578,7 +582,7 @@ static salt_ret_t salti_write(salt_channel_t *p_channel,
             channel->size_expected -= (crypto_secretbox_BOXZEROBYTES - 0x02U);
             channel->p_data -= SALT_LENGTH_SIZE;
 
-            salti_size_to_bytes(channel->p_data, channel->size_expected);
+            salti_u32_to_bytes(channel->p_data, channel->size_expected);
             channel->size_expected += SALT_LENGTH_SIZE;
 
         }
@@ -917,7 +921,7 @@ static void salti_create_m1(salt_channel_t *p_channel,
     (*size) = 42U;
 
     crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
-    salti_size_to_bytes(&p_data[0], (*size));
+    salti_u32_to_bytes(&p_data[0], (*size));
 
     (*size) += SALT_LENGTH_SIZE;
 
@@ -928,7 +932,6 @@ static salt_ret_t salti_handle_a1_or_m1(salt_channel_t *p_channel,
                                         uint32_t size)
 {
     SALT_VERIFY(size >= 2U, SALT_ERR_BAD_PROTOCOL);
-    SALT_HEXDUMP(p_data, size);
     if (p_data[0] == SALT_A1_HEADER && p_data[1] == 0) {
         p_channel->state = SALT_A1_HANDLE;
     } else {
@@ -942,7 +945,7 @@ static salt_ret_t salti_create_a2(salt_channel_t *p_channel,
                                   uint32_t *size)
 {
     uint8_t i;
-    salt_protocols_t *protocols = p_channel->p_supported_protocols;
+    salt_protocols_t *protocols = p_channel->p_protocols;
     *size = 0;
     for (i = 0; i < protocols->count; i++) {
         memcpy(&p_data[SALT_LENGTH_SIZE + i*20], "SC2-------", 10);
@@ -950,7 +953,7 @@ static salt_ret_t salti_create_a2(salt_channel_t *p_channel,
         *size += 20;
     }
 
-    salti_size_to_bytes(p_data, *size);
+    salti_u32_to_bytes(p_data, *size);
 
     (*size) += SALT_LENGTH_SIZE;
 
@@ -1053,7 +1056,7 @@ static salt_ret_t salti_create_m2(salt_channel_t *p_channel,
     p_channel->err_code = SALT_ERR_NONE;
     crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
 
-    salti_size_to_bytes(&p_data[0], (*size));
+    salti_u32_to_bytes(&p_data[0], (*size));
     (*size) += SALT_LENGTH_SIZE;
 
     return SALT_SUCCESS;
@@ -1197,12 +1200,12 @@ static void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment)
 
 }
 
-static void salti_size_to_bytes(uint8_t *dest, uint32_t size)
+static void salti_u32_to_bytes(uint8_t *dest, uint32_t size)
 {
     memcpy(dest, &size, SALT_LENGTH_SIZE);
 }
 
-static uint32_t salti_bytes_to_size(uint8_t *src)
+static uint32_t salti_bytes_to_u32(uint8_t *src)
 {
     return *((uint32_t*) src);
 }

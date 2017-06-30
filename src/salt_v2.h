@@ -162,7 +162,35 @@ struct salt_io_channel_s {
  */
 typedef void (*salt_time_impl)(uint32_t *p_time);
 
+/**
+ * Supported protocol of salt-channel. The user support what protocols is used by the
+ * salt-channel. Usage (After creation of salt-channel):
+ * 
+ *  salt_protocol_t supported_protocols[] = {
+ *      "Echo------",
+ *      "Temp------",
+ *      "Sensor----"
+ *  };
+ *
+ *  salt_protocols_t my_protocols = {
+ *       3,
+ *      supported_protocols
+ *  };
+ *  
+ *  channel.p_protocols = &my_protocols;
+ *  
+ *  When the client sends an A1 request the following will be the response:
+ *  Response = {
+ *      "SC2-------",
+ *      "Echo------",
+ *      "SC2-------",
+ *      "Temp------",
+ *      "Sensor----"
+ *  }
+ * 
+ */
 typedef char salt_protocol_t[10];
+
 typedef struct salt_protocols_s {
     uint8_t count;
     salt_protocol_t *p_protocols;
@@ -197,7 +225,7 @@ typedef struct salt_channel_s {
     salt_io_impl        read_impl;                      /**< Function pointer to read implementation. */
 
     salt_time_impl      time_impl;                      /**< Function pointer to get time implementation. */
-    salt_protocols_t    *p_supported_protocols;         /**< Function pointer to get supported protocols. */
+    salt_protocols_t    *p_protocols;         /**< Function pointer to get supported protocols. */
 
     uint8_t     *hdshk_buffer;                          /**< TODO: Consider making a struct for read- and maintainability. */
     uint32_t    hdshk_buffer_size;
@@ -248,31 +276,19 @@ salt_ret_t salt_set_context(
  *          after the host has responded to the A1 request.
  *          
  *          The salt channel must have been created before using this command and may
- *          only be used after a session have been initiated. When A2 have been received
- *          the p_buffer will have data with the following format (if number of supported
- *          protocols is 2):
- *          protocols_size == 2
- *          p_buffer[] = { P1[10], P2[10], P3[10], P4[10] }
- *          
- *          Where P1 and P2 could be (If this version of salt channel is supported), and P2
- *          is supporting e.g. a simple echo protocol called Echo:
- *              P1[10] = { ascii: SC2------- } = { 0x5343322d2d2d2d2d2d2d }
- *              P2[10] = { ascii: Echo------ } = { 0x4563686f2d2d2d2d2d2d }
- *          And P3, P4 could be (If the host also supports a future version of salt channel)
- *          and a protocol that the host does not want to reveal.
- *              P3[10] = { ascii: SC3------- } = { 0x5343332d2d2d2d2d2d2d }
- *              P4[10] = { ascii: ---------- } = { 0x2d2d2d2d2d2d2d2d2d2d }    
+ *          only be used after a session have been initiated.   
  *          
  *          
  * Usage:
  *      uint8_t protocols_supported[400];
  *      uint32_t protocols_size = sizeof(protocols_supported);
- *      salt_ret_t ret_code = salt_a1a2(&channel, protocols_supported, &protocols_size);
+ *      salt_protocols_t protocols;
+ *      salt_ret_t ret_code = salt_a1a2(&channel, protocols_supported, protocols_size, &protocols);
  *      if (ret_code == SALT_SUCCESS) {
  *          printf("Supported protocol:\r\n");
- *          for (uint8_t *i = protocols_supported; i < protocols_supported + protocols_size; i += 20) {
- *              printf("Supports salt channel: %*.*s\r\n", 0, 10, (char*) &protocols_supported[i]);
- *              printf("With underlying protocol: %*.*s\r\n", 0, 10, (char*) &protocols_supported[i+10]);
+ *          for (uint8_t i = 0; i < host_protocols.count; i+= 2) {
+ *              printf("Salt channel version: %*.*s\r\n", 0, 10, protocols.p_protocols[i]);
+ *              printf("With protocol: %*.*s\r\n", 0, 10, protocols.p_protocols[i+1]);
  *          }
  *      } else {
  *          // Pending or error
@@ -287,7 +303,7 @@ salt_ret_t salt_set_context(
  */
 salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                      uint8_t *p_buffer,
-                     uint32_t *p_size,
+                     uint32_t size,
                      salt_protocols_t *p_protocols);
 
 /**

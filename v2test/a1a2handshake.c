@@ -123,7 +123,7 @@ int main(void)
         supported_protocols
     };
 
-    host_channel.p_supported_protocols = &my_protocols;
+    host_channel.p_protocols = &my_protocols;
 
     client_ret = salt_create(&client_channel, SALT_CLIENT, my_write, my_read, NULL);
     client_context.channel = &client_channel;
@@ -150,7 +150,7 @@ int main(void)
     while (client_ret != SALT_SUCCESS)
     {
         if (client_ret != SALT_SUCCESS) {
-            client_ret = salt_a1a2(&client_channel, client_buffer, &size, &host_protocols);
+            client_ret = salt_a1a2(&client_channel, client_buffer, size, &host_protocols);
         }
 
         assert(client_ret != SALT_ERROR);
@@ -166,8 +166,8 @@ int main(void)
     assert(my_protocols.count*2 == host_protocols.count);
 
     for (uint8_t i = 0; i < host_protocols.count; i+= 2) {
-        printf("%*.*s\r\n", 0, 10, host_protocols.p_protocols[i]);
-        printf("%*.*s\r\n", 0, 10, host_protocols.p_protocols[i+1]);
+        //printf("%*.*s\r\n", 0, 10, host_protocols.p_protocols[i]);
+        //printf("%*.*s\r\n", 0, 10, host_protocols.p_protocols[i+1]);
         assert(memcmp(my_protocols.p_protocols[i/2],
             host_protocols.p_protocols[i+1], sizeof(salt_protocol_t)) == 0);
     }

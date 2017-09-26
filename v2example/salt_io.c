@@ -2,8 +2,7 @@
 
 #include <unistd.h>
 #include <stdio.h>
-#include "util.h"
-
+#include "salt_util.h"
 
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
@@ -17,6 +16,8 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
         }
         return SALT_ERROR;
     }
+
+    SALT_HEXDUMP(p_wchannel->p_data, p_wchannel->size_expected);
 
     p_wchannel->size = p_wchannel->size_expected;
 
@@ -32,6 +33,8 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
         p_rchannel->err_code = SALT_ERR_CONNECTION_CLOSED;
         return SALT_ERROR;
     }
+
+    SALT_HEXDUMP(p_rchannel->p_data, p_rchannel->size_expected);
 
     p_rchannel->size = p_rchannel->size_expected;
 

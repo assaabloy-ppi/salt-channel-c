@@ -22,7 +22,7 @@
 /*======= Public macro definitions ==========================================*/
 
 #define SALT_OVERHEAD_SIZE          (38U)       /**< Encryption buffer overhead size. */
-#define SALT_HNDSHK_BUFFER_SIZE     (486U)      /**< Buffer used for handshake. */
+#define SALT_HNDSHK_BUFFER_SIZE     (502)      /**< Buffer used for handshake. */
 
 /*======= Type Definitions and declarations ===================================*/
 
@@ -207,9 +207,6 @@ typedef struct salt_channel_s {
     salt_err_t      err_code;                           /**< Latest error code. */
 
     /* Encryption and signature stuff */
-    uint8_t     my_ek_sec[crypto_box_SECRETKEYBYTES];   /**< Ephemeral secret encryption key. */
-    uint8_t     my_ek_pub[crypto_box_PUBLICKEYBYTES];   /**< Ephemeral public encrypion key. */
-    uint8_t     peer_ek_pub[crypto_box_PUBLICKEYBYTES]; /**< Peer public encryption key. */
     uint8_t     ek_common[crypto_box_BEFORENMBYTES];    /**< Symmetric session encryption key. */
     uint8_t     peer_sk_pub[crypto_sign_PUBLICKEYBYTES];/**< Peer public signature key. */
     uint8_t     my_sk_sec[crypto_sign_SECRETKEYBYTES];  /**< My secret signature key. */

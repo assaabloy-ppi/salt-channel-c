@@ -37,7 +37,6 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
             &size) == CFIFO_SUCCESS);
         assert(size == p_wchannel->size_expected);
         p_wchannel->size = p_wchannel->size_expected;
-        //SALT_HEXDUMP(p_wchannel->p_data, p_wchannel->size);
         return SALT_SUCCESS;
         i = 0;
     }
@@ -77,7 +76,7 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 int main(void)
 {
 
-    printf("=== Salt v2 host+client test begin ===\r\n");
+    printf("=== Salt v2 a1a2, host+client test begin ===\r\n");
 
     uint32_t size;
     salt_channel_t  host_channel;
@@ -91,6 +90,7 @@ int main(void)
 
     uint8_t host_buffer[SALT_HNDSHK_BUFFER_SIZE + 1U];
     uint8_t client_buffer[SALT_HNDSHK_BUFFER_SIZE + 1U];
+    uint8_t client_a1a2_buffer[200];
 
     memset(host_buffer, 0xCC, sizeof(host_buffer));
     memset(client_buffer, 0xEE, sizeof(client_buffer));
@@ -150,7 +150,7 @@ int main(void)
     while (client_ret != SALT_SUCCESS)
     {
         if (client_ret != SALT_SUCCESS) {
-            client_ret = salt_a1a2(&client_channel, client_buffer, size, &host_protocols);
+            client_ret = salt_a1a2(&client_channel, client_a1a2_buffer, sizeof(client_a1a2_buffer), &host_protocols);
         }
 
         assert(client_ret != SALT_ERROR);
@@ -166,8 +166,6 @@ int main(void)
     assert(my_protocols.count*2 == host_protocols.count);
 
     for (uint8_t i = 0; i < host_protocols.count; i+= 2) {
-        //printf("%*.*s\r\n", 0, 10, host_protocols.p_protocols[i]);
-        //printf("%*.*s\r\n", 0, 10, host_protocols.p_protocols[i+1]);
         assert(memcmp(my_protocols.p_protocols[i/2],
             host_protocols.p_protocols[i+1], sizeof(salt_protocol_t)) == 0);
     }

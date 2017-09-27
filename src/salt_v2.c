@@ -108,8 +108,10 @@
 
 /*======= Local variable declarations =========================================*/
 
-static uint8_t sig1prefix[8] = { 0x53, 0x41, 0x4c, 0x54, 0x53, 0x49, 0x47, 0x31 };
-static uint8_t sig2prefix[8] = { 0x53, 0x41, 0x4c, 0x54, 0x53, 0x49, 0x47, 0x32 };
+/* Signature 1 prefix, ASCII "SC-SIG01" */
+static uint8_t sig1prefix[8] = { 0x53, 0x43, 0x2d, 0x53, 0x49, 0x47, 0x30, 0x31 };
+/* Signature 2 prefix, ASCII "SC-SIG02" */
+static uint8_t sig2prefix[8] = { 0x53, 0x43, 0x2d, 0x53, 0x49, 0x47, 0x30, 0x32 };
 
 /*======= Local function prototypes ===========================================*/
 static salt_ret_t salti_read(salt_channel_t *p_channel,
@@ -647,8 +649,7 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                 }
                 break;
             case SALT_A1_HANDLE:
-                /* TODO: Create A2 */
-                ret_code = salti_create_a2(p_channel, p_channel->hdshk_buffer, &size);
+                ret_code = salti_create_a2(p_channel, &p_channel->hdshk_buffer[64], &size);
                 if (SALT_SUCCESS == ret_code) {
                     p_channel->state = SALT_A2_IO;
                     proceed = 1;
@@ -656,7 +657,7 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                 break;
             case SALT_A2_IO:
                 ret_code = salti_write(p_channel,
-                                       p_channel->hdshk_buffer,
+                                       &p_channel->hdshk_buffer[64],
                                        size, SALT_CLEAR);
                 if (SALT_SUCCESS == ret_code) {
                     ret_code = SALT_PENDING;

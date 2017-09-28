@@ -222,7 +222,7 @@ typedef struct salt_channel_s {
     salt_io_impl        read_impl;                      /**< Function pointer to read implementation. */
 
     salt_time_impl      time_impl;                      /**< Function pointer to get time implementation. */
-    salt_protocols_t    *p_protocols;         /**< Function pointer to get supported protocols. */
+    salt_protocols_t    *p_protocols;                   /**< Function pointer to get supported protocols. */
 
     uint8_t     *hdshk_buffer;                          /**< TODO: Consider making a struct for read- and maintainability. */
     uint32_t    hdshk_buffer_size;

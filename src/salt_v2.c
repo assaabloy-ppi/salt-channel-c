@@ -207,6 +207,7 @@ salt_ret_t salt_create(
     p_channel->state = SALT_CREATED;
     p_channel->err_code = SALT_ERR_NONE;
     p_channel->my_sk_pub = &p_channel->my_sk_sec[32];
+    p_channel->p_protocols = NULL;
 
     return SALT_SUCCESS;
 }
@@ -956,15 +957,17 @@ static salt_ret_t salti_create_a2(salt_channel_t *p_channel,
 {
     uint8_t i;
     salt_protocols_t *protocols = p_channel->p_protocols;
-    uint8_t n_protocols = protocols->count;
-
-    if (((SALT_HNDSHK_BUFFER_SIZE-SALT_LENGTH_SIZE) / (2*sizeof(salt_protocol_t))) < n_protocols) {
-        n_protocols = (SALT_HNDSHK_BUFFER_SIZE / (2*sizeof(salt_protocol_t)));
-    }
 
     *size = 0;
 
     if (protocols != NULL) {
+
+        uint8_t n_protocols = protocols->count;
+
+        if (((SALT_HNDSHK_BUFFER_SIZE-SALT_LENGTH_SIZE) / (2*sizeof(salt_protocol_t))) < n_protocols) {
+            n_protocols = (SALT_HNDSHK_BUFFER_SIZE / (2*sizeof(salt_protocol_t)));
+        }
+
         for (i = 0; i < n_protocols; i++) {
             memcpy(&p_data[SALT_LENGTH_SIZE + i*2*sizeof(salt_protocol_t)],
                 "SC2-------",

@@ -228,6 +228,20 @@ typedef struct salt_channel_s {
     uint32_t    hdshk_buffer_size;
 } salt_channel_t;
 
+/**
+ * @brief Structure used for easier creating/reading messages.
+ * Specially used when writing/reading multi app packets.
+ * 
+ */
+typedef struct salt_msg_s {
+    uint8_t     *p_buffer;      /**< Message buffer. */
+    uint32_t    buffer_size;    /**< Message buffer size. */
+    uint32_t    buffer_used;
+    uint16_t    messages_count;  /**< Number of messages left to read. */
+    uint16_t    message_size;   /**< Current message size. */
+    uint8_t     *p_message;     /**< Pointer to current message. */
+} salt_msg_t;
+
 /*======= Public function declarations ========================================*/
 
 /**
@@ -463,7 +477,7 @@ salt_ret_t salt_resume(salt_channel_t *p_channel,
  *          printf("%*.*s\r\n", 0, clear_text_size, &buffer[SALT_OVERHEAD_SIZE]);
  *      }
  *      else {
- *          prtinf("Salt read error: 0x%x\r\n", channel.err_code);
+ *          // Pending or error, call salt_read again if SALT_PENDING.
  *      }
  *
  * @param p_channel     Pointer to salt channel handle.
@@ -480,6 +494,57 @@ salt_ret_t salt_read(salt_channel_t *p_channel,
                      uint8_t *p_buffer,
                      uint32_t *p_recv_size,
                      uint32_t max_size);
+
+/**
+ * @brief Reads one or more encrypted messages.
+ * 
+ * Used for easier reading of on or multiple messages.
+ * 
+ * Usage: See example at @ref/salt_read_next
+ * 
+ * @param p_channel     Pointer to salt channel handle.
+ * @param p_buffer      Pointer where to store received (clear text) data.
+ * @param buffer_size   Size of p_buffer.
+ * @param p_msg         Pointer to message structure to use when reading the message.
+ * @return SALT_SUCCESS A message was successfully received.
+ * @return SALT_PENDING The receive process is still pending.
+ * @return SALT_ERROR   If any error occured during the read.
+ */
+salt_ret_t salt_read_begin(salt_channel_t *p_channel,
+                           uint8_t *p_buffer,
+                           uint32_t buffer_size,
+                           salt_msg_t *p_msg);
+
+/**
+ * @brief Used to read messages recevied.
+ * If multiple messages was recevied this function may be used to parse to the
+ * next message.
+ * 
+ * Example code:
+ * 
+ *      uint8_t buffer[256];
+ *      salt_msg_t msg;
+ *      salt_ret_t ret = salt_read_begin(&channel, buffer, sizeof(buffer), &msg);
+ *      if (ret == SALT_SUCCESS) {
+ *      
+ *          printf("Recevied %d messages:\r\n", msg.messages_left);
+ *      
+ *          do {
+ *              printf("%*.*s\r\n", 0, msg.message_size, (char*) msg.p_message);
+ *          } while (salt_read_next(&msg) == SALT_SUCCESS);
+ *      
+ *      }
+ *      else {
+ *          // Pending or error, call salt_read_begin again if SALT_PENDING.
+ *      }
+ * 
+ * @param p_channel Pointer to salt channel handle.
+ * @param p_msg     Pointer to message structure.
+ * 
+ * @return SALT_SUCCESS The next message could be parsed and ready to be read.
+ * @return SALT_ERROR   No more messages available.
+ */
+salt_ret_t salt_read_next(salt_msg_t *p_msg);
 
 /**
  * @brief Write an encrypten message.
@@ -522,5 +587,15 @@ salt_ret_t salt_read(salt_channel_t *p_channel,
 salt_ret_t salt_write(salt_channel_t *p_channel,
                       uint8_t *p_buffer,
                       uint32_t size);
+
+
+salt_ret_t salt_write_begin(uint8_t *p_buffer,
+                            uint32_t size,
+                            salt_msg_t *p_msg);
+
+salt_ret_t salt_write_next(salt_msg_t *p_msg, uint8_t *p_buffer, uint16_t size);
+
+salt_ret_t salt_write_execute(salt_channel_t *p_channel, salt_msg_t *p_msg);
+
 
 #endif /* _SALT_V2_H_ */

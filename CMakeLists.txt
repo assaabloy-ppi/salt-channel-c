@@ -20,7 +20,7 @@ else(USE_SODIUM)
 	set(EXTRA_LIBS ${EXTRA_LIBS} tweetnacl)
 endif(USE_SODIUM)
 
-set(CMAKE_C_FLAGS_DEBUG "-Wno-deprecated-register -O0 -g -ggdb -DSALT_DEBUG=1 -fprofile-arcs -ftest-coverage ${CMAKE_CXX_FLAGS_DEBUG}")
+set(CMAKE_C_FLAGS_DEBUG "-Wno-deprecated-register -O0 -g -ggdb -DSALT_DEBUG=1 -Wall -Werror -Wpedantic -fprofile-arcs -ftest-coverage ${CMAKE_CXX_FLAGS_DEBUG}")
 
 add_subdirectory(src)
 add_subdirectory(examples)

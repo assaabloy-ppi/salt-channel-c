@@ -55,11 +55,11 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
             p_rchannel->size = p_rchannel->size_expected;
             break;
         case 2:
-            memcpy(p_rchannel->p_data, m4, 4);
+            memcpy(p_rchannel->p_data, salt_test_data.m4, 4);
             p_rchannel->size = 4;
             break;
         case 3:
-            memcpy(p_rchannel->p_data, &m4[4], p_rchannel->size_expected);
+            memcpy(p_rchannel->p_data, &salt_test_data.m4[4], p_rchannel->size_expected);
             p_rchannel->size = p_rchannel->size_expected;
             break;
         case 4:

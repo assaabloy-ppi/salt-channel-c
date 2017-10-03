@@ -413,7 +413,7 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
     ret = salti_read(p_channel, p_buffer, &size, SALT_ENCRYPTED);
 
     if (ret == SALT_SUCCESS) {
-        salt_err_t err_code = salt_read_init(&p_buffer, size, p_msg);
+        salt_err_t err_code = salt_read_init(p_buffer, size + SALT_OVERHEAD_SIZE, p_msg);
         SALT_VERIFY(err_code == SALT_ERR_NONE, err_code);
     }
 
@@ -426,8 +426,8 @@ salt_err_t salt_read_init(uint8_t *p_buffer,
 {
 
     p_msg->read.p_buffer = p_buffer;
-    p_msg->read.buffer_used = buffer_size;
-    p_msg->read.buffer_size = buffer_size;
+    p_msg->read.buffer_used = buffer_size - SALT_OVERHEAD_SIZE;
+    p_msg->read.buffer_size = buffer_size - SALT_OVERHEAD_SIZE;
 
     if (buffer_size < 32) {
       return SALT_ERR_BAD_PROTOCOL;
@@ -436,7 +436,7 @@ salt_err_t salt_read_init(uint8_t *p_buffer,
     switch (p_msg->read.p_buffer[32]) {
         case SALT_APP_PKG_MSG_HEADER_VALUE:
 
-            if (p_msg->read.buffer_used < (6U + 32U)) {
+            if (buffer_size < (6U + 32U)) {
                 return SALT_ERR_BAD_PROTOCOL;
             }
 
@@ -459,7 +459,7 @@ salt_err_t salt_read_init(uint8_t *p_buffer,
             break;
         case SALT_MULTI_APP_PKG_MSG_HEADER_VALUE:
 
-            if (p_msg->read.buffer_used < (8U + 32U)) {
+            if (buffer_size < (8U + 32U)) {
                 return SALT_ERR_BAD_PROTOCOL;
             }
 

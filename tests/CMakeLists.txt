@@ -22,5 +22,7 @@ do_test(client_handshake 	test_data)
 do_test(hostclient_session 	cfifo)
 do_test(a1a2handshake 		cfifo)
 do_test(multimessage 		cfifo)
+do_test(salt_read)
+do_test(salt_write)
 
 SETUP_TARGETS_FOR_COVERAGE(host_handshake_coverage host_handshake client_handshake a1a2handshake)

@@ -134,9 +134,9 @@ static void client_handshake(void **state)
     salt_msg_t msg_in;
     ret = salt_read_begin(&channel, hndsk_buffer, sizeof(hndsk_buffer), &msg_in);
     assert_true(ret == SALT_SUCCESS);
-    assert_true(msg_in.messages_left == 0);
-    assert_true(msg_in.message_size == sizeof(echo_bytes));
-    assert_true(memcmp(echo_bytes, msg_in.p_message, sizeof(echo_bytes)) == 0);
+    assert_true(msg_in.read.messages_left == 0);
+    assert_true(msg_in.read.message_size == sizeof(echo_bytes));
+    assert_true(memcmp(echo_bytes, msg_in.read.p_message, sizeof(echo_bytes)) == 0);
 
 }
 

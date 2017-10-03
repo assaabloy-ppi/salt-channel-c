@@ -164,27 +164,27 @@ void multimessage(void **state)
         assert_true(host_ret != SALT_ERROR);
     }
 
-    assert_true(host_to_read.messages_left == 3);
-    assert_true(host_to_read.message_size == sizeof("Client message 1"));
-    assert_true(memcmp("Client message 1", host_to_read.p_message, sizeof("Client message 1")) == 0);
+    assert_true(host_to_read.read.messages_left == 3);
+    assert_true(host_to_read.read.message_size == sizeof("Client message 1"));
+    assert_true(memcmp("Client message 1", host_to_read.read.p_message, sizeof("Client message 1")) == 0);
 
     host_ret = salt_read_next(&host_to_read);
     assert_true(host_ret == SALT_SUCCESS);
-    assert_true(host_to_read.messages_left == 2);
-    assert_true(host_to_read.message_size == sizeof("Client message 2"));
-    assert_true(memcmp("Client message 2", host_to_read.p_message, sizeof("Client message 2")) == 0);
+    assert_true(host_to_read.read.messages_left == 2);
+    assert_true(host_to_read.read.message_size == sizeof("Client message 2"));
+    assert_true(memcmp("Client message 2", host_to_read.read.p_message, sizeof("Client message 2")) == 0);
 
     host_ret = salt_read_next(&host_to_read);
     assert_true(host_ret == SALT_SUCCESS);
-    assert_true(host_to_read.messages_left == 1);
-    assert_true(host_to_read.message_size == sizeof("Client message 3"));
-    assert_true(memcmp("Client message 3", host_to_read.p_message, sizeof("Client message 3")) == 0);
+    assert_true(host_to_read.read.messages_left == 1);
+    assert_true(host_to_read.read.message_size == sizeof("Client message 3"));
+    assert_true(memcmp("Client message 3", host_to_read.read.p_message, sizeof("Client message 3")) == 0);
 
     host_ret = salt_read_next(&host_to_read);
     assert_true(host_ret == SALT_SUCCESS);
-    assert_true(host_to_read.messages_left == 0);
-    assert_true(host_to_read.message_size == sizeof("Client message 4"));
-    assert_true(memcmp("Client message 4", host_to_read.p_message, sizeof("Client message 4")) == 0);
+    assert_true(host_to_read.read.messages_left == 0);
+    assert_true(host_to_read.read.message_size == sizeof("Client message 4"));
+    assert_true(memcmp("Client message 4", host_to_read.read.p_message, sizeof("Client message 4")) == 0);
 
     host_ret = salt_read_next(&host_to_read);
     assert_true(host_ret == SALT_ERROR);

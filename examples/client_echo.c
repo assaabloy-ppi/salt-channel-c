@@ -112,7 +112,7 @@ static void *connection_handler(void *context)
         if (ret == SALT_SUCCESS)
         {
             do {
-                printf("\33[2K\rhost: %*.*s", 0, msg_in.message_size - 1, &msg_in.p_message[1]);
+                printf("\33[2K\rhost: %*.*s", 0, msg_in.read.message_size - 1, &msg_in.read.p_message[1]);
                 printf("Enter message: ");
             } while (salt_read_next(&msg_in) == SALT_SUCCESS);
 

@@ -228,7 +228,7 @@ void a1a2handshake(void **state)
     } while (host_ret == SALT_PENDING);
 
     assert_true(host_ret == SALT_SUCCESS);
-    assert_int_equal(16, host_msg.message_size);
+    assert_int_equal(16, host_msg.read.message_size);
 
     /* Host reads next messages */
     do {
@@ -236,33 +236,33 @@ void a1a2handshake(void **state)
     } while (host_ret == SALT_PENDING);
 
     assert_true(host_ret == SALT_SUCCESS);
-    assert_int_equal(4, host_msg.messages_left);
-    assert_int_equal(1, host_msg.message_size);
-    assert_memory_equal(host_msg.p_message, client_message, host_msg.message_size);
+    assert_int_equal(4, host_msg.read.messages_left);
+    assert_int_equal(1, host_msg.read.message_size);
+    assert_memory_equal(host_msg.read.p_message, client_message, host_msg.read.message_size);
 
     host_ret = salt_read_next(&host_msg);
     assert_true(host_ret == SALT_SUCCESS);
-    assert_int_equal(3, host_msg.messages_left);
-    assert_int_equal(2, host_msg.message_size);
-    assert_memory_equal(host_msg.p_message, client_message, host_msg.message_size);
+    assert_int_equal(3, host_msg.read.messages_left);
+    assert_int_equal(2, host_msg.read.message_size);
+    assert_memory_equal(host_msg.read.p_message, client_message, host_msg.read.message_size);
 
     host_ret = salt_read_next(&host_msg);
     assert_true(host_ret == SALT_SUCCESS);
-    assert_int_equal(2, host_msg.messages_left);
-    assert_int_equal(10, host_msg.message_size);
-    assert_memory_equal(host_msg.p_message, client_message, host_msg.message_size);
+    assert_int_equal(2, host_msg.read.messages_left);
+    assert_int_equal(10, host_msg.read.message_size);
+    assert_memory_equal(host_msg.read.p_message, client_message, host_msg.read.message_size);
 
     host_ret = salt_read_next(&host_msg);
     assert_true(host_ret == SALT_SUCCESS);
-    assert_int_equal(1, host_msg.messages_left);
-    assert_int_equal(7, host_msg.message_size);
-    assert_memory_equal(host_msg.p_message, client_message, host_msg.message_size);
+    assert_int_equal(1, host_msg.read.messages_left);
+    assert_int_equal(7, host_msg.read.message_size);
+    assert_memory_equal(host_msg.read.p_message, client_message, host_msg.read.message_size);
 
     host_ret = salt_read_next(&host_msg);
     assert_true(host_ret == SALT_SUCCESS);
-    assert_int_equal(0, host_msg.messages_left);
-    assert_int_equal(16, host_msg.message_size);
-    assert_memory_equal(host_msg.p_message, client_message, host_msg.message_size);
+    assert_int_equal(0, host_msg.read.messages_left);
+    assert_int_equal(16, host_msg.read.message_size);
+    assert_memory_equal(host_msg.read.p_message, client_message, host_msg.read.message_size);
 
     /* Test single app package */
     host_ret = salt_write_begin(host_buffer, sizeof(host_buffer), &host_msg);
@@ -296,7 +296,7 @@ void a1a2handshake(void **state)
     } while (client_ret == SALT_PENDING);
 
     assert_true(client_ret == SALT_SUCCESS);
-    assert_int_equal(16, client_msg.message_size);
+    assert_int_equal(16, client_msg.read.message_size);
 
     /* Host reads next messages */
     do {
@@ -304,33 +304,33 @@ void a1a2handshake(void **state)
     } while (client_ret == SALT_PENDING);
 
     assert_true(client_ret == SALT_SUCCESS);
-    assert_int_equal(4, client_msg.messages_left);
-    assert_int_equal(1, client_msg.message_size);
-    assert_memory_equal(client_msg.p_message, host_message, client_msg.message_size);
+    assert_int_equal(4, client_msg.read.messages_left);
+    assert_int_equal(1, client_msg.read.message_size);
+    assert_memory_equal(client_msg.read.p_message, host_message, client_msg.read.message_size);
 
     client_ret = salt_read_next(&client_msg);
     assert_true(client_ret == SALT_SUCCESS);
-    assert_int_equal(3, client_msg.messages_left);
-    assert_int_equal(2, client_msg.message_size);
-    assert_memory_equal(client_msg.p_message, host_message, client_msg.message_size);
+    assert_int_equal(3, client_msg.read.messages_left);
+    assert_int_equal(2, client_msg.read.message_size);
+    assert_memory_equal(client_msg.read.p_message, host_message, client_msg.read.message_size);
 
     client_ret = salt_read_next(&client_msg);
     assert_true(client_ret == SALT_SUCCESS);
-    assert_int_equal(2, client_msg.messages_left);
-    assert_int_equal(10, client_msg.message_size);
-    assert_memory_equal(client_msg.p_message, host_message, client_msg.message_size);
+    assert_int_equal(2, client_msg.read.messages_left);
+    assert_int_equal(10, client_msg.read.message_size);
+    assert_memory_equal(client_msg.read.p_message, host_message, client_msg.read.message_size);
 
     client_ret = salt_read_next(&client_msg);
     assert_true(client_ret == SALT_SUCCESS);
-    assert_int_equal(1, client_msg.messages_left);
-    assert_int_equal(7, client_msg.message_size);
-    assert_memory_equal(client_msg.p_message, host_message, client_msg.message_size);
+    assert_int_equal(1, client_msg.read.messages_left);
+    assert_int_equal(7, client_msg.read.message_size);
+    assert_memory_equal(client_msg.read.p_message, host_message, client_msg.read.message_size);
 
     client_ret = salt_read_next(&client_msg);
     assert_true(client_ret == SALT_SUCCESS);
-    assert_int_equal(0, client_msg.messages_left);
-    assert_int_equal(16, client_msg.message_size);
-    assert_memory_equal(client_msg.p_message, host_message, client_msg.message_size);
+    assert_int_equal(0, client_msg.read.messages_left);
+    assert_int_equal(16, client_msg.read.message_size);
+    assert_memory_equal(client_msg.read.p_message, host_message, client_msg.read.message_size);
 
 }
 

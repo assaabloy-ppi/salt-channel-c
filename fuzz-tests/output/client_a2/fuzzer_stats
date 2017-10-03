@@ -1,0 +1,27 @@
+start_time        : 1507041019
+last_update       : 1507041022
+fuzzer_pid        : 12578
+cycles_done       : 0
+execs_done        : 32373
+execs_per_sec     : 4000.00
+paths_total       : 15
+paths_favored     : 1
+paths_found       : 14
+paths_imported    : 0
+max_depth         : 2
+cur_path          : 0
+pending_favs      : 1
+pending_total     : 15
+variable_paths    : 0
+stability         : 100.00%
+bitmap_cvg        : 0.06%
+unique_crashes    : 0
+unique_hangs      : 0
+last_path         : 1507041020
+last_crash        : 0
+last_hang         : 0
+execs_since_crash : 32373
+exec_timeout      : 20
+afl_banner        : client_a2.fuzz
+afl_version       : 2.35b
+command_line      : afl-fuzz -i input/client_a2 -o output/client_a2 ./_build/client_a2.fuzz

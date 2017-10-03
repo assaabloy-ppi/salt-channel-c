@@ -1,0 +1,27 @@
+start_time        : 1507043141
+last_update       : 1507043145
+fuzzer_pid        : 25117
+cycles_done       : 0
+execs_done        : 48036
+execs_per_sec     : 5333.33
+paths_total       : 10
+paths_favored     : 9
+paths_found       : 8
+paths_imported    : 0
+max_depth         : 3
+cur_path          : 8
+pending_favs      : 2
+pending_total     : 2
+variable_paths    : 0
+stability         : 100.00%
+bitmap_cvg        : 0.10%
+unique_crashes    : 0
+unique_hangs      : 0
+last_path         : 1507043145
+last_crash        : 0
+last_hang         : 0
+execs_since_crash : 48036
+exec_timeout      : 20
+afl_banner        : host_a1m1.fuzz
+afl_version       : 2.35b
+command_line      : afl-fuzz -i input/host_a1m1 -o output/host_a1m1 ./_build/host_a1m1.fuzz

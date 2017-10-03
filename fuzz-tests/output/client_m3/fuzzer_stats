@@ -1,0 +1,27 @@
+start_time        : 1507043085
+last_update       : 1507043094
+fuzzer_pid        : 10365
+cycles_done       : 109
+execs_done        : 94872
+execs_per_sec     : 4000.00
+paths_total       : 5
+paths_favored     : 4
+paths_found       : 4
+paths_imported    : 0
+max_depth         : 4
+cur_path          : 3
+pending_favs      : 1
+pending_total     : 2
+variable_paths    : 0
+stability         : 100.00%
+bitmap_cvg        : 0.13%
+unique_crashes    : 0
+unique_hangs      : 0
+last_path         : 1507043093
+last_crash        : 0
+last_hang         : 0
+execs_since_crash : 94872
+exec_timeout      : 20
+afl_banner        : client_m3.fuzz
+afl_version       : 2.35b
+command_line      : afl-fuzz -i input/client_m3 -o output/client_m3 ./_build/client_m3.fuzz

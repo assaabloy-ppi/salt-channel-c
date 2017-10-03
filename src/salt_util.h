@@ -37,6 +37,6 @@ do {                                                                        \
  * @param mode Salt mode to print
  * @return Return a pointer to salt mode string
  */
-char *mode2str(salt_mode_t mode);
+char *salt_mode2str(salt_mode_t mode);
 
 #endif /* _SALT_UTIL_H_ */

@@ -25,7 +25,7 @@
                 p_channel->err_code = error_code;                               \
                 printf(                                                         \
                     "Runtime error (%s, %s): %s at %s:%d, %s.\r\n",             \
-                    #error_code, mode2str(p_channel->mode), #x,                 \
+                    #error_code, salt_mode2str(p_channel->mode), #x,                 \
                     __FILE__, __LINE__, __func__);                              \
                 return SALT_ERROR;                                              \
             }                                                                   \
@@ -496,7 +496,7 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
     return ret;
 }
 
-salt_ret_t salt_read_get(salt_msg_t *p_msg)
+salt_ret_t salt_read_next(salt_msg_t *p_msg)
 {
 
     if (p_msg->messages_left == 0) {

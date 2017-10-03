@@ -7,16 +7,13 @@ enable_language(C)
 option(USE_SODIUM "Use TweetNaCl as crypto native" OFF)
 
 if(USE_SODIUM)
-	#message("Using libsodium as crypto native, not configured")
 	include_directories ("${PROJECT_SOURCE_DIR}/src/external/libsodium")
 	include_directories ("${PROJECT_SOURCE_DIR}/src/external/libsodium/include")
 	set(EXTRA_LIBS ${EXTRA_LIBS} libsodium.a)
 	return()
 else(USE_SODIUM)
 	include_directories ("${PROJECT_SOURCE_DIR}/src/external/tweetnacl")
-	# TweetNaCl library
 	add_library(tweetnacl src/external/tweetnacl/tweetnacl.c)
-	#message("Using TweetNaCl as crypto native")
 	set(EXTRA_LIBS ${EXTRA_LIBS} tweetnacl)
 endif(USE_SODIUM)
 

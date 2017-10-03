@@ -5,5 +5,8 @@ SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
 include_directories(../src ./)
 
-add_executable(HostEcho host_echo.c salt_io.c randombytes_linux.c)
-target_link_libraries(HostEcho salt)
+add_executable(host_echo host_echo.c salt_io.c randombytes_linux.c)
+target_link_libraries(host_echo salt)
+
+add_executable(client_echo client_echo.c salt_io.c randombytes_linux.c)
+target_link_libraries(client_echo salt)

@@ -160,7 +160,7 @@ static void *connection_handler(void *context)
 
         do {
             ret = salt_read_begin(&client->channel, rx_buffer, sizeof(rx_buffer), &msg_in);
-        } while (ret != SALT_SUCCESS);
+        } while (ret == SALT_PENDING);
 
         if (ret == SALT_ERROR) {
             printf("Error during read:\r\n");
@@ -170,10 +170,10 @@ static void *connection_handler(void *context)
             break;
         }
 
-        ret = salt_write_begin(tx_buffer, sizeof(msg_out), &msg_out);
+        ret = salt_write_begin(tx_buffer, sizeof(tx_buffer), &msg_out);
         ret = salt_write_next(&msg_out, msg_in.p_message, msg_in.message_size);
         for (uint16_t i = 0; i < msg_in.messages_left; i++) {
-            ret = salt_read_get(&msg_in);
+            ret = salt_read_next(&msg_in);
             ret = salt_write_next(&msg_out, msg_in.p_message, msg_in.message_size);
         }
 

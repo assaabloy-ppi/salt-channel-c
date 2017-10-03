@@ -15,7 +15,7 @@
 /*======= Local variable declarations =======================================*/
 /*======= Global function implementations ===================================*/
 
-char *mode2str(salt_mode_t mode)
+char *salt_mode2str(salt_mode_t mode)
 {
     switch (mode) {
         case SALT_SERVER:

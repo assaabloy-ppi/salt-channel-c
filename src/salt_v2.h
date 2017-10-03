@@ -237,7 +237,7 @@ typedef struct salt_msg_s {
     uint8_t     *p_buffer;      /**< Message buffer. */
     uint32_t    buffer_size;    /**< Message buffer size. */
     uint32_t    buffer_used;
-    uint16_t    messages_count;  /**< Number of messages left to read. */
+    uint16_t    messages_left;  /**< Number of messages left to read. */
     uint16_t    message_size;   /**< Current message size. */
     uint8_t     *p_message;     /**< Pointer to current message. */
 } salt_msg_t;
@@ -490,17 +490,13 @@ salt_ret_t salt_resume(salt_channel_t *p_channel,
  * @return SALT_ERROR   If any error occured during the read.
  *
  */
-salt_ret_t salt_read(salt_channel_t *p_channel,
-                     uint8_t *p_buffer,
-                     uint32_t *p_recv_size,
-                     uint32_t max_size);
 
 /**
  * @brief Reads one or more encrypted messages.
  * 
  * Used for easier reading of on or multiple messages.
  * 
- * Usage: See example at @ref/salt_read_next
+ * Usage: See example at @ref/salt_read_get
  * 
  * @param p_channel     Pointer to salt channel handle.
  * @param p_buffer      Pointer where to store received (clear text) data.
@@ -531,7 +527,7 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
  *      
  *          do {
  *              printf("%*.*s\r\n", 0, msg.message_size, (char*) msg.p_message);
- *          } while (salt_read_next(&msg) == SALT_SUCCESS);
+ *          } while (salt_read_get(&msg) == SALT_SUCCESS);
  *      
  *      }
  *      else {
@@ -544,7 +540,7 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
  * @return SALT_SUCCESS The next message could be parsed and ready to be read.
  * @return SALT_ERROR   No more messages available.
  */
-salt_ret_t salt_read_next(salt_msg_t *p_msg);
+salt_ret_t salt_read_get(salt_msg_t *p_msg);
 
 /**
  * @brief Write an encrypten message.
@@ -584,10 +580,6 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg);
  * @return SALT_ERROR   If any error occured during the sending process.
  *
  */
-salt_ret_t salt_write(salt_channel_t *p_channel,
-                      uint8_t *p_buffer,
-                      uint32_t size);
-
 
 salt_ret_t salt_write_begin(uint8_t *p_buffer,
                             uint32_t size,

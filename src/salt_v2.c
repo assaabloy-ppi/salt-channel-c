@@ -401,42 +401,18 @@ salt_ret_t salt_resume(salt_channel_t *p_channel,
     return SALT_ERROR;
 }
 
-salt_ret_t salt_read(salt_channel_t *p_channel,
-                     uint8_t *p_buffer,
-                     uint32_t *p_recv_size,
-                     uint32_t max_size)
-{
-    salt_ret_t ret;
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
-    SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
-                SALT_ERR_INVALID_STATE);
-    SALT_VERIFY(max_size >= SALT_OVERHEAD_SIZE, SALT_ERR_BUFF_TO_SMALL);
-
-    SALT_VERIFY(max_size >= SALT_OVERHEAD_SIZE, SALT_ERR_BUFF_TO_SMALL);
-
-
-    *p_recv_size = max_size;
-
-    ret = salti_read(p_channel, p_buffer, p_recv_size, SALT_APP_MSG);
-
-    if (SALT_SUCCESS == ret) {
-
-        SALT_VERIFY(SALT_APP_PKG_MSG_HEADER_VALUE == p_buffer[32],
-                    SALT_ERR_BAD_PROTOCOL);
-
-        (*p_recv_size) -= 6U;
-    }
-
-    return ret;
-
-}
-
 salt_ret_t salt_read_begin(salt_channel_t *p_channel,
                            uint8_t *p_buffer,
                            uint32_t buffer_size,
                            salt_msg_t *p_msg)
 {
     salt_ret_t ret;
+
+    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
+                SALT_ERR_INVALID_STATE);
+    SALT_VERIFY(buffer_size >= SALT_OVERHEAD_SIZE, SALT_ERR_BUFF_TO_SMALL);
+
     p_msg->p_buffer = p_buffer;
     p_msg->buffer_used = buffer_size;
     p_msg->buffer_size = buffer_size;
@@ -463,7 +439,7 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
              *                   |<---  p_msg->buffer_used  --->|
              * 
              */
-            p_msg->messages_count = 0;
+            p_msg->messages_left = 0;
             p_msg->p_message = &p_msg->p_buffer[SALT_OVERHEAD_SIZE];
             p_msg->message_size = p_msg->buffer_used - 6U;
 
@@ -486,21 +462,21 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
              *                                                    |<-- p_msg->buffer_size -->|
              */
 
-            p_msg->messages_count = salti_bytes_to_u16(&p_msg->p_buffer[38]);
+            p_msg->messages_left = salti_bytes_to_u16(&p_msg->p_buffer[38]);
             p_msg->buffer_size = p_msg->buffer_used - 6U;
             p_msg->buffer_used = 0;
-
-            uint32_t total_size = p_msg->buffer_size;
-            uint16_t messages_count = p_msg->messages_count;
-            uint32_t buffer_used = 0;
             p_msg->p_message = &p_msg->p_buffer[40];
 
-            while (messages_count > 0) {
+            uint32_t total_size = p_msg->buffer_size;
+            uint16_t messages_left = p_msg->messages_left;
+            uint32_t buffer_used = 0;
+
+            while (messages_left > 0) {
                 uint16_t message_size = salti_bytes_to_u16(p_msg->p_message);
                 p_msg->p_message += 2 + message_size;
                 buffer_used += 2 + message_size;
                 if (buffer_used < total_size) {
-                    messages_count--;
+                    messages_left--;
                 } else {
                     SALT_ERROR(SALT_ERR_BAD_PROTOCOL);
                 }
@@ -508,7 +484,7 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
 
             p_msg->message_size = salti_bytes_to_u16(&p_msg->p_buffer[40]);
             p_msg->p_message = &p_msg->p_buffer[42];
-            p_msg->messages_count--;
+            p_msg->messages_left--;
             p_msg->buffer_used = 2 + p_msg->message_size;
 
         } else {
@@ -520,10 +496,10 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
     return ret;
 }
 
-salt_ret_t salt_read_next(salt_msg_t *p_msg)
+salt_ret_t salt_read_get(salt_msg_t *p_msg)
 {
 
-    if (p_msg->messages_count == 0) {
+    if (p_msg->messages_left == 0) {
         return SALT_ERROR;
     }
 
@@ -538,21 +514,10 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg)
 
     p_msg->buffer_used += 2 + p_msg->message_size;
 
-    p_msg->messages_count--;
+    p_msg->messages_left--;
 
 
     return SALT_SUCCESS;
-}
-
-salt_ret_t salt_write(salt_channel_t *p_channel,
-                      uint8_t *p_buffer,
-                      uint32_t size)
-{
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
-    SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
-                SALT_ERR_INVALID_STATE);
-
-    return salti_write(p_channel, p_buffer, size, SALT_APP_PKG_MSG_HEADER_VALUE);
 }
 
 salt_ret_t salt_write_begin(uint8_t *p_buffer,
@@ -577,7 +542,7 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
     p_msg->buffer_size = size;
     p_msg->p_message = &p_buffer[SALT_OVERHEAD_SIZE] + 2U;
     p_msg->buffer_used = SALT_OVERHEAD_SIZE + 2U;
-    p_msg->messages_count = 0;
+    p_msg->messages_left = 0;
 
     return SALT_SUCCESS;
 }
@@ -597,7 +562,7 @@ salt_ret_t salt_write_next(salt_msg_t *p_msg, uint8_t *p_buffer, uint16_t size)
     memcpy(p_msg->p_message, p_buffer, size);
     p_msg->p_message += size;
     p_msg->buffer_used += size;
-    p_msg->messages_count++;
+    p_msg->messages_left++;
 
     return SALT_SUCCESS;
 }
@@ -609,7 +574,23 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel, salt_msg_t *p_msg)
                 SALT_ERR_INVALID_STATE);
     SALT_VERIFY_NOT_NULL(p_msg);
 
-    salti_u16_to_bytes(&p_msg->p_buffer[SALT_OVERHEAD_SIZE], p_msg->messages_count);
+    /*
+     * If there is only one message, we send it as a one package message.
+     * The buffer now looks like:
+     * { overHead[SALT_OVERHEAD_SIZE] , count[2], size1[2], msg1[n] }
+     * 
+     * When sending a one application message we use the count[2] and size1[2]
+     * as parts of the overhead bytes.
+     * 
+     */
+    if (p_msg->messages_left == 1) {
+        return salti_write(p_channel,
+                           &p_msg->p_buffer[4],
+                           p_msg->buffer_used - 4,
+                           SALT_APP_PKG_MSG_HEADER_VALUE);
+    }
+
+    salti_u16_to_bytes(&p_msg->p_buffer[SALT_OVERHEAD_SIZE], p_msg->messages_left);
 
     return salti_write(p_channel,
                        p_msg->p_buffer,

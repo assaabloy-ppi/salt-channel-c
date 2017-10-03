@@ -124,16 +124,19 @@ static void client_handshake(void **state)
 
     /* Write echo bytes 010505050505 */
     uint8_t echo_bytes[6] = {0x01, 0x05, 0x05, 0x05, 0x05, 0x05};
-    memcpy(&hndsk_buffer[SALT_OVERHEAD_SIZE], echo_bytes, sizeof(echo_bytes));
-    ret = salt_write(&channel, hndsk_buffer, SALT_OVERHEAD_SIZE + sizeof(echo_bytes));
+    salt_msg_t msg_out;
+    ret = salt_write_begin(hndsk_buffer, sizeof(hndsk_buffer), &msg_out);
+    assert_true(ret == SALT_SUCCESS);
+    ret = salt_write_next(&msg_out, echo_bytes, sizeof(echo_bytes));
+    ret = salt_write_execute(&channel, &msg_out);
     assert_true(ret == SALT_SUCCESS);
 
-    uint32_t size;
-    ret = salt_read(&channel, hndsk_buffer, &size, sizeof(hndsk_buffer));
+    salt_msg_t msg_in;
+    ret = salt_read_begin(&channel, hndsk_buffer, sizeof(hndsk_buffer), &msg_in);
     assert_true(ret == SALT_SUCCESS);
-    assert_true(size == sizeof(echo_bytes));
-    assert_true(memcmp(echo_bytes, &hndsk_buffer[SALT_OVERHEAD_SIZE], sizeof(echo_bytes)) == 0);
-
+    assert_true(msg_in.messages_left == 0);
+    assert_true(msg_in.message_size == sizeof(echo_bytes));
+    assert_true(memcmp(echo_bytes, msg_in.p_message, sizeof(echo_bytes)) == 0);
 
 }
 

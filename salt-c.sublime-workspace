@@ -1,0 +1,1375 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"host_",
+				"host_buffer"
+			],
+			[
+				"hds",
+				"hdshk_buffer"
+			],
+			[
+				"SALT_HE",
+				"SALT_HEXDUMP"
+			],
+			[
+				"my",
+				"my_sk_pub"
+			],
+			[
+				"SALT_HEXDUMP",
+				"SALT_HEXDUMP_DEBUG"
+			],
+			[
+				"tmp",
+				"tmp_msg"
+			],
+			[
+				"msg_t",
+				"msg_to_sign"
+			],
+			[
+				"si",
+				"signed_msg_size2"
+			],
+			[
+				"sign",
+				"signed_msg_size1"
+			],
+			[
+				"sig",
+				"signed_msg"
+			],
+			[
+				"SALT",
+				"SALT_SUCCESS"
+			],
+			[
+				"salt_",
+				"salt_write"
+			],
+			[
+				"byte",
+				"byte_buffer"
+			],
+			[
+				"binson",
+				"binson_buffer"
+			],
+			[
+				"ex",
+				"expectedResponse"
+			],
+			[
+				"size_",
+				"size_to_send"
+			],
+			[
+				"size",
+				"size_to_send"
+			],
+			[
+				"rx_",
+				"rx_handeled"
+			],
+			[
+				"LOG_DE",
+				"LOG_DEBUG_HEXDUMP"
+			],
+			[
+				"rx",
+				"rx_size"
+			],
+			[
+				"siz",
+				"size_bytes"
+			],
+			[
+				"conn",
+				"conn_key"
+			],
+			[
+				"con",
+				"conn_state"
+			],
+			[
+				"clien",
+				"clientSocket"
+			],
+			[
+				"CONN_HAND",
+				"BLE_CONN_HANDLE_INVALID"
+			],
+			[
+				"m_",
+				"m_ble_clients"
+			],
+			[
+				"key",
+				"key_to_conn_handle"
+			],
+			[
+				"da",
+				"data_size"
+			],
+			[
+				"mtu",
+				"mtu_size"
+			],
+			[
+				"tmp_",
+				"tmp_buffer"
+			],
+			[
+				"YALE",
+				"YALE_STATUS_LOCKED"
+			],
+			[
+				"YALE_STA",
+				"YALE_STATUS_UNLOCKED"
+			],
+			[
+				"pot_handle",
+				"pot_handle_request_task"
+			],
+			[
+				"cont",
+				"context_size"
+			],
+			[
+				"c",
+				"cb"
+			],
+			[
+				"call",
+				"callback"
+			],
+			[
+				"m_sta",
+				"m_state_handler_context"
+			],
+			[
+				"task",
+				"task_queue"
+			],
+			[
+				"bu",
+				"BUFFER_SIZE"
+			],
+			[
+				"hand",
+				"handshake_task"
+			],
+			[
+				"ra",
+				"random_poll"
+			],
+			[
+				"POT_",
+				"POT_SUCCESS"
+			],
+			[
+				"listen",
+				"listen_implementation"
+			],
+			[
+				"m_state",
+				"m_state_handler"
+			],
+			[
+				"max_",
+				"max_num_connections"
+			],
+			[
+				"num",
+				"num_connections"
+			],
+			[
+				"conn_",
+				"conn_handle_to_key"
+			],
+			[
+				"tim",
+				"time_points"
+			],
+			[
+				"n",
+				"num_time_points"
+			],
+			[
+				"m_state_",
+				"m_state_current"
+			],
+			[
+				"m_st",
+				"m_state_previous"
+			],
+			[
+				"app",
+				"app_evt_handler"
+			],
+			[
+				"va",
+				"value_handle"
+			],
+			[
+				"o",
+				"out_char_handle"
+			],
+			[
+				"is",
+				"is_connected"
+			],
+			[
+				"sys",
+				"sys_event"
+			],
+			[
+				"app_t",
+				"app_timer_start"
+			],
+			[
+				"m_ble_conn",
+				"m_ble_connection_timers"
+			],
+			[
+				"m_ble",
+				"m_ble_connection_timer"
+			],
+			[
+				"m_bl",
+				"m_ble_connection_timer"
+			],
+			[
+				"NRF_",
+				"NRF_ERROR_INVALID_PARAM"
+			],
+			[
+				"pot_ble",
+				"pot_ble_config"
+			],
+			[
+				"isr_ble",
+				"isr_ble_conn_params_error_handler"
+			],
+			[
+				"DEVICE",
+				"BLE_POT_DEVICE_NAME"
+			],
+			[
+				"CLIEN",
+				"CLIENT_HANDSHAKE_TIMEOUT_MS"
+			],
+			[
+				"pot_",
+				"pot_session_close_implementation"
+			],
+			[
+				"POT_CONN",
+				"POT_CONNECTING"
+			],
+			[
+				"time",
+				"timeout_flag"
+			],
+			[
+				"connec",
+				"connection_state"
+			],
+			[
+				"pee",
+				"peer_addr"
+			],
+			[
+				"m",
+				"my_time"
+			],
+			[
+				"ho",
+				"host_sec_key"
+			],
+			[
+				"CFICO",
+				"CFIFO_SUCCESS"
+			],
+			[
+				"CF",
+				"CFIFO_SUCCESS"
+			],
+			[
+				"item",
+				"item_size"
+			],
+			[
+				"cfifoi_",
+				"cfifoi_get"
+			],
+			[
+				"p_",
+				"p_item"
+			],
+			[
+				"b",
+				"buf_size"
+			],
+			[
+				"re",
+				"read_pos"
+			],
+			[
+				"p",
+				"p_cfifo"
+			],
+			[
+				"C",
+				"CFIFO_SIZE"
+			],
+			[
+				"cf",
+				"cfifo"
+			],
+			[
+				"sk",
+				"sk_sec"
+			],
+			[
+				"SALT_ERR_NO",
+				"SALT_ERR_NOT_SUPPORTED"
+			],
+			[
+				"p_ti",
+				"p_ticket_size"
+			],
+			[
+				"SALT_M2_",
+				"SALT_M2_NO_SUCH_SERVER_FLAG"
+			],
+			[
+				"SALT_ER",
+				"SALT_ERR_NONE"
+			],
+			[
+				"SALT_M1_",
+				"SALT_M1_SIG_KEY_INCLUDED_FLAG"
+			],
+			[
+				"SALT_M1",
+				"SALT_M1_HEADER_VALUE"
+			],
+			[
+				"host",
+				"host_channel"
+			],
+			[
+				"client",
+				"client_buffer"
+			],
+			[
+				"wri",
+				"write_handler"
+			],
+			[
+				"Clie",
+				"clientInfo"
+			],
+			[
+				"peer_",
+				"peer_sk_pub"
+			],
+			[
+				"my_sk_",
+				"my_sk_pub"
+			],
+			[
+				"my_",
+				"my_sk_pub"
+			],
+			[
+				"salti_wrt",
+				"salti_write_size_bytes"
+			],
+			[
+				"host_re",
+				"host_read_buffer"
+			],
+			[
+				"host_wr",
+				"host_write_counter"
+			],
+			[
+				"SALT_SI",
+				"SALT_LENGTH_SIZE"
+			],
+			[
+				"SALT_H",
+				"SALT_HEADER_TYPE_FLAG"
+			],
+			[
+				"erro",
+				"error_code"
+			],
+			[
+				"pot_autho",
+				"pot_autho_link_t"
+			],
+			[
+				"POT",
+				"POT_SUCCESS"
+			],
+			[
+				"link",
+				"link_buffer"
+			],
+			[
+				"num_",
+				"num_links"
+			],
+			[
+				"get_li",
+				"get_link_con"
+			],
+			[
+				"binson_write",
+				"binson_write_array_begin"
+			],
+			[
+				"st",
+				"struct\tstruct"
+			],
+			[
+				"a",
+				"allocated_links"
+			],
+			[
+				"l",
+				"last_link"
+			],
+			[
+				"autho",
+				"autho_link"
+			],
+			[
+				"auth",
+				"autho_link"
+			],
+			[
+				"prev_",
+				"prev_is_me"
+			],
+			[
+				"pot_autho_parse",
+				"pot_autho_parse_link"
+			],
+			[
+				"un",
+				"unsigned_msg"
+			],
+			[
+				"remove",
+				"remove_link_con"
+			],
+			[
+				"add_link",
+				"add_link_con"
+			],
+			[
+				"add_link_",
+				"add_link_implementation"
+			],
+			[
+				"peer",
+				"peer_ek_pub"
+			],
+			[
+				"SALT_E",
+				"SALT_ERROR"
+			],
+			[
+				"my_ek",
+				"my_ek_pub"
+			],
+			[
+				"SALTI_",
+				"SALTI_M1_HEADER"
+			],
+			[
+				"err",
+				"err_code"
+			],
+			[
+				"SALT_",
+				"SALT_SUCCESS"
+			],
+			[
+				"LEDS",
+				"LEDS_MASK"
+			],
+			[
+				"thi",
+				"thing_access"
+			],
+			[
+				"unsig",
+				"unsigned_msg_len"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "src/v2notes.txt",
+			"settings":
+			{
+				"buffer_size": 9113,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/simonj/Work/notes.txt",
+			"settings":
+			{
+				"buffer_size": 312,
+				"encoding": "UTF-8",
+				"line_ending": "Unix",
+				"name": "=== Pot-c notes ==="
+			}
+		},
+		{
+			"contents": "# iOS PoT \"lu-lock\" API Notes\n\n\"lu-lock\" specification: https://github.com/assaabloy-ppi/pot-main/blob/master/spec/spex-lock/spex-lock.md\n\n## Goals\n\n* Simple high level API, no knowledge about services, low level libraries etc.\n\n\"lu-lock\" API will extend a PoT API.\n\nBased on use cases:\n1. Identity creation\n2. Discover and claim ownership of a virgin lock\n3. Daily usage of owned lock\n    - Settings (Time, Credentials, including browse)\n    - Logs\n4. Sharing of owned lock (delegating a lock)\n5. Usage of a delegated lock\n\n## Properties of a lock (as seen by KeyApp)\n* connectState: disconnected, connecting, connected, disconnecting (Events from lower layers)\n* lockState: unknown, locked, locking, unlocking, unlocked (True lock status, received from lock)\n* accessLevel: owner(root), lu (delegation), virgin\n\n\n",
+			"settings":
+			{
+				"buffer_size": 815,
+				"line_ending": "Unix",
+				"name": "# iOS PoT \"lu-lock\" API Notes"
+			}
+		},
+		{
+			"file": "v2test/Makefile",
+			"settings":
+			{
+				"buffer_size": 1048,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/salt_v2.h",
+			"settings":
+			{
+				"buffer_size": 17376,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/salt_v2.c",
+			"settings":
+			{
+				"buffer_size": 42201,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "v2test/hostclient.c",
+			"settings":
+			{
+				"buffer_size": 5800,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 332.0,
+		"last_filter": "Snippet: ",
+		"selected_items":
+		[
+			[
+				"Snippet: ",
+				"Snippet: c-templ"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 449.0
+	},
+	"console":
+	{
+		"height": 114.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = 'df21e130d211cfc94d9b0905775a7c0f' + '1e3d39e33b79698005270310898eea76'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/simonj/Work/salt-channel-c",
+		"/home/simonj/Work/salt-channel-c/examples",
+		"/home/simonj/Work/salt-channel-c/src",
+		"/home/simonj/Work/salt-channel-c/test",
+		"/home/simonj/Work/salt-channel-c/v2example",
+		"/home/simonj/Work/salt-channel-c/v2test"
+	],
+	"file_history":
+	[
+		"/home/simonj/Work/salt-channel-c/v2test/crypt_test.c",
+		"/home/simonj/Work/salt-channel-c/src/external/tweetnacl/tweetnacl.c",
+		"/home/simonj/Work/pot-main/release1/pot-ble-module/readme.md",
+		"/home/simonj/Work/pot-main/release1/pot-ble-module-20170517/flash.sh",
+		"/home/simonj/Work/salt-channel-c/src/external/libsodium/include/sodium/crypto_sign.h",
+		"/home/simonj/Work/salt-channel-c/src/salt_v2.c",
+		"/home/simonj/Work/salt-channel-c/v2example/host_echo.c",
+		"/home/simonj/Work/salt-channel-c/v2example/host.c",
+		"/home/simonj/Work/salt-channel-c/v2example/Makefile",
+		"/home/simonj/Work/salt-channel-c/v2example/client_echo.c",
+		"/home/simonj/Work/salt-channel-c/v2example/client.c",
+		"/home/simonj/Work/salt-channel-c/src/salt_util.h",
+		"/home/simonj/Work/salt-channel-c/v2example/salt_io.c",
+		"/home/simonj/Work/binson-c-light/byte_test.c",
+		"/home/simonj/Work/salt-channel-c/v2test/hostclient.c",
+		"/home/simonj/Work/salt-channel-c/v2test/hostclient_test.out",
+		"/home/simonj/Work/salt-channel-c/salt-c.sublime-project",
+		"/home/simonj/.config/sublime-text-3/Packages/SublimeAStyleFormatter/Default (Linux).sublime-keymap",
+		"/home/simonj/Work/salt-channel-c/src/salt_v2.h",
+		"/home/simonj/Work/salt-channel-c/v2test/Makefile",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot_types.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot_session.c",
+		"/home/simonj/Work/signe/src/lock/sprot/lock_yale.c",
+		"/home/simonj/Work/signe/test/client.pubkey",
+		"/home/simonj/Work/pot/out/client.pubkey",
+		"/home/simonj/Desktop/test.c",
+		"/home/simonj/Desktop/34c4.pubkey",
+		"/home/simonj/Downloads/me.pubkey",
+		"/home/simonj/Desktop/wearable (1).pubkey",
+		"/home/simonj/Work/signe/test/wearable.pubkey",
+		"/home/simonj/Work/signe/src/external/pot-c/examples/nanohost/main.c",
+		"/home/simonj/Work/signe/src/external/pot-c/src/external/salt-channel-c/src/salt.c",
+		"/home/simonj/Work/signe/src/external/pot-c/doxygen.cfg",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot_trace.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/doxygen.txt",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/potb.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/potb_content.h",
+		"/home/simonj/Work/signe/src/lock/lock-browser_linak.c",
+		"/home/simonj/Work/signe/src/lock/lock-browser_development.c",
+		"/home/simonj/Work/signe/src/external/pot-c/examples/nanohost/lock-browser_linux.c",
+		"/home/simonj/Work/signe/src/lock/lock-browser_linux.c",
+		"/home/simonj/Work/signe/src/lock/lock-browser_motor.c",
+		"/home/simonj/Work/signe/src/lock/lock-browser_relay.c",
+		"/home/simonj/Work/signe/src/lock/lock-browser_yale.c",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot_tasks.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot_session.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot_host.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot_autho_tc.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot-env.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot_autho.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot_autho.c",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/src-test/potb_test.c",
+		"/home/simonj/Work/signe/src/pot-env/pot_storage.c",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot.c",
+		"/home/simonj/Work/signe/src/external/pot-c/examples/nanohost/pot_env.c",
+		"/home/simonj/Work/signe/src/external/pot-c/src/aa/lock/pot_lock_thing.c",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/binson_util.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/doxygen.cfg",
+		"/home/simonj/Work/signe/src/main_ble_link.c",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/libraries/scheduler/app_scheduler.h",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/libraries/scheduler/app_scheduler.c",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/libraries/fifo/app_fifo.h",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/libraries/fifo/app_fifo.c",
+		"/home/simonj/Work/signe/test/test.py",
+		"/home/simonj/Work/signe/src/bsp/pot_ble.h",
+		"/home/simonj/Work/signe/src/pot-env/pot-env_nrf52.c",
+		"/home/simonj/Work/signe/src/bsp/pot_ble.c",
+		"/home/simonj/Work/lock/src/lock_yale.c",
+		"/home/simonj/Work/module.txt",
+		"/home/simonj/Work/signe/src/lock/lock_sprot_wrapper.c",
+		"/home/simonj/Work/signe/src/lock/nprot/libNprotol/libNprotocol.c",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_link_tool.mk",
+		"/home/simonj/.config/sublime-text-3/Packages/User/SublimeAStyleFormatter.sublime-settings",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/softdevice/s132/headers/ble_gatts.h",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/softdevice/s132/headers/ble.h",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/softdevice/s132/headers/nrf_error.h",
+		"/home/simonj/Work/signe/src/main_nrf52.c",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/drivers_nrf/nrf_soc_nosd/nrf_error.h",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/examples/ble_central/ble_app_multilink_central/main.c",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/softdevice/s132/headers/ble_gap.h",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/ble/nrf_ble_gatt/nrf_ble_gatt.c",
+		"/home/simonj/Work/signe/src/ble_module_gcc_nrf52.ld",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/softdevice/s132/headers/ble_ranges.h",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/softdevice/s132/headers/ble_gattc.h",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/examples/ble_central_and_peripheral/experimental/ble_app_att_mtu_throughput/amts.c",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/ble/nrf_ble_gatt/nrf_ble_gatt.h",
+		"/home/simonj/Work/signe/src/util/rtc.c",
+		"/home/simonj/StudioProjects/pot-android/androidlib/src/main/java/pot/androidlib/BlePotClient.java",
+		"/home/simonj/Work/signe/src/config/sdk_config.h",
+		"/home/simonj/Work/signe/src/external/pot-c/src/host/pot_log.h",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/ble/ble_services/ble_hrs/ble_hrs.c",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_development.mk",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_app_common.mk",
+		"/home/simonj/Work/signe/src/bsp/bsp_link_tool.c",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_common.mk",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_sprot_production.mk",
+		"/home/simonj/Work/signe/src/Makefile",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_linak_production.mk",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_motor_production.mk",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_nprot_development.mk",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_nprot_production.mk",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_relay_development.mk",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_relay_production.mk",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_sprot_development.mk",
+		"/home/simonj/Work/signe/src/makeincl/nRF52_main_common.mk",
+		"/home/simonj/Work/signe/release.sh",
+		"/home/simonj/Work/signe/src/external/pot-c/src/aa/lock/pot_lock.h",
+		"/home/simonj/Work/signe/release-20170419130738/bin/flash.sh",
+		"/home/simonj/Work/signe/test.sh",
+		"/home/simonj/Work/signe/release-20170419130738/flash.sh",
+		"/home/simonj/Work/signe/flash.sh",
+		"/home/simonj/Work/signe/src/flash.sh",
+		"/home/simonj/Work/signe/src/release.sh",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/libraries/fstorage/fstorage.c",
+		"/home/simonj/Work/signe/test/run_all_linux_tests.sh",
+		"/home/simonj/Work/signe/src/storage/storage.c",
+		"/home/simonj/Work/signe/test/run_mocklock_test.sh",
+		"/home/simonj/Work/signe/test/TestCases/LockStressTest.java",
+		"/home/simonj/Work/signe/src/lock/lock_mock.c",
+		"/home/simonj/Work/signe/src/lock/lock_mock_linux.c",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/libraries/fstorage/fstorage.h",
+		"/home/simonj/Work/signe/src/external/nRF5_SDK/components/libraries/experimental_section_vars/nrf_section.h",
+		"/home/simonj/Work/signe/test/run_linux_test.sh",
+		"/home/simonj/Work/signe/test/TestCases/ClaimTest.java",
+		"/home/simonj/Work/signe/test/HelpClasses/PotSocketTest.java",
+		"/home/simonj/Work/signe/src/storage/storage_nrf52.c",
+		"/home/simonj/Work/signe/test/TestCases/EventTest.java"
+	],
+	"find":
+	{
+		"height": 41.0
+	},
+	"find_in_files":
+	{
+		"height": 90.0,
+		"where_history":
+		[
+			"",
+			"*.c,*.h",
+			"*.c",
+			"",
+			"*.c",
+			"*.",
+			"",
+			"*.h",
+			"*.c",
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+			"HEXDUMP",
+			"salti_create_m3m4",
+			"p_hash",
+			"salti_create_m3m4",
+			"salti_handle_m3m4",
+			"salti_create_m3m4",
+			"salti_handle_m3m4",
+			"salti_handle_m2",
+			"salti_create_m1",
+			"salti_handle_m3m4",
+			"salti_create_m3m4",
+			"Intential",
+			"gpiote_init",
+			"uint32_t",
+			"app_uart_flush",
+			"p_channel->write_channel.",
+			"p_channel->read_channel.",
+			"SALT_HEXDUMP",
+			");\n",
+			"}\n",
+			"m_isr_event_flag",
+			"typedef enum(.*);",
+			"typedef enum",
+			"lock_cmd",
+			"my_secret_key",
+			"typedef",
+			"Autho",
+			"struct PotBEnv*",
+			"struct",
+			"PotBEnv",
+			"SessionKVrec",
+			"Con",
+			"Things",
+			"Thing",
+			"Utf8",
+			"PotEnv",
+			"PotReq",
+			"pot_create_session_thing",
+			"pot_create_stored_chain",
+			"binson_write_object\\(",
+			"binson_write_object",
+			"binson_parser_get_obj_bytes",
+			"while",
+			"txQueue",
+			"rx_handeled",
+			"RX_FREE",
+			"size_bytes_read",
+			"link_tool_rx_package_task",
+			"link_tool_rx_bytes_event",
+			"link_tool_rx_package_event",
+			"connect",
+			"conn_state",
+			"assign_key",
+			"conn_handle",
+			"assign_key",
+			"#define NRF_SUCCESS",
+			"free_key",
+			"conn_handle_to_key",
+			"BLE_POT_MAX_DATA_LEN",
+			"#define NRF_SUCC",
+			"#define NRF_S",
+			"app_evt_handler",
+			"POT_BLE_DISCONNECTED",
+			"pot_ble_conn_state_t",
+			"#define NRF_SU",
+			"NRF_SUCCESS",
+			"data_length_update",
+			"sd_ble_gap_data_length_update",
+			"nrf_ble_gatt_data_length_set",
+			"MTU",
+			"ble_cfg.conn_cfg.params.gap_conn_cfg.event_length",
+			"BLE_GAP_EVENT_LENGTH_DEFAULT",
+			"NRF_BLE_GATT_MAX_MTU_SIZE",
+			"MTU",
+			"p_data_to_send",
+			"tmp_buffer_used",
+			"tmp_buffer",
+			"20",
+			"app_evt_handler",
+			"notifica",
+			"isr_ble_evt_handler",
+			"to_send",
+			"app_evt_handler",
+			"isr_ble_gatt_evt_handler",
+			"max_mtu_size",
+			"m_pot_ble_config",
+			"start",
+			"length",
+			"data_length",
+			"on_gatt",
+			"gatt_event_",
+			"BLE_GATTC_EVT_BASE",
+			"BLE_GATTS_EVT_WRITE",
+			"BLE_GAP_EVT_CONNECTED",
+			"BLE_GATTS_EVT_BASE",
+			"BLE_GAP_EVT_CONNECTED",
+			"ble_gap_params_init",
+			"ble_gatt_init",
+			"m_ble_gatt",
+			"NRF_BLE_GATT_MAX_MTU_SIZE",
+			"on_exchange_mtu_request_evt",
+			"NRF_BLE_GATT_MAX_MTU_SIZE",
+			"max_num_connections",
+			"BLE_POT_MAX_DATA_LEN",
+			"NRF_BLE_GATT_MAX_MTU_SIZE",
+			"isr_softdevice_sys_evt_handler",
+			"MTU",
+			"TODO",
+			"(.*)",
+			".call",
+			"NotInVirginMode",
+			"m_timeout",
+			"sleep_handler",
+			"m_lock_status",
+			"yale_state_to_lock_state",
+			"LOG_DEBUG",
+			"yale_state_to_lock_state",
+			"m_op",
+			"YALE_STATUS_LOCKING",
+			"m_op",
+			"yale_state_to_lock_state",
+			"state_to",
+			"yale_state_to_lock_state",
+			"m_state",
+			"CHANGE_STATE",
+			"224",
+			"sign_",
+			"pot_autho_chain_from_storage"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"Intentional",
+			"uint16_t",
+			"channel->",
+			"potb_env_t *",
+			"potb_env_s",
+			"potb_session_rec_s",
+			"con_s",
+			"things_s",
+			"thing_s",
+			"utf8_s",
+			"pot_env_s",
+			"pot_req_s",
+			"",
+			"RX_READY",
+			"link_tool_rx_bytes_task",
+			"link_tool_rx_package_task",
+			"conn_key",
+			"m_clients[0].tmp_buffer_used",
+			"m_clients[0].tmp_buffer",
+			"cp pot-ble-module/src/_build/$1/$1.hex bin/",
+			"BLE-N",
+			"blen",
+			"$1 \\",
+			"$2",
+			"#undef LOG_$1\\n#undef LOG_$1_FEED\\n#undef LOG_$1_HEXDUMP",
+			"_HEXDUMP\\(...\\) LOG_HEXDUMP\\(__VA_ARGS__\\)",
+			"_FEED\\(...\\) LOG_FEED\\(__VA_ARGS__\\)",
+			"LOG_$1\\(...\\) LOG\\(__VA_ARGS__\\)\\n#define LOG_$1_FEED\\(...\\) LOG\\(__VA_ARGS__\\)\\n#define LOG_$1_HEXDUMP\\(...\\) LOG\\(__VA_ARGS__\\)",
+			"LOG_$1\\(...\\)\\n#define LOG_$1_FEED\\(...\\)\\n#define LOG_$1_HEXDUMP\\(...\\)",
+			"LOG_$1\\(...\\)\\n#define LOG_$1_FEED\\(...\\)\\nLOG_$1_HEXDUMP\\(...\\)",
+			"LOG_$1\\(...\\)\\r#define LOG_$1_FEED\\(...\\)\\rLOG_$1_HEXDUMP\\(...\\)",
+			"m_",
+			"env_t",
+			"POT_FIFO",
+			"nRF52_motor_production.mk",
+			"nRF52_linak_production.mk",
+			"yale",
+			"lock_internal_state_t",
+			"key_to_conn_handle",
+			"isr_ble_on_rx",
+			"isr_ble_on_tx",
+			"pot_fifo",
+			"INFO",
+			"DEBUG",
+			"m_clients[0].bytes_received",
+			"m_clients[0].bytes_expected",
+			"m_clients[0].is_connected",
+			"m_clients[0].read_state",
+			"m_clients[0].bytes_to_send",
+			"m_clients[0].bytes_sent",
+			"m_clients[0].write_state",
+			"void *p_context",
+			"pot_t *p_pot",
+			"pot_ret_t",
+			"MY_LOG",
+			"connection_state",
+			"APPL_LOG",
+			"pote_logf",
+			" \\\\\\n",
+			"\\n",
+			"\\r\\n",
+			"//assert(crypto_si",
+			"SALT_VERIFY",
+			"SALT_ERR_NO_SUCH_SERVER",
+			"host",
+			"salti_size_to_bytes",
+			"client_",
+			"client",
+			"salti_handle_m1",
+			"sadfhasdfasfasdf",
+			"",
+			"p_msg",
+			"autho",
+			" p_req",
+			"p_req",
+			"&bp",
+			"POT_ERROR",
+			"POT_SUCCESS",
+			"POT_ERROR",
+			"lock-thing.$1",
+			"pot-things/",
+			"external/pot-c/src/host",
+			"\"msg\"",
+			"salt-channel-c/",
+			"binson_writer \\*w = &$1",
+			"binson_parser \\*p = &$1",
+			"binson_parser \\*$1 = &env->parser",
+			"binson_parser \\*$1 = &$2->parser",
+			"w = &",
+			"env->p_channel",
+			"salti_io_write",
+			"salti_io_read",
+			"/opt/nrf52/nrfjprog/nrfjprog",
+			"",
+			"TEST_CASE(test_,\\n{\\n    TEST_DATA($2, \\\"$1\\\");\\n})",
+			"TEST_CASE(test_,\\n{    TEST_DATA($2, \\\"$1\\\");\\n})",
+			"/opt/nrf52/nrfjprog/nrfjprog",
+			"    PRINT_ADDR\\(m_fs->p$2\\);",
+			"    PRINT_ADDR\\(m_fs->p$1\\);",
+			"simonj",
+			"administrator",
+			"LOG_DEBUG",
+			"Conversation",
+			"false",
+			"true",
+			"POT_LOG_EVENT_ENTRY_SIZE_WORDS",
+			"event",
+			"auth_chain.event",
+			"auth_chain.",
+			"TEST_CASE\\($1\\),",
+			"TEST_CASE\\($1\\)",
+			"pot",
+			"&storage",
+			"m_fs",
+			"m_fs->",
+			"p_fs->"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 2,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "src/v2notes.txt",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 9113,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								8220,
+								8220
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 2325.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/home/simonj/Work/notes.txt",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 312,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								312,
+								312
+							]
+						],
+						"settings":
+						{
+							"auto_name": "=== Pot-c notes ===",
+							"incomplete_sync": null,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 815,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								815,
+								815
+							]
+						],
+						"settings":
+						{
+							"auto_name": "# iOS PoT \"lu-lock\" API Notes",
+							"incomplete_sync": null,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "v2test/Makefile",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1048,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								922,
+								922
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/Makefile/Makefile.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "src/salt_v2.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 17376,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								15675,
+								15675
+							]
+						],
+						"settings":
+						{
+							"git_gutter_enabled": true,
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 7385.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "src/salt_v2.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 42201,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								33983,
+								33983
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 17894.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "v2test/hostclient.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5800,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2430,
+								2430
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": true,
+							"incomplete_sync": null,
+							"remote_loading": false,
+							"synced": false,
+							"syntax": "Packages/C++/C.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 1351.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 32.0
+	},
+	"input":
+	{
+		"height": 29.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.astyle_error_message":
+	{
+		"height": 0.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.sftp":
+	{
+		"height": 88.0
+	},
+	"output.unsaved_changes":
+	{
+		"height": 88.0
+	},
+	"pinned_build_system": "",
+	"project": "salt-c.sublime-project",
+	"replace":
+	{
+		"height": 76.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 295.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

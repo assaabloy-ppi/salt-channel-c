@@ -1,0 +1,26 @@
+{
+    "folders":
+    [
+        {
+            "path": "."
+        }
+    ],
+    "settings":
+    {
+        "translate_tabs_to_spaces": true,
+        "detect_indentation": false,
+        "tab_size": 4,
+        "AStyleFormatter":
+        {
+            "options_c":
+            {
+                "indent-spaces": 4,
+                "style": "k&r",
+                "break-closing-brackets": true,
+                "add-brackets": true,
+                "convert-tabs": true,
+                "indent-switches": true,
+            },
+        }
+    }
+}

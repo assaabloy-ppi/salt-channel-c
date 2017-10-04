@@ -18,10 +18,11 @@ typedef struct salt_test_s {
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
-    FILE* fr = fopen("/dev/urandom", "r");
-    if (!fr) perror("urandom"), exit(EXIT_FAILURE);
-    fread(p_bytes, sizeof(unsigned char), length, fr);
-    fclose(fr);
+   FILE* fr = fopen("/dev/urandom", "r");
+   if (!fr) perror("urandom"), exit(EXIT_FAILURE);
+   size_t tmp = fread(p_bytes, sizeof(unsigned char), length, fr);
+   (void) tmp;
+   fclose(fr);
 }
 
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)

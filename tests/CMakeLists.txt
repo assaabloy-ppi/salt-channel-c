@@ -2,12 +2,13 @@ project(salt-channel-c)
 
 
 INCLUDE(CodeCoverage.cmake)
+INCLUDE(FindCMocka.cmake)
 
 macro(do_test arg)
 	add_executable(${arg} ${arg}.c)
 	add_dependencies(${arg} ${arg} salt ${ARGN})
 	add_test(${arg} ${arg})
-	target_link_libraries(${arg} salt ${ARGN} /usr/local/lib/libcmocka.so ${EXTRA_LIBS})
+	target_link_libraries(${arg} salt ${ARGN} ${CMOCKA_LIBRARIES} ${EXTRA_LIBS})
 endmacro(do_test)
 
 include_directories (../src)

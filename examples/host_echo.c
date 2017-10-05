@@ -13,7 +13,6 @@
 
 
 static void *connection_handler(void *context);
-static void *write_handler(void *context);
 
 static uint8_t host_sk_sec[64] = {
     0x7a, 0x77, 0x2f, 0xa9, 0x01, 0x4b, 0x42, 0x33,
@@ -41,7 +40,7 @@ int main(int argc , char *argv[])
 
     int socket_desc;
     int client_sock;
-    
+
 
     struct clientInfo *client_info;
 
@@ -68,7 +67,7 @@ int main(int argc , char *argv[])
     server.sin_addr.s_addr = INADDR_ANY;
     server.sin_port = htons(2033);
 
-    if(bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
+    if (bind(socket_desc, (struct sockaddr *)&server , sizeof(server)) < 0)
     {
         perror("bind failed. Error");
         return 1;
@@ -82,22 +81,20 @@ int main(int argc , char *argv[])
         puts("Waiting for incoming connections...");
         c = sizeof(struct sockaddr_in);
 
-        //puts("\033[A\33[2K");
-
         client_info = malloc(sizeof(struct clientInfo));
 
-        client_info->sock_fd = accept(socket_desc,(struct sockaddr*)&client_info->client, (socklen_t*)&c);
+        client_info->sock_fd = accept(socket_desc, (struct sockaddr*)&client_info->client, (socklen_t*)&c);
         puts("Connection accepted");
 
         snprintf(client_info->ip_addr, 16, "%d.%d.%d.%d",
-                            client_info->client.sin_addr.s_addr & 0xFF,
-                            ((client_info->client.sin_addr.s_addr&0xFF00)>>8),
-                            ((client_info->client.sin_addr.s_addr&0xFF0000)>>16),
-                            ((client_info->client.sin_addr.s_addr&0xFF000000)>>24));
+                 client_info->client.sin_addr.s_addr & 0xFF,
+                 ((client_info->client.sin_addr.s_addr & 0xFF00) >> 8),
+                 ((client_info->client.sin_addr.s_addr & 0xFF0000) >> 16),
+                 ((client_info->client.sin_addr.s_addr & 0xFF000000) >> 24));
 
         pthread_t salt_thread;
 
-        if(pthread_create(&salt_thread, NULL,  connection_handler, (void*) client_info) < 0)
+        if (pthread_create(&salt_thread, NULL,  connection_handler, (void*) client_info) < 0)
         {
             puts("could not create thread");
             return 1;
@@ -122,8 +119,12 @@ static void *connection_handler(void *context)
     struct clientInfo *client = (struct clientInfo *) context;
     int sock = client->sock_fd;
     salt_ret_t ret;
-    uint32_t size;
+
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
+    uint8_t rx_buffer[1024];
+    salt_msg_t msg_in;
+    uint8_t tx_buffer[1024];
+    salt_msg_t msg_out;
 
     ret = salt_create(&client->channel, SALT_SERVER, my_write, my_read, NULL);
     assert(ret == SALT_SUCCESS);
@@ -139,6 +140,7 @@ static void *connection_handler(void *context)
     while (ret != SALT_SUCCESS) {
 
         if (ret == SALT_ERROR) {
+            printf("Error during handshake:\r\n");
             printf("Salt error: 0x%02x\r\n", client->channel.err_code);
             printf("Salt error read: 0x%02x\r\n", client->channel.read_channel.err_code);
             printf("Salt error write: 0x%02x\r\n", client->channel.write_channel.err_code);
@@ -151,23 +153,33 @@ static void *connection_handler(void *context)
     }
 
     printf("Salt handshake succeeded.\r\n");
-    pthread_t write_thread;
-    if(pthread_create(&write_thread, NULL,  write_handler, (void*) client) < 0)
-    {
-        puts("could not create write thread");
-        pthread_exit(NULL);
-    }
 
     do
     {
         memset(hndsk_buffer, 0, sizeof(hndsk_buffer));
-        ret = salt_read(&client->channel, hndsk_buffer, &size, SALT_HNDSHK_BUFFER_SIZE);
-        if (ret == SALT_SUCCESS)
-        {
-            printf("\33[2K\rclient (%s): %*.*s", client->ip_addr, 0, SALT_HNDSHK_BUFFER_SIZE-SALT_OVERHEAD_SIZE, &hndsk_buffer[SALT_OVERHEAD_SIZE]);
-            printf("Enter message: ");
+
+        do {
+            ret = salt_read_begin(&client->channel, rx_buffer, sizeof(rx_buffer), &msg_in);
+        } while (ret == SALT_PENDING);
+
+        if (ret == SALT_ERROR) {
+            printf("Error during read:\r\n");
+            printf("Salt error: 0x%02x\r\n", client->channel.err_code);
+            printf("Salt error read: 0x%02x\r\n", client->channel.read_channel.err_code);
+            printf("Salt error write: 0x%02x\r\n", client->channel.write_channel.err_code);
+            break;
         }
-    } while(ret == SALT_SUCCESS);
+
+        ret = salt_write_begin(tx_buffer, sizeof(tx_buffer), &msg_out);
+        ret = salt_write_next(&msg_out, msg_in.read.p_message, msg_in.read.message_size);
+        for (uint16_t i = 0; i < msg_in.read.messages_left; i++) {
+            ret = salt_read_next(&msg_in);
+            ret = salt_write_next(&msg_out, msg_in.read.p_message, msg_in.read.message_size);
+        }
+
+        salt_write_execute(&client->channel, &msg_out);
+
+    } while (ret == SALT_SUCCESS);
 
 
     close(sock);
@@ -179,23 +191,3 @@ static void *connection_handler(void *context)
     pthread_exit(NULL);
 }
 
-static void *write_handler(void *context)
-{
-    struct clientInfo *client = (struct clientInfo *) context;
-    int tx_size;
-    char tx_buffer[256];
-    salt_ret_t ret_code;
-
-    do
-    {
-        printf("Enter message: ");
-        tx_size = read(0, &tx_buffer[SALT_OVERHEAD_SIZE], sizeof(tx_buffer)-SALT_OVERHEAD_SIZE);
-        if (tx_size > 0) {
-            printf("\033[A\33[2K\rhost: %*.*s", 0, tx_size, &tx_buffer[SALT_OVERHEAD_SIZE]);
-            ret_code = salt_write(&client->channel, (uint8_t*) tx_buffer, tx_size + SALT_OVERHEAD_SIZE);
-        }
-    } while (ret_code == SALT_SUCCESS);
-
-
-    pthread_exit(NULL);
-}

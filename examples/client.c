@@ -1,5 +1,6 @@
 /**
- * @file salt_util.c
+ * @file client.c
+ *
  *
  * Description
  *
@@ -7,24 +8,23 @@
 
 /*======= Includes ==========================================================*/
 
-#include "salt_util.h"
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <assert.h>
+
+#include "salt_v2.h"
+#include "salt_io.h"
 
 /*======= Local Macro Definitions ===========================================*/
 /*======= Type Definitions ==================================================*/
-/*======= Local function prototypes =========================================*/
 /*======= Local variable declarations =======================================*/
+/*======= Local function prototypes =========================================*/
 /*======= Global function implementations ===================================*/
-
-char *salt_mode2str(salt_mode_t mode)
-{
-    switch (mode) {
-        case SALT_SERVER:
-            return "SALT_SERVER";
-        case SALT_CLIENT:
-            return "SALT_CLIENT";
-        default:
-            return "UNKNOWN MODE";
-    }
-}
-
 /*======= Local function implementations ====================================*/

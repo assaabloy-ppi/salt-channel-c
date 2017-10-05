@@ -9,7 +9,6 @@
 #include <pthread.h>
 #include <assert.h>
 
-#include "util.h"
 #include "salt_v2.h"
 #include "../v2test/test_data.c"
 #include "salt_io.h"

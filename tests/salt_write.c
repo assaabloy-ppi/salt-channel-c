@@ -41,15 +41,13 @@ void salt_write_messages(void **state)
     salt_msg_t message;
     salt_write_begin(buffer, sizeof(buffer), &message);
     salt_write_next(&message, (uint8_t *)"tjenare", 7);
-    salt_write_create(&message);
-    assert_int_equal(SALT_APP_PKG_MSG_HEADER_VALUE, message.write.type);
+    assert_int_equal(SALT_APP_PKG_MSG_HEADER_VALUE, salt_write_create(&message));
     assert_int_equal(1, message.write.message_count);
 
     salt_write_begin(buffer, sizeof(buffer), &message);
     salt_write_next(&message, (uint8_t *)"tjenare", 7);
     salt_write_next(&message, (uint8_t *)"tjenare", 7);
-    salt_write_create(&message);
-    assert_int_equal(SALT_MULTI_APP_PKG_MSG_HEADER_VALUE, message.write.type);
+    assert_int_equal(SALT_MULTI_APP_PKG_MSG_HEADER_VALUE, salt_write_create(&message));
     assert_int_equal(2, message.write.message_count);
 
 }

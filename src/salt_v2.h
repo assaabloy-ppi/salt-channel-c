@@ -238,16 +238,7 @@ typedef struct salt_channel_s {
  * Specially used when writing/reading multi app packets.
  *
  */
-#if 0
-typedef struct salt_msg_s {
-    uint8_t     *p_buffer;      /**< Message buffer. */
-    uint8_t     *p_message;     /**< Pointer to current message. */
-    uint32_t    buffer_size;    /**< Message buffer size. */
-    uint32_t    buffer_used;
-    uint16_t    messages_left;  /**< Number of messages left to read. */
-    uint16_t    message_size;   /**< Current message size. */
-} salt_msg_t;
-#else
+
 typedef union salt_msg_u {
     struct {
         uint8_t     *p_buffer;      /**< Message buffer. */
@@ -263,10 +254,10 @@ typedef union salt_msg_u {
         uint32_t    buffer_size;    /**< Message buffer size. */
         uint32_t    buffer_used;
         uint16_t    message_count;  /**< Number of messages left to read. */
-        uint16_t    type;           /**< Current message size. */ 
+        uint16_t    state;           /**< Current message type. */
     } write;
 } salt_msg_t;
-#endif
+
 /*======= Public function declarations ========================================*/
 
 /**
@@ -433,7 +424,8 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
  * @return SALT_ERROR   The message doesn't follow salt channel specification or the
  *                      receive buffer is to small.
  */
-salt_err_t salt_read_init(uint8_t *p_buffer,
+salt_err_t salt_read_init(uint8_t type,
+                          uint8_t *p_buffer,
                           uint32_t buffer_size,
                           salt_msg_t *p_msg);
 
@@ -579,7 +571,7 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
  * @return SALT_SUCCESS The message was successfully serialized.
  * @return SALT_ERROR   p_msg was NULL.
  */
-void salt_write_create(salt_msg_t *p_msg);
+uint8_t salt_write_create(salt_msg_t *p_msg);
 
 
 #endif /* _SALT_V2_H_ */

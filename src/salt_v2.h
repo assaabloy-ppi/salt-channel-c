@@ -71,6 +71,7 @@ typedef enum salt_err_e {
     SALT_ERR_BUFF_TO_SMALL,         /**< I/O Buffer to small. */
     SALT_ERR_BAD_PROTOCOL,          /**< Package doesn't follow specification. */
     SALT_ERR_IO_WRITE,              /**< Error occured during I/O. */
+    SALT_ERR_TIMEOUT,
     SALT_ERR_CONNECTION_CLOSED,
 } salt_err_t;
 
@@ -220,6 +221,12 @@ typedef struct salt_channel_s {
     uint8_t     read_nonce[crypto_box_NONCEBYTES];      /**< Read nonce. */
     uint8_t     write_nonce_incr;                       /**< Write nonce increment. */
     uint8_t     read_nonce_incr;                        /**< Read nonce increment. */
+
+    /* Time checking stuff */
+    uint32_t    my_epoch;
+    uint32_t    peer_epoch;
+    uint32_t    time_supported;
+    uint32_t    timeout;
 
     salt_io_channel_t   write_channel;                  /**< Write channel structure. */
     salt_io_impl        write_impl;                     /**< Function pointer to write implementation. */
@@ -374,6 +381,8 @@ salt_ret_t salt_create_signature(salt_channel_t *p_channel);
 salt_ret_t salt_init_session(salt_channel_t *p_channel,
                              uint8_t *hdshk_buffer,
                              uint32_t hdshk_buffer_size);
+
+salt_ret_t salt_set_timeout(salt_channel_t *p_channel, uint32_t timeout);
 
 /**
  * @brief Salt handshake process.

@@ -35,7 +35,7 @@ static void host_handshake_m1(void **state)
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
     memset(hndsk_buffer, 0xcc, SALT_HNDSHK_BUFFER_SIZE);
 
-    ret = salt_create(&channel, SALT_SERVER, salt_write_mock, salt_read_mock, salt_mock_time_impl);
+    ret = salt_create(&channel, SALT_SERVER, salt_write_mock, salt_read_mock, NULL);
     ret = salt_set_signature(&channel, salt_test_data.host_sk_sec);
     ret = salt_set_context(&channel, mock->expected_write, mock->next_read);
 
@@ -74,7 +74,7 @@ static void host_handshake(void **state) {
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
     memset(hndsk_buffer, 0xcc, SALT_HNDSHK_BUFFER_SIZE);
 
-    ret = salt_create(&channel, SALT_SERVER, salt_write_mock, salt_read_mock, salt_mock_time_impl);
+    ret = salt_create(&channel, SALT_SERVER, salt_write_mock, salt_read_mock, NULL);
     ret = salt_set_signature(&channel, salt_test_data.host_sk_sec);
     ret = salt_set_context(&channel, mock->expected_write, mock->next_read);
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);

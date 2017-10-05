@@ -9,7 +9,7 @@
 #include "cfifo.h"
 #include "salt_v2.h"
 #include "salt_util.h"
-#include "salt_io_mock.h"
+#include "salt_mock.h"
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {

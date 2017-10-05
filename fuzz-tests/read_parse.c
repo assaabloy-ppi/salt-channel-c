@@ -8,17 +8,28 @@
 int main(void) {
 
     uint8_t buf[1024];
+    uint8_t cpy[1024];
     salt_msg_t msg;
 
     uint32_t size = read(0, buf, sizeof(buf));
-    salt_err_t ret = salt_read_init(buf, size, &msg);
+    salt_err_t ret = salt_read_init(SALT_APP_PKG_MSG_HEADER_VALUE, buf, size, &msg);
 
     if (ret != SALT_ERR_NONE) {
         return 0;
     }
 
     do {
-        memset(msg.read.p_message, 0x00, msg.read.message_size);
+        memcpy(cpy, msg.read.p_message, msg.read.message_size);
+    } while (salt_read_next(&msg) == SALT_SUCCESS);
+
+    ret = salt_read_init(SALT_MULTI_APP_PKG_MSG_HEADER_VALUE, buf, size, &msg);
+
+    if (ret != SALT_ERR_NONE) {
+        return 0;
+    }
+
+    do {
+        memcpy(cpy, msg.read.p_message, msg.read.message_size);
     } while (salt_read_next(&msg) == SALT_SUCCESS);
 
     return 0;

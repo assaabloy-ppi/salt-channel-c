@@ -15,7 +15,7 @@
 #include <stddef.h>
 #include <setjmp.h>
 #include <cmocka.h>
-#include "salt_io_mock.h"
+#include "salt_mock.h"
 #include "salt_util.h"
 
 /*======= Local Macro Definitions ===========================================*/
@@ -24,6 +24,33 @@
 /*======= Local function prototypes =========================================*/
 /*======= Global function implementations ===================================*/
 
+
+salt_mock_t *salt_io_mock_create(void)
+{
+    salt_mock_t *mock;
+    mock = malloc(sizeof(salt_mock_t));
+    mock->expected_write = malloc(sizeof(cfifo_t));
+    mock->next_read = malloc(sizeof(cfifo_t));
+
+    uint8_t *expected_write = malloc(sizeof(test_data_t) * 10);
+    uint8_t *next_read = malloc(sizeof(test_data_t) * 10);
+
+    cfifo_init(mock->expected_write, expected_write, 10, sizeof(test_data_t));
+    cfifo_init(mock->next_read, next_read, 10, sizeof(test_data_t));
+
+    return mock;
+}
+
+
+void salt_io_mock_delete(salt_mock_t *mock)
+{
+    salt_io_mock_reset(mock);
+    free(mock->expected_write->p_buf);
+    free(mock->next_read->p_buf);
+    free(mock->expected_write);
+    free(mock->next_read);
+    free(mock);
+}
 
 void salt_io_mock_reset(salt_mock_t *mock)
 {
@@ -114,5 +141,9 @@ salt_ret_t salt_read_mock(salt_io_channel_t *p_rchannel)
     return SALT_ERROR;;
 }
 
+void salt_mock_time_impl(uint32_t *p_time)
+{
+    memset(p_time, 0, 4);
+}
 
 /*======= Local function implementations ====================================*/

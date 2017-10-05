@@ -13,6 +13,7 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
 
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
+    (void) p_wchannel;
     return SALT_SUCCESS;
 }
 

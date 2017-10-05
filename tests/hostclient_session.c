@@ -25,7 +25,7 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
    fclose(fr);
 }
 
-salt_ret_t my_write(salt_io_channel_t *p_wchannel)
+static salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
 
     static uint8_t i = 0;
@@ -49,7 +49,7 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
     
 }
 
-salt_ret_t my_read(salt_io_channel_t *p_rchannel)
+static salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 {
     static uint8_t i = 0;
 
@@ -76,7 +76,7 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 }
 
 
-void hostclient_session(void **state)
+static void hostclient_session(void **state)
 {
     (void) state;
     salt_channel_t  host_channel;

@@ -16,7 +16,7 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
     (void) length;
 }
 
-void salt_write_begin_buffer_size(void **state)
+static void salt_write_begin_buffer_size(void **state)
 {
     uint8_t buffer[256];
     uint8_t msg[256];
@@ -35,7 +35,7 @@ void salt_write_begin_buffer_size(void **state)
 
 }
 
-void salt_write_messages(void **state)
+static void salt_write_messages(void **state)
 {
     uint8_t buffer[256];
     salt_msg_t message;
@@ -52,7 +52,7 @@ void salt_write_messages(void **state)
 
 }
 
-void write_begin_null_args(void **state)
+static void write_begin_null_args(void **state)
 {
     uint8_t buffer[256];
     salt_msg_t message;

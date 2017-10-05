@@ -16,10 +16,11 @@ include_directories (cfifo)
 
 add_library(cfifo cfifo/cfifo.c)
 add_library(test_data test_data.c)
+add_library(io_mock salt_io_mock.c)
 
 # Test runners
-do_test(host_handshake 		test_data)
-do_test(client_handshake 	test_data)
+do_test(host_handshake 		test_data io_mock cfifo)
+do_test(client_handshake 	test_data io_mock cfifo)
 do_test(hostclient_session 	cfifo)
 do_test(a1a2handshake 		cfifo)
 do_test(multimessage 		cfifo)

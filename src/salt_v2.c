@@ -567,7 +567,7 @@ salt_ret_t salt_write_next(salt_msg_t *p_msg, uint8_t *p_buffer, uint16_t size)
 {
 
     /* We need size + 2 bytes available. */
-    if ((p_msg->write.buffer_size - p_msg->write.buffer_used) < (size + 2)) {
+    if ((uint16_t)(p_msg->write.buffer_size - p_msg->write.buffer_used) < (size + 2)) {
         return SALT_ERROR;
     }
 
@@ -906,8 +906,8 @@ static salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                                         &p_channel->write_channel.p_data,
                                         &p_channel->write_channel.size);
 
-                SALT_VERIFY(SALT_M4_HEADER_VALUE == header[0], SALT_ERR_BAD_PROTOCOL);
                 SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
+                SALT_VERIFY(SALT_M4_HEADER_VALUE == header[0], SALT_ERR_BAD_PROTOCOL);
 
                 ret_code = salti_handle_m3m4(p_channel,
                                              p_channel->write_channel.p_data,
@@ -1048,8 +1048,8 @@ static salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
                                         &p_channel->read_channel.p_data,
                                         &p_channel->read_channel.size);
 
-                SALT_VERIFY(SALT_M3_HEADER_VALUE == header[0], SALT_ERR_BAD_PROTOCOL);
                 SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
+                SALT_VERIFY(SALT_M3_HEADER_VALUE == header[0], SALT_ERR_BAD_PROTOCOL);
 
                 ret_code = salti_handle_m3m4(p_channel,
                                              p_channel->read_channel.p_data,
@@ -1355,6 +1355,8 @@ static salt_ret_t salti_handle_m3m4(salt_channel_t *p_channel,
 {
     unsigned long long sign_msg_size;
 
+    SALT_VERIFY(96U == size, SALT_ERR_BAD_PROTOCOL);
+
     memcpy(p_channel->peer_sk_pub, p_data, 32);
     memcpy(p_channel->hdshk_buffer, &p_data[32], 64);
 
@@ -1508,7 +1510,7 @@ static salt_ret_t salti_unwrap(salt_channel_t *p_channel,
     SALT_VERIFY((p_data[14] == 0x06U && p_data[15] == 0x00U),
                 SALT_ERR_BAD_PROTOCOL);
 
-    SALT_VERIFY(size >= 18U, SALT_ERR_BAD_PROTOCOL);
+    SALT_VERIFY(size >= 24U, SALT_ERR_BAD_PROTOCOL);
 
     memset(p_data, 0x00U, crypto_secretbox_BOXZEROBYTES);
     size = size + crypto_secretbox_BOXZEROBYTES - 2U;

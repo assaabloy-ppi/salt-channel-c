@@ -9,6 +9,7 @@
 #include "cfifo.h"
 #include "salt_v2.h"
 #include "salt_util.h"
+#include "salt_io_mock.h"
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
@@ -16,7 +17,7 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
     (void) length;
 }
 
-void read_test(void **state)
+static void read_test(void **state)
 {
     uint8_t buffer[256];
     //uint8_t msg[256];
@@ -45,6 +46,7 @@ void read_test(void **state)
 
     assert_true(SALT_ERROR == salt_read_next(&message));
 }
+
 
 int main(void)
 {

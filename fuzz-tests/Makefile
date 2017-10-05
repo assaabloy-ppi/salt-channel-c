@@ -63,5 +63,3 @@ coverage: $(EXE_COV)
 clean:
 	rm -rf _build
 	rm -rf output
-	rm *.gcda
-	rm *.gcno

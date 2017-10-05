@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "salt_v2.h"
+#include "test_data.h"
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {

@@ -2,7 +2,19 @@
 
 #include <unistd.h>
 #include <stdio.h>
+#include <inttypes.h>
+#include <math.h>
+#include <stdio.h>
+#include <sys/time.h>
+#include <string.h>
 #include "salt_util.h"
+
+static salt_ret_t get_time(salt_time_t *p_time, uint32_t *time);
+
+salt_time_t my_time = {
+    get_time,
+    NULL
+};
 
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
@@ -34,5 +46,16 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 
     p_rchannel->size = p_rchannel->size_expected;
 
+    return SALT_SUCCESS;
+}
+
+static salt_ret_t get_time(salt_time_t *p_time, uint32_t *time)
+{
+    (void) *p_time;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    uint64_t curr_time = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000;
+    uint32_t rel_time = curr_time % 0xFFFFFFFF;
+    *time = rel_time;
     return SALT_SUCCESS;
 }

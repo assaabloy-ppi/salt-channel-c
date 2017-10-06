@@ -71,7 +71,7 @@ static void *connection_handler(void *context)
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
     salt_msg_t msg_in;
 
-    ret = salt_create(&channel, SALT_CLIENT, my_write, my_read, NULL);
+    ret = salt_create(&channel, SALT_CLIENT, my_write, my_read, &my_time);
     assert(ret == SALT_SUCCESS);
     ret = salt_create_signature(&channel); /* Creates a new signature. */
     assert(ret == SALT_SUCCESS);
@@ -80,6 +80,8 @@ static void *connection_handler(void *context)
 
     ret = salt_set_context(&channel, &sock, &sock);
     assert(ret == SALT_SUCCESS);
+
+    salt_set_delay_threshold(&channel, 1000);
 
     ret = salt_handshake(&channel);
 

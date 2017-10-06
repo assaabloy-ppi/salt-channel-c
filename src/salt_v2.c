@@ -25,7 +25,7 @@
                 p_channel->err_code = error_code;                               \
                 printf(                                                         \
                     "Runtime error (%s, %s): %s at %s:%d, %s.\r\n",             \
-                    #error_code, salt_mode2str(p_channel->mode), #x,                 \
+                    #error_code, salt_mode2str(p_channel->mode), #x,            \
                     __FILE__, __LINE__, __func__);                              \
                 return SALT_ERROR;                                              \
             }                                                                   \
@@ -183,7 +183,7 @@ static uint32_t salti_bytes_to_u16(uint8_t *src); // TODO: Consider renaming to 
 static void salti_u32_to_bytes(uint8_t *dest, uint32_t size); // TODO: Consider renaming to u32_to_bytes
 static uint32_t salti_bytes_to_u32(uint8_t *src); // TODO: Consider renaming to bytes_to_u32
 
-static void salti_get_time(salt_channel_t *p_channel, uint32_t *p_time);
+static salt_ret_t salti_get_time(salt_channel_t *p_channel, uint32_t *p_time);
 
 /*======= Global function implementations =====================================*/
 
@@ -192,7 +192,7 @@ salt_ret_t salt_create(
     salt_mode_t mode,
     salt_io_impl write_impl,
     salt_io_impl read_impl,
-    salt_time_impl time_impl)
+    salt_time_t *time_impl)
 {
 
     SALT_VERIFY_VALID_CHANNEL(p_channel);
@@ -200,17 +200,19 @@ salt_ret_t salt_create(
     SALT_VERIFY(mode <= SALT_CLIENT,
                 SALT_ERR_NOT_SUPPORTED);
 
+    p_channel->mode = mode;
+
     SALT_VERIFY_NOT_NULL(write_impl);
     SALT_VERIFY_NOT_NULL(read_impl);
 
     p_channel->write_impl = write_impl;
     p_channel->read_impl = read_impl;
     p_channel->time_impl = time_impl;
-    p_channel->mode = mode;
     p_channel->state = SALT_CREATED;
     p_channel->err_code = SALT_ERR_NONE;
     p_channel->my_sk_pub = &p_channel->my_sk_sec[32];
     p_channel->p_protocols = NULL;
+    p_channel->delay_threshold = 0;
 
     return SALT_SUCCESS;
 }
@@ -363,24 +365,28 @@ salt_ret_t salt_init_session(salt_channel_t *p_channel,
 
 }
 
-salt_ret_t salt_set_timeout(salt_channel_t *p_channel, uint32_t timeout)
+salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel, uint32_t delay_threshold)
 {
     SALT_VERIFY_VALID_CHANNEL(p_channel);
-    p_channel->timeout = timeout;
-    
+    p_channel->delay_threshold = delay_threshold;
+
     return SALT_ERROR;
 }
 
 salt_ret_t salt_handshake(salt_channel_t *p_channel)
 {
+    salt_ret_t ret;
     SALT_VERIFY_VALID_CHANNEL(p_channel);
 
     if (p_channel->mode == SALT_SERVER) {
-        return salti_handshake_server(p_channel);
+        ret = salti_handshake_server(p_channel);
     }
     else {
-        return salti_handshake_client(p_channel);
+        ret = salti_handshake_client(p_channel);
     }
+
+    return ret;
+
 }
 
 salt_ret_t salt_read_begin(salt_channel_t *p_channel,
@@ -954,6 +960,7 @@ static salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
                  * support for virtual server yet, so the size of M1 is always 42
                  * bytes.
                  */
+
                 salti_create_m1(p_channel,
                                 &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET],
                                 &size,
@@ -1215,7 +1222,8 @@ static salt_ret_t salti_handle_m1(salt_channel_t *p_channel,
     if (salti_bytes_to_u32(&p_data[6]) == 1) {
         salti_get_time(p_channel, &p_channel->peer_epoch);
         p_channel->time_supported &= 1;
-    } else {
+    }
+    else {
         p_channel->time_supported = 0;
     }
 
@@ -1277,7 +1285,7 @@ static salt_ret_t salti_create_m2(salt_channel_t *p_channel,
     if (p_channel->time_impl != NULL) {
         p_data[SALT_LENGTH_SIZE + 2] = 0x01U;
     }
-    
+
 
     memcpy(&p_data[SALT_LENGTH_SIZE + 6],
            &p_channel->hdshk_buffer[SALT_PUB_ENC_OFFSET],
@@ -1332,7 +1340,8 @@ static salt_ret_t salti_handle_m2(salt_channel_t *p_channel,
     if (salti_bytes_to_u32(&p_data[2]) == 1) {
         salti_get_time(p_channel, &p_channel->peer_epoch);
         p_channel->time_supported &= 1;
-    } else {
+    }
+    else {
         p_channel->time_supported = 0;
     }
 
@@ -1476,7 +1485,10 @@ static salt_ret_t salti_wrap(salt_channel_t *p_channel,
     p_data[32] = header;
     p_data[33] = 0x00;
 
-    salti_get_time(p_channel, (uint32_t *) &p_data[34]);
+    uint32_t time;
+    salti_get_time(p_channel, &time);
+    time -= p_channel->my_epoch;
+    salti_u32_to_bytes(&p_data[34], time);
 
     ret = crypto_box_afternm(
               p_data,
@@ -1556,15 +1568,15 @@ static salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
     (*header) = &p_data[32];
 
-    uint32_t t_package = salti_bytes_to_u32(&p_data[34]);
-    uint32_t t_arrival;
-    salti_get_time(p_channel, &t_arrival);
+    if (p_channel->time_supported && p_channel->delay_threshold > 0) {
+        uint32_t t_package = salti_bytes_to_u32(&p_data[34]);
+        uint32_t t_arrival;
+        salti_get_time(p_channel, &t_arrival);
 
-    if (p_channel->time_supported && p_channel->timeout > 0) {
-        if (t_arrival - p_channel->peer_epoch > t_package + p_channel->timeout) {
+        if (t_arrival - p_channel->peer_epoch > t_package + p_channel->delay_threshold) {
             /* Timeout */
             SALT_ERROR(SALT_ERR_TIMEOUT);
-        } 
+        }
     }
 
 
@@ -1610,15 +1622,13 @@ static uint32_t salti_bytes_to_u32(uint8_t *src)
     return *((uint32_t*) src);
 }
 
-static void salti_get_time(salt_channel_t *p_channel, uint32_t *p_time)
+static salt_ret_t salti_get_time(salt_channel_t *p_channel, uint32_t *p_time)
 {
-    
-    if (p_channel->time_impl != NULL) {
-        p_channel->time_impl(p_time);
-        printf("%s: %08x (%u)\r\n",
-            salt_mode2str(p_channel->mode),
-            p_time[0], p_time[0]);
-        return;
+    if (p_channel->time_impl != NULL && p_channel->time_impl->get_time != NULL) {
+        return p_channel->time_impl->get_time(p_channel->time_impl, p_time);
     }
+
     memset(p_time, 0x00, 4);
+    return SALT_ERROR;
+
 }

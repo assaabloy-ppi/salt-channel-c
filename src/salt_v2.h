@@ -71,6 +71,7 @@ typedef enum salt_err_e {
     SALT_ERR_BUFF_TO_SMALL,         /**< I/O Buffer to small. */
     SALT_ERR_BAD_PROTOCOL,          /**< Package doesn't follow specification. */
     SALT_ERR_IO_WRITE,              /**< Error occured during I/O. */
+    SALT_ERR_TIMEOUT,
     SALT_ERR_CONNECTION_CLOSED,
 } salt_err_t;
 
@@ -165,7 +166,17 @@ struct salt_io_channel_s {
  *
  * @param p_time    Pointer where current time will be copied to.
  */
-typedef void (*salt_time_impl)(uint32_t *p_time);
+
+/* TODO: Write description */
+typedef struct salt_time_s salt_time_t;
+typedef salt_ret_t (*salt_get_time)(salt_time_t *p_time, uint32_t *time);
+
+struct salt_time_s {
+    salt_get_time   get_time;
+    void            *p_context;
+};
+
+
 
 /**
  * Supported protocol of salt-channel. The user support what protocols is used by the
@@ -221,12 +232,18 @@ typedef struct salt_channel_s {
     uint8_t     write_nonce_incr;                       /**< Write nonce increment. */
     uint8_t     read_nonce_incr;                        /**< Read nonce increment. */
 
+    /* Time checking stuff */
+    uint32_t    my_epoch;
+    uint32_t    peer_epoch;
+    uint32_t    time_supported;
+    uint32_t    delay_threshold;
+
     salt_io_channel_t   write_channel;                  /**< Write channel structure. */
     salt_io_impl        write_impl;                     /**< Function pointer to write implementation. */
     salt_io_channel_t   read_channel;                   /**< Read channel structure. */
     salt_io_impl        read_impl;                      /**< Function pointer to read implementation. */
 
-    salt_time_impl      time_impl;                      /**< Function pointer to get time implementation. */
+    salt_time_t         *time_impl;                      /**< Function pointer to get time implementation. */
     salt_protocols_t    *p_protocols;                   /**< Function pointer to get supported protocols. */
 
     uint8_t     *hdshk_buffer;                          /**< TODO: Consider making a struct for read- and maintainability. */
@@ -279,7 +296,7 @@ salt_ret_t salt_create(
     salt_mode_t mode,
     salt_io_impl write_impl,
     salt_io_impl read_impl,
-    salt_time_impl time_impl);
+    salt_time_t *time_impl);
 
 /**
  * @brief Sets the context passed to the user injected read implementation.
@@ -374,6 +391,8 @@ salt_ret_t salt_create_signature(salt_channel_t *p_channel);
 salt_ret_t salt_init_session(salt_channel_t *p_channel,
                              uint8_t *hdshk_buffer,
                              uint32_t hdshk_buffer_size);
+
+salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel, uint32_t delay_threshold);
 
 /**
  * @brief Salt handshake process.

@@ -22,13 +22,64 @@
 /*======= Type Definitions ==================================================*/
 /*======= Local variable declarations =======================================*/
 /*======= Local function prototypes =========================================*/
+
+
+static salt_ret_t salt_mock_get_time(salt_time_t *p_time, uint32_t *time);
+
 /*======= Global function implementations ===================================*/
 
-
-salt_mock_t *salt_io_mock_create(void)
+salt_mock_t *salt_mock_create(void)
 {
-    salt_mock_t *mock;
-    mock = malloc(sizeof(salt_mock_t));
+    salt_mock_t *mock = malloc(sizeof(salt_mock_t));
+    mock->time = salt_time_mock_create();
+    mock->io = salt_io_mock_create();
+
+    mock->client_time = salt_time_mock_create();
+    mock->host_time = salt_time_mock_create();
+
+    return mock;
+}
+void salt_mock_delete(salt_mock_t* mock)
+{
+    salt_time_mock_delete(mock->time);
+    salt_time_mock_delete(mock->client_time);
+    salt_time_mock_delete(mock->host_time);
+    salt_io_mock_delete(mock->io);
+    free(mock);
+}
+
+salt_time_t *salt_time_mock_create(void)
+{
+    salt_time_t *mock;
+    mock = malloc(sizeof(salt_time_t));
+    cfifo_t *time_queue = malloc(sizeof(cfifo_t));
+    uint8_t *time_queue_data = malloc(sizeof(uint32_t) * 10);
+    cfifo_init(time_queue, time_queue_data, 10, sizeof(uint32_t));
+    mock->get_time = salt_mock_get_time;
+    mock->p_context = time_queue;
+    return mock;
+}
+
+void salt_time_mock_set_next(salt_time_t *mock, uint32_t time)
+{
+    cfifo_t *time_queue = (cfifo_t *) mock->p_context;
+    if (time_queue != NULL) {
+        cfifo_put(time_queue, &time);
+    }
+}
+
+void salt_time_mock_delete(salt_time_t *mock)
+{
+    cfifo_t *time_queue = (cfifo_t *) mock->p_context;
+    free(time_queue->p_buf);
+    free(time_queue);
+    free(mock);
+}
+
+salt_io_mock_t *salt_io_mock_create(void)
+{
+    salt_io_mock_t *mock;
+    mock = malloc(sizeof(salt_io_mock_t));
     mock->expected_write = malloc(sizeof(cfifo_t));
     mock->next_read = malloc(sizeof(cfifo_t));
 
@@ -42,7 +93,7 @@ salt_mock_t *salt_io_mock_create(void)
 }
 
 
-void salt_io_mock_delete(salt_mock_t *mock)
+void salt_io_mock_delete(salt_io_mock_t *mock)
 {
     salt_io_mock_reset(mock);
     free(mock->expected_write->p_buf);
@@ -52,7 +103,7 @@ void salt_io_mock_delete(salt_mock_t *mock)
     free(mock);
 }
 
-void salt_io_mock_reset(salt_mock_t *mock)
+void salt_io_mock_reset(salt_io_mock_t *mock)
 {
     test_data_t next;
     while (cfifo_get(mock->expected_write, &next) == CFIFO_SUCCESS) {
@@ -63,7 +114,7 @@ void salt_io_mock_reset(salt_mock_t *mock)
     }
 }
 
-void salt_io_mock_set_next_read(salt_mock_t *mock, uint8_t *p_data, uint32_t size, bool add_size)
+void salt_io_mock_set_next_read(salt_io_mock_t *mock, uint8_t *p_data, uint32_t size, bool add_size)
 {
     test_data_t next;
 
@@ -89,7 +140,7 @@ void salt_io_mock_set_next_read(salt_mock_t *mock, uint8_t *p_data, uint32_t siz
     }
 }
 
-void salt_io_mock_expect_next_write(salt_mock_t *mock, uint8_t *p_data, uint32_t size, bool add_size)
+void salt_io_mock_expect_next_write(salt_io_mock_t *mock, uint8_t *p_data, uint32_t size, bool add_size)
 {
 
     test_data_t next;
@@ -141,9 +192,21 @@ salt_ret_t salt_read_mock(salt_io_channel_t *p_rchannel)
     return SALT_ERROR;;
 }
 
-void salt_mock_time_impl(uint32_t *p_time)
+void salt_io_mock_time_impl(uint32_t *p_time)
 {
     memset(p_time, 0, 4);
 }
 
 /*======= Local function implementations ====================================*/
+
+static salt_ret_t salt_mock_get_time(salt_time_t *p_time, uint32_t *time)
+{
+    cfifo_t *time_queue = (cfifo_t *) p_time->p_context;
+    uint32_t next;
+    if (cfifo_get(time_queue, &next) == CFIFO_SUCCESS) {
+        *time = next;
+        return SALT_SUCCESS;
+    }
+    return SALT_ERROR;
+}
+

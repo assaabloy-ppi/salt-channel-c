@@ -126,7 +126,7 @@ static void *connection_handler(void *context)
     uint8_t tx_buffer[1024];
     salt_msg_t msg_out;
 
-    ret = salt_create(&client->channel, SALT_SERVER, my_write, my_read, NULL);
+    ret = salt_create(&client->channel, SALT_SERVER, my_write, my_read, &my_time);
     assert(ret == SALT_SUCCESS);
     ret = salt_set_signature(&client->channel, host_sk_sec);
     assert(ret == SALT_SUCCESS);
@@ -135,6 +135,7 @@ static void *connection_handler(void *context)
 
     ret = salt_set_context(&client->channel, &client->sock_fd, &client->sock_fd);
     assert(ret == SALT_SUCCESS);
+    salt_set_delay_threshold(&client->channel, 1000);
     ret = salt_handshake(&client->channel);
 
     while (ret != SALT_SUCCESS) {

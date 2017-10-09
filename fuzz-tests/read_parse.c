@@ -19,7 +19,7 @@ int main(void) {
     }
 
     do {
-        memcpy(cpy, msg.read.p_message, msg.read.message_size);
+        memcpy(cpy, msg.read.p_payload, msg.read.message_size);
     } while (salt_read_next(&msg) == SALT_SUCCESS);
 
     ret = salt_read_init(SALT_MULTI_APP_PKG_MSG_HEADER_VALUE, buf, size, &msg);
@@ -29,7 +29,7 @@ int main(void) {
     }
 
     do {
-        memcpy(cpy, msg.read.p_message, msg.read.message_size);
+        memcpy(cpy, msg.read.p_payload, msg.read.message_size);
     } while (salt_read_next(&msg) == SALT_SUCCESS);
 
     return 0;

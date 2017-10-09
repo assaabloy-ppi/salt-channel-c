@@ -254,7 +254,7 @@ typedef struct salt_channel_s {
 typedef union salt_msg_u {
     struct {
         uint8_t     *p_buffer;      /**< Message buffer. */
-        uint8_t     *p_message;     /**< Pointer to current message. */
+        uint8_t     *p_payload;     /**< Pointer to current message. */
         uint32_t    buffer_size;    /**< Message buffer size. */
         uint32_t    buffer_used;
         uint16_t    messages_left;  /**< Number of messages left to read. */
@@ -262,7 +262,7 @@ typedef union salt_msg_u {
     } read;
     struct {
         uint8_t     *p_buffer;      /**< Message buffer. */
-        uint8_t     *p_message;     /**< Pointer to current message. */
+        uint8_t     *p_payload;     /**< Pointer to current message. */
         uint32_t    buffer_size;    /**< Message buffer size. */
         uint32_t    buffer_used;
         uint16_t    message_count;  /**< Number of messages left to read. */
@@ -474,7 +474,7 @@ salt_err_t salt_read_init(uint8_t type,
  *          printf("Recevied %d messages:\r\n", msg.messages_left + 1);
  *
  *          do {
- *              printf("%*.*s\r\n", 0, msg.message_size, (char*) msg.p_message);
+ *              printf("%*.*s\r\n", 0, msg.message_size, (char*) msg.p_payload);
  *          } while (salt_read_next(&msg) == SALT_SUCCESS);
  *
  *      } else {
@@ -532,9 +532,11 @@ salt_err_t salt_write_init(uint8_t *p_buffer,
  * @return SALT_ERROR   The message was to large to fit in the state structure.
  *
  */
-salt_ret_t salt_write_next(salt_msg_t *p_msg,
+salt_ret_t salt_write_next_copy(salt_msg_t *p_msg,
                            uint8_t *p_buffer,
                            uint16_t size);
+
+salt_ret_t salt_write_next_appended(salt_msg_t *p_msg, uint16_t size);
 
 /**
  * @brief Encrypts and send the messages prepared in \ref salt_write_begin and \ref salt_write_next

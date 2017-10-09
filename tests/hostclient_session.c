@@ -151,7 +151,7 @@ static void hostclient_session(void **state)
     /* Test single app package */
     client_ret = salt_write_begin(client_buffer, sizeof(client_buffer), &client_msg);
     assert_true(SALT_SUCCESS == client_ret);
-    client_ret = salt_write_next(&client_msg, client_message, sizeof(client_message));
+    client_ret = salt_write_next_copy(&client_msg, client_message, sizeof(client_message));
     assert_true(SALT_SUCCESS == client_ret);
     do {
         client_ret = salt_write_execute(&client_channel, &client_msg);
@@ -160,15 +160,15 @@ static void hostclient_session(void **state)
     /* Test multi app package */
     client_ret = salt_write_begin(client_buffer, sizeof(client_buffer), &client_msg);
     assert_true(SALT_SUCCESS == client_ret);
-    client_ret = salt_write_next(&client_msg, client_message, 1);
+    client_ret = salt_write_next_copy(&client_msg, client_message, 1);
     assert_true(SALT_SUCCESS == client_ret);
-    client_ret = salt_write_next(&client_msg, client_message, 2);
+    client_ret = salt_write_next_copy(&client_msg, client_message, 2);
     assert_true(SALT_SUCCESS == client_ret);
-    client_ret = salt_write_next(&client_msg, client_message, 10);
+    client_ret = salt_write_next_copy(&client_msg, client_message, 10);
     assert_true(SALT_SUCCESS == client_ret);
-    client_ret = salt_write_next(&client_msg, client_message, 7);
+    client_ret = salt_write_next_copy(&client_msg, client_message, 7);
     assert_true(SALT_SUCCESS == client_ret);
-    client_ret = salt_write_next(&client_msg, client_message, 16);
+    client_ret = salt_write_next_copy(&client_msg, client_message, 16);
     assert_true(SALT_SUCCESS == client_ret);
     do {
         client_ret = salt_write_execute(&client_channel, &client_msg);
@@ -190,31 +190,31 @@ static void hostclient_session(void **state)
     assert_true(host_ret == SALT_SUCCESS);
     assert_int_equal(4, host_msg.read.messages_left);
     assert_int_equal(1, host_msg.read.message_size);
-    assert_memory_equal(host_msg.read.p_message, client_message, host_msg.read.message_size);
+    assert_memory_equal(host_msg.read.p_payload, client_message, host_msg.read.message_size);
 
     host_ret = salt_read_next(&host_msg);
     assert_true(host_ret == SALT_SUCCESS);
     assert_int_equal(3, host_msg.read.messages_left);
     assert_int_equal(2, host_msg.read.message_size);
-    assert_memory_equal(host_msg.read.p_message, client_message, host_msg.read.message_size);
+    assert_memory_equal(host_msg.read.p_payload, client_message, host_msg.read.message_size);
 
     host_ret = salt_read_next(&host_msg);
     assert_true(host_ret == SALT_SUCCESS);
     assert_int_equal(2, host_msg.read.messages_left);
     assert_int_equal(10, host_msg.read.message_size);
-    assert_memory_equal(host_msg.read.p_message, client_message, host_msg.read.message_size);
+    assert_memory_equal(host_msg.read.p_payload, client_message, host_msg.read.message_size);
 
     host_ret = salt_read_next(&host_msg);
     assert_true(host_ret == SALT_SUCCESS);
     assert_int_equal(1, host_msg.read.messages_left);
     assert_int_equal(7, host_msg.read.message_size);
-    assert_memory_equal(host_msg.read.p_message, client_message, host_msg.read.message_size);
+    assert_memory_equal(host_msg.read.p_payload, client_message, host_msg.read.message_size);
 
     host_ret = salt_read_next(&host_msg);
     assert_true(host_ret == SALT_SUCCESS);
     assert_int_equal(0, host_msg.read.messages_left);
     assert_int_equal(16, host_msg.read.message_size);
-    assert_memory_equal(host_msg.read.p_message, client_message, host_msg.read.message_size);
+    assert_memory_equal(host_msg.read.p_payload, client_message, host_msg.read.message_size);
 
     host_ret = salt_read_next(&host_msg);
     assert_true(host_ret == SALT_ERROR);
@@ -222,7 +222,7 @@ static void hostclient_session(void **state)
     /* Test single app package */
     host_ret = salt_write_begin(host_buffer, sizeof(host_buffer), &host_msg);
     assert_true(SALT_SUCCESS == host_ret);
-    host_ret = salt_write_next(&host_msg, host_message, sizeof(host_message));
+    host_ret = salt_write_next_copy(&host_msg, host_message, sizeof(host_message));
     assert_true(SALT_SUCCESS == host_ret);
     do {
         host_ret = salt_write_execute(&host_channel, &host_msg);
@@ -231,15 +231,15 @@ static void hostclient_session(void **state)
     /* Test multi app package */
     host_ret = salt_write_begin(host_buffer, sizeof(host_buffer), &host_msg);
     assert_true(SALT_SUCCESS == host_ret);
-    host_ret = salt_write_next(&host_msg, host_message, 1);
+    host_ret = salt_write_next_copy(&host_msg, host_message, 1);
     assert_true(SALT_SUCCESS == host_ret);
-    host_ret = salt_write_next(&host_msg, host_message, 2);
+    host_ret = salt_write_next_copy(&host_msg, host_message, 2);
     assert_true(SALT_SUCCESS == host_ret);
-    host_ret = salt_write_next(&host_msg, host_message, 10);
+    host_ret = salt_write_next_copy(&host_msg, host_message, 10);
     assert_true(SALT_SUCCESS == host_ret);
-    host_ret = salt_write_next(&host_msg, host_message, 7);
+    host_ret = salt_write_next_copy(&host_msg, host_message, 7);
     assert_true(SALT_SUCCESS == host_ret);
-    host_ret = salt_write_next(&host_msg, host_message, 16);
+    host_ret = salt_write_next_copy(&host_msg, host_message, 16);
     assert_true(SALT_SUCCESS == host_ret);
     do {
         host_ret = salt_write_execute(&host_channel, &host_msg);
@@ -261,31 +261,31 @@ static void hostclient_session(void **state)
     assert_true(client_ret == SALT_SUCCESS);
     assert_int_equal(4, client_msg.read.messages_left);
     assert_int_equal(1, client_msg.read.message_size);
-    assert_memory_equal(client_msg.read.p_message, host_message, client_msg.read.message_size);
+    assert_memory_equal(client_msg.read.p_payload, host_message, client_msg.read.message_size);
 
     client_ret = salt_read_next(&client_msg);
     assert_true(client_ret == SALT_SUCCESS);
     assert_int_equal(3, client_msg.read.messages_left);
     assert_int_equal(2, client_msg.read.message_size);
-    assert_memory_equal(client_msg.read.p_message, host_message, client_msg.read.message_size);
+    assert_memory_equal(client_msg.read.p_payload, host_message, client_msg.read.message_size);
 
     client_ret = salt_read_next(&client_msg);
     assert_true(client_ret == SALT_SUCCESS);
     assert_int_equal(2, client_msg.read.messages_left);
     assert_int_equal(10, client_msg.read.message_size);
-    assert_memory_equal(client_msg.read.p_message, host_message, client_msg.read.message_size);
+    assert_memory_equal(client_msg.read.p_payload, host_message, client_msg.read.message_size);
 
     client_ret = salt_read_next(&client_msg);
     assert_true(client_ret == SALT_SUCCESS);
     assert_int_equal(1, client_msg.read.messages_left);
     assert_int_equal(7, client_msg.read.message_size);
-    assert_memory_equal(client_msg.read.p_message, host_message, client_msg.read.message_size);
+    assert_memory_equal(client_msg.read.p_payload, host_message, client_msg.read.message_size);
 
     client_ret = salt_read_next(&client_msg);
     assert_true(client_ret == SALT_SUCCESS);
     assert_int_equal(0, client_msg.read.messages_left);
     assert_int_equal(16, client_msg.read.message_size);
-    assert_memory_equal(client_msg.read.p_message, host_message, client_msg.read.message_size);
+    assert_memory_equal(client_msg.read.p_payload, host_message, client_msg.read.message_size);
 
     client_ret = salt_read_next(&client_msg);
     assert_true(client_ret == SALT_ERROR);

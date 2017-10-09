@@ -83,7 +83,7 @@ int main(void) {
     }
 
     do {
-        memset(read_msg.read.p_message, 0x00, read_msg.read.message_size);
+        memset(read_msg.read.p_payload, 0x00, read_msg.read.message_size);
     } while (salt_read_next(&read_msg) == SALT_SUCCESS);
 
     if (ret == SALT_SUCCESS) {

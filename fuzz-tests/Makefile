@@ -1,8 +1,10 @@
 
 FLAGS_COMMON = -Wall -Wpedantic -Wextra -Werror
+INC_PATHS_GCC = -I../src -I../tests -I../src/external/tweetnacl
+INC_PATHS_AFL = -I../src -I../tests -I../src/external/tweetnacl
 
-GCC_FLAGS = -I../src -I../tests -I../src/external/tweetnacl $(FLAGS_COMMON) -O0 -g -ggdb -fprofile-arcs -ftest-coverage
-AFL_FLAGS = -I../src -I../tests -I../src/external/tweetnacl
+GCC_FLAGS = $(INC_PATHS_GCC) $(FLAGS_COMMON) -O0 -g -ggdb -fprofile-arcs -ftest-coverage
+AFL_FLAGS = $(INC_PATHS_AFL)
 SRC = ../src/salt_v2.c ../src/salt_util.c
 
 FUZZ_TARGETS = host_a1m1 client_m2 client_m3 host_m4 client_a2 host_app client_app read_parse
@@ -30,7 +32,7 @@ _build/salt_util.o: ../src/salt_util.c
 	gcc -c $^ $(GCC_FLAGS) -o $@
 
 _build/crypt_mock.o: crypt_mock.c
-	gcc -c $^ $(GCC_FLAGS) -o $@
+	gcc -c $^ -o $@ $(INC_PATHS_GCC)
 
 _build/test_data_mock.o: test_data_mock.c
 	gcc -c $^ $(GCC_FLAGS) -o $@

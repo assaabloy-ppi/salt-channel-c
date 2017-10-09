@@ -43,10 +43,6 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
     return SALT_SUCCESS;
 }
 
-void my_time_impl(uint32_t *p_time) {
-    memset(p_time, 0, 4);
-}
-
 int main(void) {
 
     salt_channel_t channel;
@@ -55,20 +51,14 @@ int main(void) {
     memset(hndsk_buffer, 0xcc, SALT_HNDSHK_BUFFER_SIZE);
     uint8_t sig[64];
 
-    ret = salt_create(&channel, SALT_SERVER, my_write, my_read, my_time_impl);
+    ret = salt_create(&channel, SALT_SERVER, my_write, my_read, NULL);
 
-    salt_protocol_t supported_protocols[] = {
-        "Echo------",
-        "Temp------",
-        "Sensor----"
-    };
-
-    salt_protocols_t my_protocols = {
-        3,
-        supported_protocols
-    };
-
-    channel.p_protocols = &my_protocols;
+    uint8_t protocol_buf[128];
+    salt_protocols_t my_protocols;
+    ret = salt_protocols_init(&channel, &my_protocols, protocol_buf, sizeof(protocol_buf));
+    ret = salt_protocols_append(&my_protocols, "Echo", 4);
+    ret = salt_protocols_append(&my_protocols, "Temp", 4);
+    ret = salt_protocols_append(&my_protocols, "Sensor", 6);
 
     ret = salt_set_signature(&channel, sig);
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);

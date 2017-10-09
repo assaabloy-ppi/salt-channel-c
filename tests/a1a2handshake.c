@@ -115,18 +115,17 @@ static void a1a2handshake(void **state)
     host_ret = salt_set_context(&host_channel, &host_context, &host_context); /* Write, read */
     assert_true(host_ret == SALT_SUCCESS);
 
-    salt_protocol_t supported_protocols[] = {
-        "Echo------",
-        "Temp------",
-        "Sensor----"
-    };
+    uint8_t protocol_buf[128];
+    salt_protocols_t my_protocols;
+    host_ret = salt_protocols_init(&host_channel, &my_protocols, protocol_buf, sizeof(protocol_buf));
+    assert_true(host_ret == SALT_SUCCESS);
+    host_ret = salt_protocols_append(&my_protocols, "Echo", 4);
+    assert_true(host_ret == SALT_SUCCESS);
+    host_ret = salt_protocols_append(&my_protocols, "Temp", 4);
+    assert_true(host_ret == SALT_SUCCESS);
+    host_ret = salt_protocols_append(&my_protocols, "Sensor", 6);
+    assert_true(host_ret == SALT_SUCCESS);
 
-    salt_protocols_t my_protocols = {
-        3,
-        supported_protocols
-    };
-
-    host_channel.p_protocols = &my_protocols;
 
     client_ret = salt_create(&client_channel, SALT_CLIENT, my_write, my_read, NULL);
     client_context.channel = &client_channel;
@@ -164,11 +163,11 @@ static void a1a2handshake(void **state)
         assert_true(host_ret != SALT_ERROR);
     }
 
-    assert_true(my_protocols.count*2 == host_protocols.count);
+    assert_true(my_protocols.count == host_protocols.count);
 
-    for (uint8_t i = 0; i < host_protocols.count; i+= 2) {
-        assert_true(memcmp(my_protocols.p_protocols[i/2],
-            host_protocols.p_protocols[i+1], sizeof(salt_protocol_t)) == 0);
+    for (uint8_t i = 0; i < host_protocols.count; i++) {
+        assert_true(memcmp(my_protocols.p_protocols[i],
+            host_protocols.p_protocols[i], sizeof(salt_protocol_t)) == 0);
     }
 
     client_ret = SALT_PENDING;

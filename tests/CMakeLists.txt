@@ -20,6 +20,7 @@ add_library(io_mock salt_mock.c)
 
 # Test runners
 do_test(host_handshake 		test_data io_mock cfifo)
+do_test(host_a1a2           test_data io_mock cfifo)
 do_test(client_handshake 	test_data io_mock cfifo)
 do_test(salt_init           test_data io_mock cfifo)
 do_test(hostclient_session 	cfifo)

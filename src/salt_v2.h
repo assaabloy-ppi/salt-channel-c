@@ -182,18 +182,10 @@ struct salt_time_s {
  * Supported protocol of salt-channel. The user support what protocols is used by the
  * salt-channel. Usage (After creation of salt-channel):
  *
- *  salt_protocol_t supported_protocols[] = {
- *      "Echo------",
- *      "Temp------",
- *      "Sensor----"
- *  };
- *
- *  salt_protocols_t my_protocols = {
- *       3,
- *      supported_protocols
- *  };
- *
- *  channel.p_protocols = &my_protocols;
+ *  uint8_t protocol_buffer[128];
+ *  salt_protocols_t protocols;
+ *  salt_ret_t ret = salt_protocols_init(&channel, &protocols, buffer, sizeof(buffer));
+ *  ret = salt_protocol_append(&protocols, "ECHO", 4);
  *
  *  When the client sends an A1 request the following will be the response:
  *  Response = {
@@ -208,7 +200,10 @@ struct salt_time_s {
 typedef char salt_protocol_t[10];
 
 typedef struct salt_protocols_s {
-    uint8_t count;
+    uint8_t     *p_buffer;
+    uint32_t    buf_size;
+    uint32_t    buf_used;
+    uint8_t     count;
     salt_protocol_t *p_protocols;
 } salt_protocols_t;
 
@@ -312,6 +307,15 @@ salt_ret_t salt_set_context(
     salt_channel_t *p_channel,
     void *p_write_context,
     void *p_read_context);
+
+salt_ret_t salt_protocols_init(salt_channel_t *p_channel,
+                               salt_protocols_t *p_protocols,
+                               uint8_t *p_buffer,
+                               uint32_t size);
+
+salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
+                                 char *p_buffer,
+                                 uint8_t size);
 
 /**
  * @brief Request information about protocols supported by host.

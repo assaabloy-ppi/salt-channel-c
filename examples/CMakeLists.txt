@@ -10,3 +10,6 @@ target_link_libraries(host_echo salt)
 
 add_executable(client_echo client_echo.c salt_io.c randombytes_linux.c)
 target_link_libraries(client_echo salt)
+
+add_executable(client client.c salt_io.c randombytes_linux.c binson_light.c)
+target_link_libraries(client salt)

@@ -63,7 +63,7 @@ static void client_handshake(void **state)
     salt_msg_t msg_out;
     ret = salt_write_begin(hndsk_buffer, sizeof(hndsk_buffer), &msg_out);
     assert_true(ret == SALT_SUCCESS);
-    ret = salt_write_next(&msg_out, echo_bytes, sizeof(echo_bytes));
+    ret = salt_write_next_copy(&msg_out, echo_bytes, sizeof(echo_bytes));
     ret = salt_write_execute(&channel, &msg_out);
     assert_true(ret == SALT_SUCCESS);
 
@@ -72,7 +72,7 @@ static void client_handshake(void **state)
     assert_true(ret == SALT_SUCCESS);
     assert_true(msg_in.read.messages_left == 0);
     assert_true(msg_in.read.message_size == sizeof(echo_bytes));
-    assert_true(memcmp(echo_bytes, msg_in.read.p_message, sizeof(echo_bytes)) == 0);
+    assert_true(memcmp(echo_bytes, msg_in.read.p_payload, sizeof(echo_bytes)) == 0);
 
 }
 

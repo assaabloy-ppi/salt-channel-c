@@ -172,10 +172,10 @@ static void *connection_handler(void *context)
         }
 
         ret = salt_write_begin(tx_buffer, sizeof(tx_buffer), &msg_out);
-        ret = salt_write_next(&msg_out, msg_in.read.p_message, msg_in.read.message_size);
+        ret = salt_write_next_copy(&msg_out, msg_in.read.p_payload, msg_in.read.message_size);
         for (uint16_t i = 0; i < msg_in.read.messages_left; i++) {
             ret = salt_read_next(&msg_in);
-            ret = salt_write_next(&msg_out, msg_in.read.p_message, msg_in.read.message_size);
+            ret = salt_write_next_copy(&msg_out, msg_in.read.p_payload, msg_in.read.message_size);
         }
 
         salt_write_execute(&client->channel, &msg_out);

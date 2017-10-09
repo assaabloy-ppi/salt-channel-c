@@ -533,7 +533,7 @@ salt_err_t salt_read_init(uint8_t type,
          *
          */
         p_msg->read.messages_left = 0;
-        p_msg->read.p_message = p_buffer;
+        p_msg->read.p_payload = p_buffer;
         p_msg->read.message_size = buffer_size;
 
         break;
@@ -560,7 +560,7 @@ salt_err_t salt_read_init(uint8_t type,
 
         p_msg->read.messages_left = salti_bytes_to_u16(p_msg->read.p_buffer);
         p_msg->read.buffer_used = 0;
-        p_msg->read.p_message = &p_msg->read.p_buffer[2];
+        p_msg->read.p_payload = &p_msg->read.p_buffer[2];
 
         if (p_msg->read.messages_left == 0) {
             return SALT_ERR_BAD_PROTOCOL;
@@ -572,8 +572,8 @@ salt_err_t salt_read_init(uint8_t type,
         uint16_t message_size;
 
         while (messages_left > 0) {
-            message_size = salti_bytes_to_u16(p_msg->read.p_message);
-            p_msg->read.p_message += 2 + message_size;
+            message_size = salti_bytes_to_u16(p_msg->read.p_payload);
+            p_msg->read.p_payload += 2 + message_size;
             buffer_used += 2 + message_size;
             if (buffer_used < total_size) {
                 messages_left--;
@@ -584,7 +584,7 @@ salt_err_t salt_read_init(uint8_t type,
         }
 
         p_msg->read.message_size = salti_bytes_to_u16(&p_msg->read.p_buffer[2]);
-        p_msg->read.p_message = &p_msg->read.p_buffer[4];
+        p_msg->read.p_payload = &p_msg->read.p_buffer[4];
         p_msg->read.messages_left--;
         p_msg->read.buffer_used = 2 + p_msg->read.message_size;
 
@@ -604,9 +604,9 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg)
         return SALT_ERROR;
     }
 
-    p_msg->read.p_message += p_msg->read.message_size;
-    p_msg->read.message_size = salti_bytes_to_u16(p_msg->read.p_message);
-    p_msg->read.p_message += 2;
+    p_msg->read.p_payload += p_msg->read.message_size;
+    p_msg->read.message_size = salti_bytes_to_u16(p_msg->read.p_payload);
+    p_msg->read.p_payload += 2;
     p_msg->read.buffer_used = 2 + p_msg->read.message_size;
 
     if (p_msg->read.buffer_used + 2 + p_msg->read.message_size > p_msg->read.buffer_size) {
@@ -650,15 +650,15 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
 
     p_msg->write.state = 0;
     p_msg->write.p_buffer = p_buffer;
-    p_msg->write.buffer_size = size;
-    p_msg->write.p_message = &p_buffer[SALT_OVERHEAD_SIZE] + 2U;
-    p_msg->write.buffer_used = SALT_OVERHEAD_SIZE + 2U;
+    p_msg->write.buffer_size = size - SALT_OVERHEAD_SIZE;
+    p_msg->write.p_payload = &p_buffer[SALT_OVERHEAD_SIZE] + 4U;
+    p_msg->write.buffer_used = 2U;
     p_msg->write.message_count = 0;
 
     return SALT_SUCCESS;
 }
 
-salt_ret_t salt_write_next(salt_msg_t *p_msg, uint8_t *p_buffer, uint16_t size)
+salt_ret_t salt_write_next_copy(salt_msg_t *p_msg, uint8_t *p_buffer, uint16_t size)
 {
 
     /* We need size + 2 bytes available. */
@@ -666,13 +666,26 @@ salt_ret_t salt_write_next(salt_msg_t *p_msg, uint8_t *p_buffer, uint16_t size)
         return SALT_ERROR;
     }
 
-    salti_u16_to_bytes(p_msg->write.p_message, size);
-    p_msg->write.p_message += 2;
-    p_msg->write.buffer_used += 2;
+    salti_u16_to_bytes(p_msg->write.p_payload - 2U, size);
 
-    memcpy(p_msg->write.p_message, p_buffer, size);
-    p_msg->write.p_message += size;
-    p_msg->write.buffer_used += size;
+    memcpy(p_msg->write.p_payload, p_buffer, size);
+    p_msg->write.p_payload += size + 2U;
+    p_msg->write.buffer_used += size + 2U;
+    p_msg->write.message_count++;
+
+    return SALT_SUCCESS;
+}
+
+salt_ret_t salt_write_next_appended(salt_msg_t *p_msg, uint16_t size)
+{
+    /* We need size + 2 bytes available. */
+    if ((uint16_t)(p_msg->write.buffer_size - p_msg->write.buffer_used) < (size + 2)) {
+        return SALT_ERROR;
+    }
+
+    salti_u16_to_bytes(p_msg->write.p_payload - 2U, size);
+    p_msg->write.p_payload += size + 2U;
+    p_msg->write.buffer_used += size + 2U;
     p_msg->write.message_count++;
 
     return SALT_SUCCESS;
@@ -714,14 +727,14 @@ uint8_t salt_write_create(salt_msg_t *p_msg)
     if (p_msg->write.message_count == 1) {
         p_msg->write.p_buffer = &p_msg->write.p_buffer[4];
         p_msg->write.buffer_size = p_msg->write.buffer_used;
-        p_msg->write.buffer_used -= (4 + SALT_OVERHEAD_SIZE);
-        p_msg->write.p_message = &p_msg->write.p_buffer[SALT_OVERHEAD_SIZE];
+        p_msg->write.buffer_used -= (4);
+        p_msg->write.p_payload = &p_msg->write.p_buffer[SALT_OVERHEAD_SIZE];
         return SALT_APP_PKG_MSG_HEADER_VALUE;
     }
     else {
         salti_u16_to_bytes(&p_msg->write.p_buffer[SALT_OVERHEAD_SIZE], p_msg->write.message_count);
-        p_msg->write.buffer_size = p_msg->write.buffer_used - SALT_OVERHEAD_SIZE;
-        p_msg->write.p_message = &p_msg->write.p_buffer[SALT_OVERHEAD_SIZE];
+        p_msg->write.buffer_size = p_msg->write.buffer_used;
+        p_msg->write.p_payload = &p_msg->write.p_buffer[SALT_OVERHEAD_SIZE];
         return SALT_MULTI_APP_PKG_MSG_HEADER_VALUE;
     }
 

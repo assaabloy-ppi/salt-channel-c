@@ -101,6 +101,21 @@ int main(int argc, char **argv)
     binson_writer_init(&w, msg_out.write.p_payload, msg_out.write.buffer_size - msg_out.write.buffer_used);
     binson_write_object_begin(&w);
     binson_write_name(&w, "c");
+    binson_write_string(&w, "getInfo");
+    binson_write_name(&w, "i");
+    binson_write_integer(&w, 1);
+    binson_write_name(&w, "t");
+    binson_write_bytes(&w, t, 2);
+    binson_write_object_end(&w);
+
+    printf("Sending data:\r\n");
+    SALT_HEXDUMP(w.io.pbuf, binson_writer_get_counter(&w));
+
+    salt_write_next_appended(&msg_out, binson_writer_get_counter(&w));
+
+    binson_writer_init(&w, msg_out.write.p_payload, msg_out.write.buffer_size - msg_out.write.buffer_used);
+    binson_write_object_begin(&w);
+    binson_write_name(&w, "c");
     binson_write_string(&w, "u");
     binson_write_name(&w, "i");
     binson_write_integer(&w, 1);
@@ -108,12 +123,29 @@ int main(int argc, char **argv)
     binson_write_bytes(&w, t, 2);
     binson_write_object_end(&w);
 
-    salt_write_next_appended(&msg_out, binson_writer_get_counter(&w));
-
+    printf("Sending data:\r\n");
     SALT_HEXDUMP(w.io.pbuf, binson_writer_get_counter(&w));
-    SALT_HEXDUMP(msg_out.write.p_buffer, msg_out.write.buffer_used);
 
-    salt_write_execute(&channel, &msg_out);
+    salt_write_next_appended(&msg_out, binson_writer_get_counter(&w));
+    
+    ret = SALT_PENDING;
+    do {
+        ret = salt_write_execute(&channel, &msg_out);
+    } while (ret == SALT_PENDING);
+    
+
+    ret = SALT_PENDING;
+
+    while (1) {
+        do {
+            ret = salt_read_begin(&channel, hndsk_buffer, sizeof(hndsk_buffer), &msg_out);
+        } while (ret == SALT_PENDING);
+
+        do {
+            printf("Received data:\r\n");
+            SALT_HEXDUMP(msg_out.read.p_payload, msg_out.read.message_size);
+        } while (salt_read_next(&msg_out) == SALT_SUCCESS);
+    }
 
     close(sock_desc);
 

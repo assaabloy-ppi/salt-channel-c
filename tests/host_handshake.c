@@ -6,7 +6,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
-#include "salt_util.h"
+#include "salti_util.h"
 #include "salt.h"
 #include "salt_mock.h"
 #include "test_data.h"

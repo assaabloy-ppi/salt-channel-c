@@ -1,0 +1,58 @@
+#ifndef _SALTI_HANDSHAKE_H_
+#define _SALTI_HANDSHAKE_H_
+
+/**
+ * @file salti_handshake.h
+ *
+ * Description
+ *
+ */
+
+/*======= Includes ==========================================================*/
+
+/* Salt library includes */
+#include "salt.h"
+#include "salti_util.h"
+
+/*======= Public macro definitions ==========================================*/
+/*======= Type Definitions and declarations =================================*/
+/*======= Public function declarations ======================================*/
+
+salt_ret_t salti_handshake_server(salt_channel_t *p_channel);
+
+salt_ret_t salti_handshake_client(salt_channel_t *p_channel);
+
+void salti_create_m1(salt_channel_t *p_channel,
+                     uint8_t *p_data,
+                     uint32_t *size,
+                     uint8_t *p_hash);
+
+salt_ret_t salti_handle_a1_or_m1(salt_channel_t *p_channel,
+                                 uint8_t *p_data,
+                                 uint32_t size);
+
+salt_ret_t salti_handle_m1(salt_channel_t *p_channel,
+                           uint8_t *p_data,
+                           uint32_t size,
+                           uint8_t *p_hash);
+
+salt_ret_t salti_create_m2(salt_channel_t *p_channel,
+                           uint8_t *p_data,
+                           uint32_t *size,
+                           uint8_t *p_hash);
+
+salt_ret_t salti_handle_m2(salt_channel_t *p_channel,
+                           uint8_t *p_data,
+                           uint32_t size,
+                           uint8_t *p_hash);
+
+salt_ret_t salti_create_m3m4(salt_channel_t *p_channel,
+                             uint8_t *p_data,
+                             uint32_t *size);
+
+salt_ret_t salti_handle_m3m4(salt_channel_t *p_channel,
+                             uint8_t *p_data,
+                             uint32_t size);
+
+#endif /* _SALTI_HANDSHAKE_H_ */
+

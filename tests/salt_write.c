@@ -7,8 +7,9 @@
 #include <cmocka.h>
 
 #include "cfifo.h"
-#include "salt.c"
-#include "salt_util.c"
+#include "salt.h"
+#include "salti_util.h"
+#include "salti_handshake.h"
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
@@ -114,7 +115,7 @@ static void write_append_no_copy_single(void **state)
     salt_msg_t message;
     salt_write_begin(buffer, sizeof(buffer), &message);
     size = snprintf((char*)message.write.p_payload,
-        message.write.buffer_size - message.write.buffer_used,
+        message.write.buffer_available,
         "Cool message 1");
     assert_true(salt_write_commit(&message, size) == SALT_SUCCESS);
 
@@ -154,7 +155,7 @@ static void write_append_no_copy(void **state)
         0x04 , 0x00 , 0xFF , 0xFF , 0xFF, 0xFF      /* Msg = 4 bytes length */
     };
 
-    assert_int_equal(sizeof(expected), message.write.buffer_size);
+    assert_int_equal(sizeof(expected) + SALT_OVERHEAD_SIZE, message.write.buffer_size);
     assert_memory_equal(expected, message.write.p_payload, sizeof(expected));
 
 

@@ -279,20 +279,20 @@ typedef struct salt_channel_s {
 
 typedef union salt_msg_u {
     struct {
-        uint8_t     *p_buffer;      /**< Message buffer. */
-        uint8_t     *p_payload;     /**< Pointer to current message. */
-        uint32_t    buffer_size;    /**< Message buffer size. */
+        uint8_t     *p_buffer;          /**< Message buffer. */
+        uint8_t     *p_payload;         /**< Pointer to current message. */
+        uint32_t    buffer_size;        /**< Message buffer size. */
         uint32_t    buffer_used;
-        uint16_t    messages_left;  /**< Number of messages left to read. */
-        uint16_t    message_size;   /**< Current message size. */
+        uint16_t    messages_left;      /**< Number of messages left to read. */
+        uint16_t    message_size;       /**< Current message size. */
     } read;
     struct {
-        uint8_t     *p_buffer;      /**< Message buffer. */
-        uint8_t     *p_payload;     /**< Pointer to current message. */
-        uint32_t    buffer_size;    /**< Message buffer size. */
-        uint32_t    buffer_used;    /**< How much of the buffer is used. */
-        uint16_t    message_count;  /**< Number of messages left to read. */
-        uint16_t    state;          /**< Current message type. */
+        uint8_t     *p_buffer;          /**< Message buffer. */
+        uint8_t     *p_payload;         /**< Pointer to current message. */
+        uint32_t    buffer_size;        /**< Message buffer size. */
+        uint32_t    buffer_available;   /**< How much of the buffer is used. */
+        uint16_t    message_count;      /**< Number of messages left to read. */
+        uint16_t    state;              /**< Current message type. */
     } write;
 } salt_msg_t;
 
@@ -548,6 +548,8 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
  * If this function is called more than once after \ref salt_write_begin all
  * following clear text packages will be sent as one encrypted package. The
  * content of p_buffer will be copied to the buffer of the p_msg structure.
+ * 
+ * The available buffer is in p_msg->buffer_available.
  *
  * @param p_msg     Pointer to message state structure.
  * @param p_buffer  Pointer to clear text message.
@@ -608,7 +610,7 @@ salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint16_t size);
  *      
  *      my_object m;
  *      uint16_t size = serialize_my_object(&m, tx_msg.write.p_payload,
- *                                          tx_msg.write.buffer_size - tx_msg.write.buffer_used);
+ *                                          tx_msg.write.buffer_available);
  *      ret = salt_write_commit(&tx_msg, size);
  *      if (ret == SALT_ERROR) {
  *          // tx_buffer is full

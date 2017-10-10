@@ -20,7 +20,7 @@
 #include <assert.h>
 
 #include "salt.h"
-#include "salt_util.h"
+#include "salti_util.h"
 #include "binson_light.h"
 #include "salt_io.h"
 
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
     ret = salt_write_begin(hndsk_buffer, sizeof(hndsk_buffer), &msg_out);
     binson_writer  w;
 
-    binson_writer_init(&w, msg_out.write.p_payload, msg_out.write.buffer_size - msg_out.write.buffer_used);
+    binson_writer_init(&w, msg_out.write.p_payload, msg_out.write.buffer_available);
     binson_write_object_begin(&w);
     binson_write_name(&w, "c");
     binson_write_string(&w, "getInfo");
@@ -109,11 +109,11 @@ int main(int argc, char **argv)
     binson_write_object_end(&w);
 
     printf("Sending data:\r\n");
-    SALT_HEXDUMP(w.io.pbuf, binson_writer_get_counter(&w));
+    SALT_HEXDUMP_DEBUG(w.io.pbuf, binson_writer_get_counter(&w));
 
     salt_write_commit(&msg_out, binson_writer_get_counter(&w));
 
-    binson_writer_init(&w, msg_out.write.p_payload, msg_out.write.buffer_size - msg_out.write.buffer_used);
+    binson_writer_init(&w, msg_out.write.p_payload, msg_out.write.buffer_available);
     binson_write_object_begin(&w);
     binson_write_name(&w, "c");
     binson_write_string(&w, "u");
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
     binson_write_object_end(&w);
 
     printf("Sending data:\r\n");
-    SALT_HEXDUMP(w.io.pbuf, binson_writer_get_counter(&w));
+    SALT_HEXDUMP_DEBUG(w.io.pbuf, binson_writer_get_counter(&w));
 
     salt_write_commit(&msg_out, binson_writer_get_counter(&w));
     
@@ -141,9 +141,13 @@ int main(int argc, char **argv)
             ret = salt_read_begin(&channel, hndsk_buffer, sizeof(hndsk_buffer), &msg_out);
         } while (ret == SALT_PENDING);
 
+        if (ret == SALT_ERROR) {
+            break;
+        }
+
         do {
             printf("Received data:\r\n");
-            SALT_HEXDUMP(msg_out.read.p_payload, msg_out.read.message_size);
+            SALT_HEXDUMP_DEBUG(msg_out.read.p_payload, msg_out.read.message_size);
         } while (salt_read_next(&msg_out) == SALT_SUCCESS);
     }
 

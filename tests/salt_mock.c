@@ -16,7 +16,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include "salt_mock.h"
-#include "salt_util.h"
+#include "salti_util.h"
 
 /*======= Local Macro Definitions ===========================================*/
 /*======= Type Definitions ==================================================*/

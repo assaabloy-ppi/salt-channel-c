@@ -8,7 +8,7 @@
 
 #include "cfifo.h"
 #include "salt.h"
-#include "salt_util.h"
+#include "salti_util.h"
 
 typedef struct salt_test_s {
     salt_channel_t  *channel;

@@ -8,7 +8,7 @@
 
 #include "cfifo.h"
 #include "salt.h"
-#include "salt_util.h"
+#include "salti_util.h"
 #include "salt_mock.h"
 
 typedef struct salt_test_s {

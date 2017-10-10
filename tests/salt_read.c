@@ -7,8 +7,9 @@
 #include <cmocka.h>
 
 #include "cfifo.h"
-#include "salt.c"
-#include "salt_util.c"
+#include "salt.h"
+#include "salti_util.h"
+#include "salti_handshake.h"
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {

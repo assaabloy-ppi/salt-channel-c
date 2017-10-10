@@ -57,7 +57,7 @@ static uint8_t sig2prefix[8] = { 0x53, 0x43, 0x2d, 0x53, 0x49, 0x47, 0x30, 0x32 
 /*======= Global function implementations ===================================*/
 /*======= Local function implementations ====================================*/
 
-salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
+salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
 {
 
     uint32_t size = 0;
@@ -128,6 +128,12 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                                        &size,
                                        &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET]);
 
+            if (p_channel->err_code == SALT_ERR_NO_SUCH_SERVER) {
+                proceed = 1;
+                p_channel->state = SALT_M2_IO;
+                break;
+            }
+
             salti_get_time(p_channel, &p_channel->my_epoch);
 
             SALT_VERIFY(SALT_ERROR != ret_code, p_channel->err_code);
@@ -164,7 +170,9 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
             ret_code = salti_io_write(p_channel,
                                       &p_channel->hdshk_buffer[200],
                                       size);
+
             if (SALT_SUCCESS == ret_code) {
+                SALT_VERIFY(p_channel->err_code == SALT_ERR_NONE, p_channel->err_code);
                 p_channel->state = SALT_M3_INIT;
                 proceed = 1;
             }
@@ -235,6 +243,12 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                                          p_channel->write_channel.size);
 
             if (SALT_SUCCESS == ret_code) {
+
+                if (p_with != NULL) {
+                    SALT_VERIFY(memcmp(p_with, p_channel->peer_sk_pub, 32) == 0,
+                        SALT_ERR_BAD_PEER);
+                }
+
                 p_channel->state = SALT_SESSION_ESTABLISHED;
             }
             memset(p_channel->hdshk_buffer, 0x00, p_channel->hdshk_buffer_size);
@@ -247,7 +261,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
     return ret_code;
 }
 
-salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
+salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
 {
     uint32_t size = 0;
     salt_ret_t ret_code = SALT_ERROR;
@@ -268,7 +282,8 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
             salti_create_m1(p_channel,
                             &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET],
                             &size,
-                            &p_channel->hdshk_buffer[SALT_M1_HASH_OFFSET]);
+                            &p_channel->hdshk_buffer[SALT_M1_HASH_OFFSET],
+                            p_with);
             salti_get_time(p_channel, &p_channel->my_epoch);
             p_channel->state = SALT_M1_IO;
             proceed = 1;
@@ -307,6 +322,9 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
             ret_code = salti_handle_m2(p_channel,
                                        &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET],
                                        size, &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET]);
+            
+            SALT_VERIFY(SALT_ERROR != ret_code, p_channel->err_code);
+
             if (SALT_SUCCESS == ret_code) {
                 p_channel->state = SALT_M3_INIT;
                 proceed = 1;
@@ -379,6 +397,10 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
                                          p_channel->read_channel.size);
 
             if (SALT_SUCCESS == ret_code) {
+                if (p_with != NULL) {
+                    SALT_VERIFY(memcmp(p_with, p_channel->peer_sk_pub, 32) == 0,
+                        SALT_ERR_BAD_PEER);
+                }
                 p_channel->state = SALT_M4_IO;
                 proceed = 1;
             }
@@ -422,9 +444,12 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
 void salti_create_m1(salt_channel_t *p_channel,
                      uint8_t *p_data,
                      uint32_t *size,
-                     uint8_t *p_hash)
+                     uint8_t *p_hash,
+                     uint8_t *p_with)
 {
     /* First 4 bytes is reserved for size. */
+
+    (*size) = 42U;
 
     /* Protocol indicator */
     p_data[SALT_LENGTH_SIZE + 0] = 'S';
@@ -432,7 +457,14 @@ void salti_create_m1(salt_channel_t *p_channel,
     p_data[SALT_LENGTH_SIZE + 2] = 'v';
     p_data[SALT_LENGTH_SIZE + 3] = '2';
     p_data[SALT_LENGTH_SIZE + 4] = SALT_M1_HEADER_VALUE;
-    p_data[SALT_LENGTH_SIZE + 5] = 0x00U; /* No tickets */
+
+    if (p_with != NULL) {
+        p_data[SALT_LENGTH_SIZE + 5] = SALT_M1_SIG_KEY_INCLUDED_FLAG;
+        memcpy(&p_data[SALT_LENGTH_SIZE + 10 + 32], p_with, 32);
+        (*size) += 32;
+    } else {
+        p_data[SALT_LENGTH_SIZE + 5] = 0x00U; /* No tickets */
+    }
 
     memset(&p_data[SALT_LENGTH_SIZE + 6], 0x00U, 4);
     if (p_channel->time_impl != NULL) {
@@ -442,8 +474,6 @@ void salti_create_m1(salt_channel_t *p_channel,
     memcpy(&p_data[SALT_LENGTH_SIZE + 10],
            &p_channel->hdshk_buffer[SALT_PUB_ENC_OFFSET],
            crypto_box_PUBLICKEYBYTES);
-
-    (*size) = 42U;
 
     crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
     salti_u32_to_bytes(&p_data[0], (*size));
@@ -503,6 +533,7 @@ salt_ret_t salti_handle_m1(salt_channel_t *p_channel,
          */
         if (memcmp(&p_data[42], p_channel->my_sk_pub, crypto_sign_PUBLICKEYBYTES) != 0) {
             p_channel->err_code = SALT_ERR_NO_SUCH_SERVER;
+            return SALT_SUCCESS;
         }
         /*
          * TODO: How to handle multiple hosts?
@@ -560,7 +591,8 @@ salt_ret_t salti_create_m2(salt_channel_t *p_channel,
         break;
     case SALT_ERR_NO_SUCH_SERVER:
         p_data[SALT_LENGTH_SIZE + 1] = SALT_M2_NO_SUCH_SERVER_FLAG;
-        p_data[SALT_LENGTH_SIZE + 1] = SALT_LAST_FLAG;
+        p_data[SALT_LENGTH_SIZE + 1] |= SALT_LAST_FLAG;
+        memset(&p_data[SALT_LENGTH_SIZE + 6], 0x00, crypto_box_PUBLICKEYBYTES);
         break;
     case SALT_ERR_NOT_SUPPORTED:
         /* If ticket was requested, will cause handshake to stop. */
@@ -570,7 +602,6 @@ salt_ret_t salti_create_m2(salt_channel_t *p_channel,
         return SALT_ERROR;
     }
 
-    p_channel->err_code = SALT_ERR_NONE;
     crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
 
     salti_u32_to_bytes(&p_data[0], (*size));

@@ -126,13 +126,13 @@ static void host_delay_threshold_m1_m4(void **state)
     salt_time_mock_set_next(mock->host_time, 40);
 
 
-    client_ret = salt_handshake(&client_channel); /* Client sends M1, waiting for M2 */
+    client_ret = salt_handshake(&client_channel, NULL); /* Client sends M1, waiting for M2 */
     assert_true(client_ret == SALT_PENDING);
-    host_ret = salt_handshake(&host_channel); /* Host receives M1, sends M2, M3 waiting for M4 */
+    host_ret = salt_handshake(&host_channel, NULL); /* Host receives M1, sends M2, M3 waiting for M4 */
     assert_true(host_ret == SALT_PENDING);
-    client_ret = salt_handshake(&client_channel); /* Received M2, M3, sends M4 */
+    client_ret = salt_handshake(&client_channel, NULL); /* Received M2, M3, sends M4 */
     assert_true(client_ret == SALT_SUCCESS);
-    host_ret = salt_handshake(&host_channel);   /* Recieved M4, expected delay_threshold */
+    host_ret = salt_handshake(&host_channel, NULL);   /* Recieved M4, expected delay_threshold */
 
     assert_true(host_ret == SALT_ERROR);
     assert_int_equal(host_channel.err_code, SALT_ERR_TIMEOUT);

@@ -136,7 +136,7 @@ static void *connection_handler(void *context)
     ret = salt_set_context(&client->channel, &client->sock_fd, &client->sock_fd);
     assert(ret == SALT_SUCCESS);
     salt_set_delay_threshold(&client->channel, 1000);
-    ret = salt_handshake(&client->channel);
+    ret = salt_handshake(&client->channel, NULL);
 
     while (ret != SALT_SUCCESS) {
 
@@ -149,7 +149,7 @@ static void *connection_handler(void *context)
 
         assert(ret != SALT_ERROR);
 
-        salt_handshake(&client->channel);
+        salt_handshake(&client->channel, NULL);
 
     }
 

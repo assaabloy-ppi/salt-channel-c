@@ -70,7 +70,7 @@ int main(void) {
     ret = salt_create(&channel, SALT_SERVER, my_write, my_read, NULL);
     ret = salt_set_signature(&channel, sig);
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);
-    ret = salt_handshake(&channel);
+    ret = salt_handshake(&channel, NULL);
 
     salt_msg_t read_msg;
     ret = salt_read_begin(&channel, hndsk_buffer, sizeof(hndsk_buffer), &read_msg);

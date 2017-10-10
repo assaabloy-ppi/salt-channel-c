@@ -1,7 +1,5 @@
 project(salt-channel-c)
 
-
-INCLUDE(CodeCoverage.cmake)
 INCLUDE(FindCMocka.cmake)
 
 macro(do_test arg)
@@ -23,11 +21,10 @@ do_test(host_handshake 		salt test_data io_mock cfifo)
 do_test(host_a1a2           salt test_data io_mock cfifo)
 do_test(client_handshake 	salt test_data io_mock cfifo)
 do_test(salt_init           salt test_data io_mock cfifo)
+do_test(session             salt test_data io_mock cfifo)
 do_test(hostclient_session 	salt cfifo)
 do_test(host_time           salt cfifo io_mock)
 do_test(a1a2handshake 		salt cfifo)
 do_test(multimessage 		salt cfifo)
 do_test(salt_read           salt cfifo)
 do_test(salt_write          salt cfifo)
-
-SETUP_TARGETS_FOR_COVERAGE(host_handshake_coverage host_handshake client_handshake a1a2handshake)

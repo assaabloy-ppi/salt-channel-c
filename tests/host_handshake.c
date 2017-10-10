@@ -41,14 +41,14 @@ static void host_handshake_m1(void **state)
 
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);
     salt_io_mock_set_next_read(mock->io, &salt_example_session_1_data.m1[4], sizeof(salt_example_session_1_data.m1) - 5, true);
-    ret = salt_handshake(&channel);
+    ret = salt_handshake(&channel, NULL);
     assert_true(ret == SALT_ERROR);
     assert_true(SALT_ERR_M1_TOO_SMALL == channel.err_code);
 
 
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);
     salt_io_mock_set_next_read(mock->io, hndsk_buffer, sizeof(salt_example_session_1_data.m1) + 10, true);
-    ret = salt_handshake(&channel);
+    ret = salt_handshake(&channel, NULL);
     assert_true(ret == SALT_ERROR);
     assert_true(SALT_ERR_M1_BAD_PROTOCOL == channel.err_code);
 
@@ -59,7 +59,7 @@ static void host_handshake_m1(void **state)
     tmp[5] = 0x00;
     salt_io_mock_set_next_read(mock->io, tmp, sizeof(salt_example_session_1_data.m1), false);
 
-    ret = salt_handshake(&channel);
+    ret = salt_handshake(&channel, NULL);
     assert_true(ret == SALT_ERROR);
     assert_true(SALT_ERR_M1_BAD_PROTOCOL == channel.err_code);
 
@@ -85,7 +85,7 @@ static void host_handshake(void **state) {
     salt_io_mock_expect_next_write(mock->io, salt_example_session_1_data.m2, sizeof(salt_example_session_1_data.m2), false);
     salt_io_mock_expect_next_write(mock->io, salt_example_session_1_data.m3, sizeof(salt_example_session_1_data.m3), false);
 
-    ret = salt_handshake(&channel);
+    ret = salt_handshake(&channel, NULL);
     assert_true(ret == SALT_SUCCESS);
 
     /* Check that we did not overflow handshake buffer */
@@ -118,7 +118,7 @@ static void host_handshake_single_echo(void **state) {
     salt_io_mock_expect_next_write(mock->io, salt_example_session_1_data.m3, sizeof(salt_example_session_1_data.m3), false);
     salt_io_mock_expect_next_write(mock->io, salt_example_session_1_data.msg2, sizeof(salt_example_session_1_data.msg2), false);
 
-    ret = salt_handshake(&channel);
+    ret = salt_handshake(&channel, NULL);
     assert_true(ret == SALT_SUCCESS);
 
     /* Check that we did not overflow handshake buffer */
@@ -177,7 +177,7 @@ static void host_handshake_multi_echo(void **state) {
     ret = salt_set_delay_threshold(&channel, 100);
     assert_true(ret == SALT_SUCCESS);
 
-    ret = salt_handshake(&channel);
+    ret = salt_handshake(&channel, NULL);
     assert_true(ret == SALT_SUCCESS);
 
     /* Check that we did not overflow handshake buffer */

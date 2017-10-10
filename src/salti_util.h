@@ -46,6 +46,7 @@
                     "Runtime error (%s, %s): %s at %s:%d, %s.\r\n",         \
                     #error_code, salt_mode2str(p_channel->mode), #x,        \
                     __FILE__, __LINE__, __func__);                          \
+                p_channel->state = SALT_ERR_CONNECTION_CLOSED;              \
                 return SALT_ERROR;                                          \
             }                                                               \
         } while (0)
@@ -54,6 +55,7 @@
         do {                                                                \
             if (!(x)) {                                                     \
                 p_channel->err_code = error_code;                           \
+                p_channel->state = SALT_ERR_CONNECTION_CLOSED;              \
                 return SALT_ERROR;                                          \
             }                                                               \
         } while (0)

@@ -62,7 +62,7 @@ int main(void) {
 
     ret = salt_set_signature(&channel, sig);
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);
-    ret = salt_handshake(&channel);
+    ret = salt_handshake(&channel, NULL);
 
     if (ret == SALT_ERROR) {
         return 0;

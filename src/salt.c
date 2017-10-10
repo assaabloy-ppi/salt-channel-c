@@ -160,7 +160,9 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
 salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                      uint8_t *p_buffer,
                      uint32_t size,
-                     salt_protocols_t *p_protocols)
+                     salt_protocols_t *p_protocols,
+                     uint8_t *p_with,
+                     uint16_t with_size)
 {
 
     salt_ret_t ret_code = SALT_PENDING;
@@ -171,6 +173,10 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
 
     SALT_VERIFY(p_channel->state >= SALT_CREATED && p_channel->state < SALT_M1_IO,
                 SALT_ERR_INVALID_STATE);
+
+    if (p_with != NULL || with_size > 0) {
+        SALT_ERROR(SALT_ERR_NOT_SUPPORTED);
+    }
 
     while (proceed) {
         proceed = 0;
@@ -309,16 +315,16 @@ salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel, uint32_t delay_th
     return SALT_SUCCESS;
 }
 
-salt_ret_t salt_handshake(salt_channel_t *p_channel)
+salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with)
 {
     salt_ret_t ret;
     SALT_VERIFY_VALID_CHANNEL(p_channel);
 
     if (p_channel->mode == SALT_SERVER) {
-        ret = salti_handshake_server(p_channel);
+        ret = salti_handshake_server(p_channel, p_with);
     }
     else {
-        ret = salti_handshake_client(p_channel);
+        ret = salti_handshake_client(p_channel, p_with);
     }
 
     return ret;

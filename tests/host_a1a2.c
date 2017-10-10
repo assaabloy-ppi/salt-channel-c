@@ -51,7 +51,7 @@ static void host_a1a2(void **state) {
 
     salt_io_mock_expect_next_write(mock->io, salt_example_session_2_data.a2, sizeof(salt_example_session_2_data.a2), false);
 
-    ret = salt_handshake(&channel);
+    ret = salt_handshake(&channel, NULL);
     assert_true(ret == SALT_PENDING);
 
     /* Check that we did not overflow handshake buffer */

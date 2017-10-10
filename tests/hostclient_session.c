@@ -130,11 +130,11 @@ static void hostclient_session(void **state)
 
     while ((host_ret | client_ret) != SALT_SUCCESS)
     {
-        client_ret = salt_handshake(&client_channel);
+        client_ret = salt_handshake(&client_channel, NULL);
         assert_true(client_buffer[SALT_HNDSHK_BUFFER_SIZE] == 0xEE);
         assert_true(client_ret != SALT_ERROR);
 
-        host_ret = salt_handshake(&host_channel);
+        host_ret = salt_handshake(&host_channel, NULL);
         assert_true(host_buffer[SALT_HNDSHK_BUFFER_SIZE] == 0xCC);
         assert_true(host_ret != SALT_ERROR);
     }

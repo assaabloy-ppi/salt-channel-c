@@ -144,13 +144,13 @@ static void multimessage(void **state)
     salt_msg_t client_to_write;
     client_ret = salt_write_begin(client_buffer, sizeof(client_buffer), &client_to_write);
     assert_true(client_ret == SALT_SUCCESS);
-    client_ret = salt_write_next_copy(&client_to_write, (uint8_t *) "Client message 1", sizeof("Client message 1"));
+    client_ret = salt_write_next(&client_to_write, (uint8_t *) "Client message 1", sizeof("Client message 1"));
     assert_true(client_ret == SALT_SUCCESS);
-    client_ret = salt_write_next_copy(&client_to_write, (uint8_t *) "Client message 2", sizeof("Client message 2"));
+    client_ret = salt_write_next(&client_to_write, (uint8_t *) "Client message 2", sizeof("Client message 2"));
     assert_true(client_ret == SALT_SUCCESS);
-    client_ret = salt_write_next_copy(&client_to_write, (uint8_t *) "Client message 3", sizeof("Client message 3"));
+    client_ret = salt_write_next(&client_to_write, (uint8_t *) "Client message 3", sizeof("Client message 3"));
     assert_true(client_ret == SALT_SUCCESS);
-    client_ret = salt_write_next_copy(&client_to_write, (uint8_t *) "Client message 4", sizeof("Client message 4"));
+    client_ret = salt_write_next(&client_to_write, (uint8_t *) "Client message 4", sizeof("Client message 4"));
     assert_true(client_ret == SALT_SUCCESS);
     client_ret = SALT_PENDING;
     while (client_ret != SALT_SUCCESS) {

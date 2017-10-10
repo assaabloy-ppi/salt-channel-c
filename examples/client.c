@@ -111,7 +111,7 @@ int main(int argc, char **argv)
     printf("Sending data:\r\n");
     SALT_HEXDUMP(w.io.pbuf, binson_writer_get_counter(&w));
 
-    salt_write_next_appended(&msg_out, binson_writer_get_counter(&w));
+    salt_write_commit(&msg_out, binson_writer_get_counter(&w));
 
     binson_writer_init(&w, msg_out.write.p_payload, msg_out.write.buffer_size - msg_out.write.buffer_used);
     binson_write_object_begin(&w);
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
     printf("Sending data:\r\n");
     SALT_HEXDUMP(w.io.pbuf, binson_writer_get_counter(&w));
 
-    salt_write_next_appended(&msg_out, binson_writer_get_counter(&w));
+    salt_write_commit(&msg_out, binson_writer_get_counter(&w));
     
     ret = SALT_PENDING;
     do {

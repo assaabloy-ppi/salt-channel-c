@@ -17,6 +17,8 @@
 /*======= Includes ============================================================*/
 
 #include <stdint.h>
+#include <stdbool.h>
+
 #include "salt_crypto_wrapper.h"
 
 /*======= Public macro definitions ==========================================*/
@@ -108,6 +110,7 @@ typedef enum salt_state_e {
     SALT_M4_IO,
     SALT_M4_HANDLE,
     SALT_SESSION_ESTABLISHED,
+    SALT_SESSION_CLOSED
 } salt_state_t;
 
 /**
@@ -634,7 +637,8 @@ salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint16_t size);
  * @return SALT_ERROR   If any error occured during the sending process.
  */
 salt_ret_t salt_write_execute(salt_channel_t *p_channel,
-                              salt_msg_t *p_msg);
+                              salt_msg_t *p_msg,
+                              bool last_msg);
 
 
 #endif /* _SALT_V2_H_ */

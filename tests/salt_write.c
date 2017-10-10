@@ -155,7 +155,7 @@ static void write_append_no_copy(void **state)
         0x04 , 0x00 , 0xFF , 0xFF , 0xFF, 0xFF      /* Msg = 4 bytes length */
     };
 
-    assert_int_equal(sizeof(expected) + SALT_OVERHEAD_SIZE, message.write.buffer_size);
+    assert_int_equal(sizeof(expected), message.write.buffer_size);
     assert_memory_equal(expected, message.write.p_payload, sizeof(expected));
 
 

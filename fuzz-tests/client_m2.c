@@ -9,7 +9,7 @@
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
-    memcpy(p_bytes, salt_test_data.client_ek_sec, length);
+    memcpy(p_bytes, salt_example_session_1_data.client_ek_sec, length);
 }
 
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)

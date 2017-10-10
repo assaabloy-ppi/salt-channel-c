@@ -195,11 +195,12 @@ salt_ret_t salti_io_write(salt_channel_t *p_channel,
  * @return SALT_ERROR   Wrapping failed.
  */
 salt_ret_t salti_wrap(salt_channel_t *p_channel,
-                             uint8_t *p_data,
-                             uint32_t size,
-                             uint8_t header,
-                             uint8_t **wrapped,
-                             uint32_t *wrapped_length)
+                      uint8_t *p_data,
+                      uint32_t size,
+                      uint8_t header,
+                      uint8_t **wrapped,
+                      uint32_t *wrapped_length,
+                      bool last_msg)
 {
 
     int ret;
@@ -224,7 +225,7 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
 
     salti_increase_nonce(p_channel->write_nonce, p_channel->write_nonce_incr);
     p_data[14] = SALT_ENCRYPTED_MSG_HEADER_VALUE;
-    p_data[15] = 0x00;
+    p_data[15] = (last_msg) ? SALT_LAST_FLAG : 0x00U;
     size += 24;
     salti_u32_to_bytes(&p_data[10], size);
     size += 4U;
@@ -271,8 +272,12 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
                                uint32_t *unwrapped_length)
 {
     /* Header in p_data[14:15] must be { 0x06 , 0x00 } */
-    SALT_VERIFY((p_data[14] == 0x06U && p_data[15] == 0x00U),
+    SALT_VERIFY(p_data[14] == 0x06U,
                 SALT_ERR_BAD_PROTOCOL);
+
+    if ((p_data[15] & SALT_LAST_FLAG) > 0U) {
+        p_channel->state = SALT_SESSION_CLOSED;
+    }
 
     SALT_VERIFY(size >= 24U, SALT_ERR_BAD_PROTOCOL);
 
@@ -295,7 +300,6 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
         uint32_t t_package = salti_bytes_to_u32(&p_data[34]);
         uint32_t t_arrival;
         salti_get_time(p_channel, &t_arrival);
-
         if (t_arrival - p_channel->peer_epoch > t_package + p_channel->delay_threshold) {
             /* Timeout */
             SALT_ERROR(SALT_ERR_TIMEOUT);
@@ -326,23 +330,32 @@ void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment)
 
 void salti_u16_to_bytes(uint8_t *dest, uint16_t size)
 {
-    memcpy(dest, &size, sizeof(uint16_t));
+    dest[0] = size & 0xFFU;
+    dest[1] = (size >> 8U) & 0xFFU;
 }
 
-uint32_t salti_bytes_to_u16(uint8_t *src)
+uint16_t salti_bytes_to_u16(uint8_t *src)
 {
-    return *((uint16_t*) src);
+    return ((src[0] & 0x00FFU) | ((src[1] << 8U) & 0xFF00U));
 }
 
 
 void salti_u32_to_bytes(uint8_t *dest, uint32_t size)
 {
-    memcpy(dest, &size, sizeof(uint32_t));
+    dest[0] = size & 0xFFU;
+    dest[1] = (size >> 8U) & 0xFFU;
+    dest[2] = (size >> 16U) & 0xFFU;
+    dest[3] = (size >> 24U) & 0xFFU;
 }
 
 uint32_t salti_bytes_to_u32(uint8_t *src)
 {
-    return *((uint32_t*) src);
+    return (
+        (src[0] & 0x000000FFU) |
+        ((src[1] << 8U) & 0x0000FF00U) |
+        ((src[2] << 16U) & 0x00FF0000U) |
+        ((src[3] << 24U) & 0xFFU)
+    );
 }
 
 salt_ret_t salti_get_time(salt_channel_t *p_channel, uint32_t *p_time)
@@ -481,7 +494,7 @@ uint8_t salt_write_create(salt_msg_t *p_msg)
     }
     else {
         salti_u16_to_bytes(&p_msg->write.p_buffer[SALT_OVERHEAD_SIZE], p_msg->write.message_count);
-        p_msg->write.buffer_size -= p_msg->write.buffer_available;
+        p_msg->write.buffer_size -= (p_msg->write.buffer_available + SALT_OVERHEAD_SIZE);
         p_msg->write.p_payload = &p_msg->write.p_buffer[SALT_OVERHEAD_SIZE];
         return SALT_MULTI_APP_PKG_MSG_HEADER_VALUE;
     }

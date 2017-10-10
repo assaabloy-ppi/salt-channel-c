@@ -154,7 +154,7 @@ static void multimessage(void **state)
     assert_true(client_ret == SALT_SUCCESS);
     client_ret = SALT_PENDING;
     while (client_ret != SALT_SUCCESS) {
-        client_ret = salt_write_execute(&client_channel, &client_to_write);
+        client_ret = salt_write_execute(&client_channel, &client_to_write, false);
         assert_true(client_ret != SALT_ERROR);
     }
 

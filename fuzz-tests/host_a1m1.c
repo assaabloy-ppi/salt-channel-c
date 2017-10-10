@@ -8,7 +8,7 @@
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
-    memcpy(p_bytes, salt_test_data.host_ek_sec, length);
+    memcpy(p_bytes, salt_example_session_1_data.host_ek_sec, length);
 }
 
 

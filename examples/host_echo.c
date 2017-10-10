@@ -178,7 +178,7 @@ static void *connection_handler(void *context)
             ret = salt_write_next(&msg_out, msg_in.read.p_payload, msg_in.read.message_size);
         }
 
-        salt_write_execute(&client->channel, &msg_out);
+        salt_write_execute(&client->channel, &msg_out, false);
 
     } while (ret == SALT_SUCCESS);
 

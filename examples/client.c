@@ -130,7 +130,7 @@ int main(int argc, char **argv)
     
     ret = SALT_PENDING;
     do {
-        ret = salt_write_execute(&channel, &msg_out);
+        ret = salt_write_execute(&channel, &msg_out, false);
     } while (ret == SALT_PENDING);
     
 

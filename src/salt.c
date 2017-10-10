@@ -458,7 +458,9 @@ salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint16_t size)
     return SALT_SUCCESS;
 }
 
-salt_ret_t salt_write_execute(salt_channel_t *p_channel, salt_msg_t *p_msg)
+salt_ret_t salt_write_execute(salt_channel_t *p_channel,
+                              salt_msg_t *p_msg,
+                              bool last_msg)
 {
     uint8_t type;
     salt_ret_t ret = SALT_ERROR;
@@ -475,7 +477,8 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel, salt_msg_t *p_msg)
                          p_msg->write.buffer_size,
                          type,
                          &p_msg->write.p_buffer,
-                         &p_msg->write.buffer_size);
+                         &p_msg->write.buffer_size,
+                         last_msg);
         SALT_VERIFY(SALT_SUCCESS == ret, p_channel->err_code);
     }
 

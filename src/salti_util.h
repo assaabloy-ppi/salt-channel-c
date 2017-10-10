@@ -101,7 +101,8 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
                       uint32_t size,
                       uint8_t header,
                       uint8_t **wrapped,
-                      uint32_t *wrapped_length);
+                      uint32_t *wrapped_length,
+                      bool last_msg);
 
 salt_ret_t salti_unwrap(salt_channel_t *p_channel,
                         uint8_t *p_data,
@@ -114,7 +115,7 @@ void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment);
 
 void salti_u16_to_bytes(uint8_t *dest, uint16_t size);
 
-uint32_t salti_bytes_to_u16(uint8_t *src);
+uint16_t salti_bytes_to_u16(uint8_t *src);
 
 void salti_u32_to_bytes(uint8_t *dest, uint32_t size);
 

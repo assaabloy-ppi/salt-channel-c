@@ -8,7 +8,7 @@
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
-    memcpy(p_bytes, salt_test_data.client_ek_sec, length);
+    memcpy(p_bytes, salt_example_session_1_data.client_ek_sec, length);
 }
 
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
@@ -26,19 +26,19 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 
     switch (i) {
         case 0:
-            memcpy(p_rchannel->p_data, salt_test_data.m2, 4);
+            memcpy(p_rchannel->p_data, salt_example_session_1_data.m2, 4);
             p_rchannel->size = 4;
             break;
         case 1:
-            memcpy(p_rchannel->p_data, &salt_test_data.m2[4], p_rchannel->size_expected);
+            memcpy(p_rchannel->p_data, &salt_example_session_1_data.m2[4], p_rchannel->size_expected);
             p_rchannel->size = p_rchannel->size_expected;
             break;
         case 2:
-            memcpy(p_rchannel->p_data, salt_test_data.m3, 4);
+            memcpy(p_rchannel->p_data, salt_example_session_1_data.m3, 4);
             p_rchannel->size = 4;
             break;
         case 3:
-            memcpy(p_rchannel->p_data, &salt_test_data.m3[4], p_rchannel->size_expected);
+            memcpy(p_rchannel->p_data, &salt_example_session_1_data.m3[4], p_rchannel->size_expected);
             p_rchannel->size = p_rchannel->size_expected;
             break;
         case 4:
@@ -67,7 +67,7 @@ int main(void) {
     memset(hndsk_buffer, 0xcc, SALT_HNDSHK_BUFFER_SIZE);
 
     ret = salt_create(&channel, SALT_CLIENT, my_write, my_read, NULL);
-    ret = salt_set_signature(&channel, salt_test_data.client_sk_sec);
+    ret = salt_set_signature(&channel, salt_example_session_1_data.client_sk_sec);
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);
     ret = salt_handshake(&channel);
 

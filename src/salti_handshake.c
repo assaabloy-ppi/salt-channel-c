@@ -181,7 +181,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel)
                                   size,
                                   SALT_M3_HEADER_VALUE,
                                   &p_channel->write_channel.p_data,
-                                  &p_channel->write_channel.size);
+                                  &p_channel->write_channel.size, false);
 
             SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
 
@@ -391,7 +391,7 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel)
                                   p_channel->write_channel.size,
                                   SALT_M4_HEADER_VALUE,
                                   &p_channel->write_channel.p_data,
-                                  &p_channel->write_channel.size);
+                                  &p_channel->write_channel.size, false);
 
             SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
 

@@ -202,7 +202,7 @@ static void a1a2handshake(void **state)
     client_ret = salt_write_next(&client_msg, client_message, sizeof(client_message));
     assert_true(SALT_SUCCESS == client_ret);
     do {
-        client_ret = salt_write_execute(&client_channel, &client_msg);
+        client_ret = salt_write_execute(&client_channel, &client_msg, false);
     } while (client_ret == SALT_PENDING);
 
     /* Test multi app package */
@@ -219,7 +219,7 @@ static void a1a2handshake(void **state)
     client_ret = salt_write_next(&client_msg, client_message, 16);
     assert_true(SALT_SUCCESS == client_ret);
     do {
-        client_ret = salt_write_execute(&client_channel, &client_msg);
+        client_ret = salt_write_execute(&client_channel, &client_msg, false);
     } while (client_ret == SALT_PENDING);
 
     /* Host reads first message */
@@ -270,7 +270,7 @@ static void a1a2handshake(void **state)
     host_ret = salt_write_next(&host_msg, host_message, sizeof(host_message));
     assert_true(SALT_SUCCESS == host_ret);
     do {
-        host_ret = salt_write_execute(&host_channel, &host_msg);
+        host_ret = salt_write_execute(&host_channel, &host_msg, false);
     } while (host_ret == SALT_PENDING);
 
     /* Test multi app package */
@@ -287,7 +287,7 @@ static void a1a2handshake(void **state)
     host_ret = salt_write_next(&host_msg, host_message, 16);
     assert_true(SALT_SUCCESS == host_ret);
     do {
-        host_ret = salt_write_execute(&host_channel, &host_msg);
+        host_ret = salt_write_execute(&host_channel, &host_msg, false);
     } while (host_ret == SALT_PENDING);
 
     /* Host reads first message */

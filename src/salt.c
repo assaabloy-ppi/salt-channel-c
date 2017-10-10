@@ -1,5 +1,5 @@
 /**
- * @file salt_v2.c
+ * @file salt.c
  *
  * Salt channel version 2 implementation.
  *
@@ -10,7 +10,7 @@
  */
 
 /*======= Includes ============================================================*/
-#include "salt_v2.h"
+#include "salt.h"
 
 /* C Library includes */
 #include <string.h> /* memcpy, memset */

@@ -2,7 +2,7 @@
 #define _SALT_V2_H_
 
 /**
- * @file salt_v2.h
+ * @file salt.h
  *
  * Salt channel version 2 header file. The salt-channel-c follows the specification:
  * https://github.com/assaabloy-ppi/salt-channel/blob/master/files/spec/spec-salt-channel-v2-draft4.md

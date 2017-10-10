@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <semaphore.h>
 
-#include "salt_v2.h"
+#include "salt.h"
 #include "salt_io.h"
 
 

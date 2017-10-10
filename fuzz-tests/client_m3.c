@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "salt_v2.h"
+#include "salt.h"
 #include "test_data.h"
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)

@@ -5,7 +5,7 @@ INC_PATHS_AFL = -I../src -I../tests -I../src/external/tweetnacl
 
 GCC_FLAGS = $(INC_PATHS_GCC) $(FLAGS_COMMON) -O0 -g -ggdb -fprofile-arcs -ftest-coverage
 AFL_FLAGS = $(INC_PATHS_AFL)
-SRC = ../src/salt_v2.c ../src/salt_util.c
+SRC = ../src/salt.c ../src/salt_util.c
 
 FUZZ_TARGETS = host_a1m1 client_m2 client_m3 host_m4 client_a2 host_app client_app read_parse
 
@@ -13,7 +13,7 @@ EXE_FUZZ_TARGETS = $(addsuffix .fuzz, $(FUZZ_TARGETS))
 SRC_FUZZ_TARGETS = $(addsuffix .c, $(FUZZ_TARGETS))
 
 EXE_COV = $(addsuffix .cov, $(FUZZ_TARGETS))
-EXE_OBJ = _build/salt_v2.o _build/salt_util.o
+EXE_OBJ = _build/salt.o _build/salt_util.o
 
 ifdef USE_TWEETNACL
 EXE_OBJ += _build/tweetnacl.o _build/test_data.o
@@ -25,7 +25,7 @@ endif
 
 .PHONY: all
 
-_build/salt_v2.o: ../src/salt_v2.c
+_build/salt.o: ../src/salt.c
 	gcc -c $^ $(GCC_FLAGS) -o $@
 
 _build/salt_util.o: ../src/salt_util.c

@@ -10,7 +10,7 @@
 #include <assert.h>
 
 
-#include "salt_v2.h"
+#include "salt.h"
 #include "salt_io.h"
 
 static void *connection_handler(void *context);

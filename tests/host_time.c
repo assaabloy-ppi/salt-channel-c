@@ -7,8 +7,8 @@
 #include <cmocka.h>
 
 #include "cfifo.h"
-#include "salt_v2.h"
-#include "salt_util.h"
+#include "salt.h"
+#include "salti_util.h"
 #include "salt_mock.h"
 
 typedef struct salt_test_s {

@@ -2,7 +2,7 @@
 #define _SALT_V2_H_
 
 /**
- * @file salt_v2.h
+ * @file salt.h
  *
  * Salt channel version 2 header file. The salt-channel-c follows the specification:
  * https://github.com/assaabloy-ppi/salt-channel/blob/master/files/spec/spec-salt-channel-v2-draft4.md
@@ -17,6 +17,8 @@
 /*======= Includes ============================================================*/
 
 #include <stdint.h>
+#include <stdbool.h>
+
 #include "salt_crypto_wrapper.h"
 
 /*======= Public macro definitions ==========================================*/
@@ -24,10 +26,6 @@
 #define SALT_READ_OVERHEAD_SIZE     (38U)       /**< Encryption buffer overhead size for read. */
 #define SALT_WRITE_OVERHEAD_SIZE    (42U)       /**< Encryption buffer overhead size for write. */
 #define SALT_HNDSHK_BUFFER_SIZE     (502)       /**< Buffer used for handshake. */
-
-/* Application package message header */
-#define SALT_APP_PKG_MSG_HEADER_VALUE           (0x05U)
-#define SALT_MULTI_APP_PKG_MSG_HEADER_VALUE     (0x0BU)
 
 /*======= Type Definitions and declarations ===================================*/
 
@@ -112,6 +110,7 @@ typedef enum salt_state_e {
     SALT_M4_IO,
     SALT_M4_HANDLE,
     SALT_SESSION_ESTABLISHED,
+    SALT_SESSION_CLOSED
 } salt_state_t;
 
 /**
@@ -138,6 +137,12 @@ typedef enum salt_io_state_e {
  * must be reported in p_channel->err_code. When implementing the read channel,
  * the function must only return SALT_SUCCESS when p_channel->size_expected == p_channel.size.
  *
+ * The read operation is always done in two steps:
+ *  1. Read 4 size bytes, derive length n.
+ *  2. Read the package of length n.
+ *  
+ * The write opration is done in one step:
+ *  1. Write { size[4] , package[n] }
  *
  * @param p_channel    Pointer to I/O channel structure.
  *
@@ -167,10 +172,25 @@ struct salt_io_channel_s {
  * @param p_time    Pointer where current time will be copied to.
  */
 
-/* TODO: Write description */
-typedef struct salt_time_s salt_time_t;
+/**
+ * @brief Function for dependency injection to make salt channel protected against
+ * delay attacks.
+ * 
+ * 
+ * @param p_time    Pointer to time structure.
+ * @param time      Return time parameter.
+ * 
+ * @return SALT_SUCCESS The time could be retreived.
+ * @return SALT_ERROR   The time could not be retrieved.
+ * 
+ */
+typedef struct salt_time_s salt_time_t; /* Forward declaration */
 typedef salt_ret_t (*salt_get_time)(salt_time_t *p_time, uint32_t *time);
 
+/**
+ * @brief Time implementation structure.
+ * 
+ */
 struct salt_time_s {
     salt_get_time   get_time;
     void            *p_context;
@@ -186,6 +206,15 @@ struct salt_time_s {
  *  salt_protocols_t protocols;
  *  salt_ret_t ret = salt_protocols_init(&channel, &protocols, buffer, sizeof(buffer));
  *  ret = salt_protocol_append(&protocols, "ECHO", 4);
+ *  ret = salt_protocol_append(&protocols, "Temp", 4);
+ *  
+ *  Since the A2 package have this structure:
+ *  
+ *  A2 = { header[2] , count[1] , p01[10] , p02[10] , pN1[10] , pN2[10] }
+ *  
+ *  The required buffer size for n supported protocols is:
+ *  
+ *  buffer_size = 3 + n * 20
  *
  *  When the client sends an A1 request the following will be the response:
  *  Response = {
@@ -238,35 +267,35 @@ typedef struct salt_channel_s {
     salt_io_channel_t   read_channel;                   /**< Read channel structure. */
     salt_io_impl        read_impl;                      /**< Function pointer to read implementation. */
 
-    salt_time_t         *time_impl;                      /**< Function pointer to get time implementation. */
+    salt_time_t         *time_impl;                     /**< Function pointer to get time implementation. */
     salt_protocols_t    *p_protocols;                   /**< Function pointer to get supported protocols. */
 
-    uint8_t     *hdshk_buffer;                          /**< TODO: Consider making a struct for read- and maintainability. */
-    uint32_t    hdshk_buffer_size;
+    uint8_t     *hdshk_buffer;                          /**< Handshake buffer, used only during handshake. */
+    uint32_t    hdshk_buffer_size;                      /**< Handshake buffer size> = SALT_HNDSHK_BUFFER_SIZE. */
 } salt_channel_t;
 
 /**
  * @brief Structure used for easier creating/reading messages.
  * Specially used when writing/reading multi app packets.
- *
+ * See \ref salt_write_execute and \ref salt_read_begin
  */
 
 typedef union salt_msg_u {
     struct {
-        uint8_t     *p_buffer;      /**< Message buffer. */
-        uint8_t     *p_payload;     /**< Pointer to current message. */
-        uint32_t    buffer_size;    /**< Message buffer size. */
+        uint8_t     *p_buffer;          /**< Message buffer. */
+        uint8_t     *p_payload;         /**< Pointer to current message. */
+        uint32_t    buffer_size;        /**< Message buffer size. */
         uint32_t    buffer_used;
-        uint16_t    messages_left;  /**< Number of messages left to read. */
-        uint16_t    message_size;   /**< Current message size. */
+        uint16_t    messages_left;      /**< Number of messages left to read. */
+        uint16_t    message_size;       /**< Current message size. */
     } read;
     struct {
-        uint8_t     *p_buffer;      /**< Message buffer. */
-        uint8_t     *p_payload;     /**< Pointer to current message. */
-        uint32_t    buffer_size;    /**< Message buffer size. */
-        uint32_t    buffer_used;
-        uint16_t    message_count;  /**< Number of messages left to read. */
-        uint16_t    state;           /**< Current message type. */
+        uint8_t     *p_buffer;          /**< Message buffer. */
+        uint8_t     *p_payload;         /**< Pointer to current message. */
+        uint32_t    buffer_size;        /**< Message buffer size. */
+        uint32_t    buffer_available;   /**< How much of the buffer is used. */
+        uint16_t    message_count;      /**< Number of messages left to read. */
+        uint16_t    state;              /**< Current message type. */
     } write;
 } salt_msg_t;
 
@@ -356,6 +385,8 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
 
 /**
  * @brief Sets the signature used for the salt channel.
+ * 
+ * This function will copy the signature in p_signature to the salt-channel structure.
  *
  * @param p_channel     Pointer to channel handle.
  * @param p_signature   Pointer to signature. Must be crypto_sign_SECRETKEYBYTES bytes long.
@@ -396,7 +427,25 @@ salt_ret_t salt_init_session(salt_channel_t *p_channel,
                              uint8_t *hdshk_buffer,
                              uint32_t hdshk_buffer_size);
 
-salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel, uint32_t delay_threshold);
+
+/**
+ * @brief Set threshold for delay protection.
+ * 
+ * The salt-channel-c implements a delay attack protection. This means that both peers
+ * sends a time relative to the first messages sent. This means that from the timestamp
+ * in a package an expected time could be derived. If this one differs more than the
+ * threshold a delay attack might be present and the salt-channel implementation
+ * will return error. For this feature to work the used must inject a get time implementation.
+ * See \ref salt_create.
+ * 
+ * @param p_channel         Pointer to channel handle.
+ * @param delay_threshold   Threshold for differense in milliseconds.
+ * 
+ * @return SALT_SUCCESS The new threshold was successfully updated.
+ * @return SALT_ERROR   The channel handle was a NULL pointer.
+ */
+salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel,
+                                    uint32_t delay_threshold);
 
 /**
  * @brief Salt handshake process.
@@ -415,10 +464,9 @@ salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel, uint32_t delay_th
 salt_ret_t salt_handshake(salt_channel_t *p_channel);
 
 /**
- * @brief Reads one or more encrypted messages.
- *
- *
- * Usage: See example at \ref salt_read_next
+ * @brief Reads one or multiple encrypted message.
+ * 
+ * The actual I/O operation of the read process. Usage: See example at \ref salt_read_next
  *
  * @param p_channel     Pointer to salt channel handle.
  * @param p_buffer      Pointer where to store received (clear text) data.
@@ -434,24 +482,6 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
                            uint8_t *p_buffer,
                            uint32_t buffer_size,
                            salt_msg_t *p_msg);
-
-/**
- * @brief Used internally by \ref salt_read_begin. Declared public for testability.
- *
- * Initialized a parsing of a application or multi application message. The input to
- * this function is clear text.
- *
- * @param p_msg         Pointer to message structure to use when reading the message.
- *
- * @return SALT_SUCCESS The message follows salt-channel specification.
- * @return SALT_ERROR   The message doesn't follow salt channel specification or the
- *                      receive buffer is to small.
- */
-salt_err_t salt_read_init(uint8_t type,
-                          uint8_t *p_buffer,
-                          uint32_t buffer_size,
-                          salt_msg_t *p_msg);
-
 
 /**
  * @brief Used to read messages recevied.
@@ -499,8 +529,10 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg);
  * provided send buffer - SALT_WRITE_OVERHEAD_SIZE.
  *
  * The content of p_buffer will be modified during the authenticated encryption.
- *
  * Usage: See example at \ref salt_write_execute
+ * 
+ * After this procedure the available size for writing can be derived
+ * using available = p_msg->buffer_size - p_msg->buffer_used.
  *
  * @param p_buffer  Pointer where to store received (clear text) data.
  * @param size      Size of clear text message to send.
@@ -513,16 +545,14 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg);
 salt_ret_t salt_write_begin(uint8_t *p_buffer,
                             uint32_t size,
                             salt_msg_t *p_msg);
-
-salt_err_t salt_write_init(uint8_t *p_buffer,
-                           uint32_t size,
-                           salt_msg_t *p_msg);
-
 /**
- * @brief Add a clear text message to next encrypted package.
+ * @brief Copy a clear text message to be encrypted to next encrypted package.
  *
  * If this function is called more than once after \ref salt_write_begin all
- * following clear text packages will be sent as one encrypted package.
+ * following clear text packages will be sent as one encrypted package. The
+ * content of p_buffer will be copied to the buffer of the p_msg structure.
+ * 
+ * The available buffer is in p_msg->buffer_available.
  *
  * @param p_msg     Pointer to message state structure.
  * @param p_buffer  Pointer to clear text message.
@@ -532,11 +562,27 @@ salt_err_t salt_write_init(uint8_t *p_buffer,
  * @return SALT_ERROR   The message was to large to fit in the state structure.
  *
  */
-salt_ret_t salt_write_next_copy(salt_msg_t *p_msg,
-                           uint8_t *p_buffer,
-                           uint16_t size);
+salt_ret_t salt_write_next(salt_msg_t *p_msg,
+                                uint8_t *p_buffer,
+                                uint16_t size);
 
-salt_ret_t salt_write_next_appended(salt_msg_t *p_msg, uint16_t size);
+/**
+ * @brief Add a clear text message to be encrypted to next encrypted package.
+ * 
+ * The difference from this function and \ref salt_write_next is that this function
+ * assumes that the used have already put the message in the buffer of the message structure.
+ * Used for instance when a write is initiated on a buffer, and then messages are appended into
+ * that buffer using e.g. a message serialized.
+ * 
+ * Example usage see \ref salt_write_execute
+ * 
+ * @param p_msg     Pointer to message state structure.
+ * @param size      Size of bytes that where written into the buffer.
+ * 
+ * @return SALT_SUCCESS A message was successfully appended to the state structure.
+ * @return SALT_ERROR   The message was to large to fit in the state structure.
+ */
+salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint16_t size);
 
 /**
  * @brief Encrypts and send the messages prepared in \ref salt_write_begin and \ref salt_write_next
@@ -564,6 +610,14 @@ salt_ret_t salt_write_next_appended(salt_msg_t *p_msg, uint16_t size);
  *      if (ret == SALT_ERROR) {
  *          // tx_buffer is full
  *      }
+ *      
+ *      my_object m;
+ *      uint16_t size = serialize_my_object(&m, tx_msg.write.p_payload,
+ *                                          tx_msg.write.buffer_available);
+ *      ret = salt_write_commit(&tx_msg, size);
+ *      if (ret == SALT_ERROR) {
+ *          // tx_buffer is full
+ *      }
  *
  *      do {
  *          ret = salt_write_execute(&channel, &msg);
@@ -583,20 +637,8 @@ salt_ret_t salt_write_next_appended(salt_msg_t *p_msg, uint16_t size);
  * @return SALT_ERROR   If any error occured during the sending process.
  */
 salt_ret_t salt_write_execute(salt_channel_t *p_channel,
-                              salt_msg_t *p_msg);
-
-/**
- * @brief Used internally by \ref salt_write_execute. Declared public for testability.
- *
- * Creates the final serialized clear text data after \ref salt_write_begin and
- * \ref salt_write_next have been called.
- *
- * @param p_msg         Pointer to message structure.
- *
- * @return SALT_SUCCESS The message was successfully serialized.
- * @return SALT_ERROR   p_msg was NULL.
- */
-uint8_t salt_write_create(salt_msg_t *p_msg);
+                              salt_msg_t *p_msg,
+                              bool last_msg);
 
 
 #endif /* _SALT_V2_H_ */

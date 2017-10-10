@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <string.h>
-#include "salt_util.h"
+#include "salti_util.h"
 
 static salt_ret_t get_time(salt_time_t *p_time, uint32_t *time);
 

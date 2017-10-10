@@ -7,9 +7,9 @@
 #include <cmocka.h>
 
 #include "cfifo.h"
-#include "salt_v2.h"
-#include "salt_util.h"
-#include "salt_mock.h"
+#include "salt.h"
+#include "salti_util.h"
+#include "salti_handshake.h"
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
@@ -23,9 +23,9 @@ static void read_test(void **state)
     salt_msg_t message;
 
     salt_write_begin(buffer, sizeof(buffer), &message);
-    salt_write_next_copy(&message, (uint8_t *) "12345", 5);
-    salt_write_next_copy(&message, (uint8_t *) "678", 3);
-    salt_write_next_copy(&message, (uint8_t *) "87641258", 8);
+    salt_write_next(&message, (uint8_t *) "12345", 5);
+    salt_write_next(&message, (uint8_t *) "678", 3);
+    salt_write_next(&message, (uint8_t *) "87641258", 8);
     uint8_t type = salt_write_create(&message);
     assert_int_equal(type, SALT_MULTI_APP_PKG_MSG_HEADER_VALUE);
 

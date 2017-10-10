@@ -10,7 +10,7 @@
 #include <assert.h>
 
 
-#include "salt_v2.h"
+#include "salt.h"
 #include "salt_io.h"
 
 static void *connection_handler(void *context);
@@ -140,9 +140,9 @@ static void *write_handler(void *context)
         input[0] = 0x01;
         if (tx_size > 0) {
             salt_write_begin(tx_buffer, sizeof(tx_buffer), &out_msg);
-            salt_write_next_copy(&out_msg, (uint8_t *)input, tx_size + 1);
+            salt_write_next(&out_msg, (uint8_t *)input, tx_size + 1);
             printf("\r\n\033[A\33[2K\rclient: %*.*s\r\n", 0, tx_size - 1, &input[1]);
-            ret_code = salt_write_execute(channel, &out_msg);
+            ret_code = salt_write_execute(channel, &out_msg, false);
         }
     } while (ret_code == SALT_SUCCESS);
 

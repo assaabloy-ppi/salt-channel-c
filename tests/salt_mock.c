@@ -16,7 +16,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include "salt_mock.h"
-#include "salt_util.h"
+#include "salti_util.h"
 
 /*======= Local Macro Definitions ===========================================*/
 /*======= Type Definitions ==================================================*/
@@ -168,6 +168,9 @@ salt_ret_t salt_write_mock(salt_io_channel_t *p_wchannel)
     cfifo_t *cfifo = (cfifo_t *) p_wchannel->p_context;
 
     if (cfifo_get(cfifo, &next) == CFIFO_SUCCESS) {
+
+    //SALT_HEXDUMP_DEBUG(p_wchannel->p_data, p_wchannel->size_expected);
+    //SALT_HEXDUMP_DEBUG(next.data, next.size);
         assert_int_equal(next.size, p_wchannel->size_expected);
         assert_memory_equal(next.data, p_wchannel->p_data, p_wchannel->size_expected);
         free(next.data);

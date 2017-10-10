@@ -6,14 +6,14 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
-#include "salt_util.h"
-#include "salt_v2.h"
+#include "salti_util.h"
+#include "salt.h"
 #include "salt_mock.h"
 #include "test_data.h"
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
-    memcpy(p_bytes, salt_test_data.client_ek_sec, length);
+    memcpy(p_bytes, salt_example_session_1_data.client_ek_sec, length);
 }
 
 static void test_salt_create(void **state)
@@ -53,7 +53,7 @@ static void test_salt_set_signature(void **state)
     salt_ret_t ret;
 
     salt_create(&channel, SALT_CLIENT, salt_write_mock, salt_read_mock, NULL);
-    ret = salt_set_signature(NULL, salt_test_data.client_sk_sec);
+    ret = salt_set_signature(NULL, salt_example_session_1_data.client_sk_sec);
     assert_true(SALT_ERROR == ret);
 
     salt_create(&channel, SALT_CLIENT, salt_write_mock, salt_read_mock, NULL);
@@ -62,13 +62,13 @@ static void test_salt_set_signature(void **state)
     assert_true(SALT_ERR_NULL_PTR == channel.err_code);
 
     salt_create(&channel, SALT_CLIENT, salt_write_mock, salt_read_mock, NULL);
-    ret = salt_set_signature(&channel, salt_test_data.client_sk_sec);
+    ret = salt_set_signature(&channel, salt_example_session_1_data.client_sk_sec);
     assert_true(SALT_SUCCESS == ret);
     assert_true(SALT_ERR_NONE == channel.err_code);
 
     assert_memory_equal(channel.my_sk_sec,
-                        salt_test_data.client_sk_sec,
-                        sizeof(salt_test_data.client_sk_sec));
+                        salt_example_session_1_data.client_sk_sec,
+                        sizeof(salt_example_session_1_data.client_sk_sec));
 
 }
 
@@ -105,7 +105,7 @@ static void test_salt_init_session(void **state)
     assert_true(SALT_ERROR == ret);
     assert_true(SALT_ERR_NO_SIGNATURE == channel.err_code);
 
-    salt_set_signature(&channel, salt_test_data.client_sk_sec);
+    salt_set_signature(&channel, salt_example_session_1_data.client_sk_sec);
     ret = salt_init_session(&channel, NULL, SALT_HNDSHK_BUFFER_SIZE);
     assert_true(SALT_ERROR == ret);
     assert_true(SALT_ERR_NULL_PTR == channel.err_code);

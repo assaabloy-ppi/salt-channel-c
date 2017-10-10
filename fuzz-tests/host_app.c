@@ -3,12 +3,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "salt_v2.h"
+#include "salt.h"
 #include "test_data.h"
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
-    memcpy(p_bytes, salt_test_data.host_ek_sec, length);
+    memcpy(p_bytes, salt_example_session_1_data.host_ek_sec, length);
 }
 
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
@@ -26,19 +26,19 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 
     switch (i) {
         case 0:
-            memcpy(p_rchannel->p_data, salt_test_data.m1, 4);
+            memcpy(p_rchannel->p_data, salt_example_session_1_data.m1, 4);
             p_rchannel->size = 4;
             break;
         case 1:
-            memcpy(p_rchannel->p_data, &salt_test_data.m1[4], p_rchannel->size_expected);
+            memcpy(p_rchannel->p_data, &salt_example_session_1_data.m1[4], p_rchannel->size_expected);
             p_rchannel->size = p_rchannel->size_expected;
             break;
         case 2:
-            memcpy(p_rchannel->p_data, salt_test_data.m4, 4);
+            memcpy(p_rchannel->p_data, salt_example_session_1_data.m4, 4);
             p_rchannel->size = 4;
             break;
         case 3:
-            memcpy(p_rchannel->p_data, &salt_test_data.m4[4], p_rchannel->size_expected);
+            memcpy(p_rchannel->p_data, &salt_example_session_1_data.m4[4], p_rchannel->size_expected);
             p_rchannel->size = p_rchannel->size_expected;
             break;
         case 4:

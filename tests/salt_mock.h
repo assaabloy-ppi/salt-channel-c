@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "salt_v2.h"
+#include "salt.h"
 #include "cfifo.h"
 
 /*======= Public macro definitions ==========================================*/

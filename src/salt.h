@@ -54,24 +54,17 @@ typedef enum salt_err_e {
     SALT_ERR_NO_SIGNATURE,          /**< No signature set error. */
     SALT_ERR_SESSION_NOT_INITIATED, /**< Session not initiated when handshaking error. */
     SALT_ERR_INVALID_STATE,         /**< Invalid state error. */
-    SALT_ERR_M1_TOO_SMALL,          /**< Size of M1 message to small. */
-    SALT_ERR_M1_BAD_PROTOCOL,       /**< Bad protocol in M1 message. */
-    SALT_ERR_M1_BAD_HEADER,         /**< Bad header in M1 message. */
     SALT_ERR_NO_SUCH_SERVER,        /**< Client included an invalid public signature key. */
-    SALT_ERR_M2_TOO_SMALL,          /**< Size of M2 message to small. */
-    SALT_ERR_M2_BAD_HEADER,         /**< Vad header in M2 message. */
-    SALT_ERR_M3M4_WRONG_SIZE,       /**< Bad size of M3/M4 message. */
     SALT_ERR_COMMON_KEY,            /**< Common key calculation error. */
     SALT_ERR_SIGNING,               /**< Signing error. */
     SALT_ERR_ENCRYPTION,            /**< Encryption error. */
     SALT_ERR_DECRYPTION,            /**< Decryption error. */
-    SALT_ERR_BAD_SIGNATURE,         /**< Signature verification failed. */
     SALT_ERR_BUFF_TO_SMALL,         /**< I/O Buffer to small. */
     SALT_ERR_BAD_PROTOCOL,          /**< Package doesn't follow specification. */
     SALT_ERR_IO_WRITE,              /**< Error occured during I/O. */
-    SALT_ERR_TIMEOUT,
-    SALT_ERR_BAD_PEER,
-    SALT_ERR_CONNECTION_CLOSED,
+    SALT_ERR_DELAY_DETECTED,        /**< Error if a delayed packet was detected. */
+    SALT_ERR_BAD_PEER,              /**< If expected peer didn't match or signature verification faild. */
+    SALT_ERR_CONNECTION_CLOSED      /**< If the session was closed, internally or by peer. */
 } salt_err_t;
 
 
@@ -111,7 +104,8 @@ typedef enum salt_state_e {
     SALT_M4_IO,
     SALT_M4_HANDLE,
     SALT_SESSION_ESTABLISHED,
-    SALT_SESSION_CLOSED
+    SALT_SESSION_CLOSED,
+    SALT_ERROR_STATE
 } salt_state_t;
 
 /**

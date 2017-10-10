@@ -302,7 +302,7 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
         salti_get_time(p_channel, &t_arrival);
         if (t_arrival - p_channel->peer_epoch > t_package + p_channel->delay_threshold) {
             /* Timeout */
-            SALT_ERROR(SALT_ERR_TIMEOUT);
+            SALT_ERROR(SALT_ERR_DELAY_DETECTED);
         }
     }
 

@@ -43,14 +43,14 @@ static void host_handshake_m1(void **state)
     salt_io_mock_set_next_read(mock->io, &salt_example_session_1_data.m1[4], sizeof(salt_example_session_1_data.m1) - 5, true);
     ret = salt_handshake(&channel, NULL);
     assert_true(ret == SALT_ERROR);
-    assert_true(SALT_ERR_M1_TOO_SMALL == channel.err_code);
+    assert_true(SALT_ERR_BAD_PROTOCOL == channel.err_code);
 
 
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);
     salt_io_mock_set_next_read(mock->io, hndsk_buffer, sizeof(salt_example_session_1_data.m1) + 10, true);
     ret = salt_handshake(&channel, NULL);
     assert_true(ret == SALT_ERROR);
-    assert_true(SALT_ERR_M1_BAD_PROTOCOL == channel.err_code);
+    assert_true(SALT_ERR_BAD_PROTOCOL == channel.err_code);
 
 
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);
@@ -61,7 +61,7 @@ static void host_handshake_m1(void **state)
 
     ret = salt_handshake(&channel, NULL);
     assert_true(ret == SALT_ERROR);
-    assert_true(SALT_ERR_M1_BAD_PROTOCOL == channel.err_code);
+    assert_true(SALT_ERR_BAD_PROTOCOL == channel.err_code);
 
 
 }

@@ -27,8 +27,6 @@
 #define SALT_LENGTH_SIZE                        (4U)
 #define SALT_HEADER_SIZE                        (2U)
 #define SALT_TIME_SIZE                          (4U)
-#define SALT_TICKET_LENGTH_SIZE                 (1U)
-#define SALT_MAX_TICKET_SIZE                    (127U) /* Not supported yet */
 #define SALT_A1_HEADER                          (8U)
 #define SALT_A2_HEADER                          (9U)
 #define SALT_LAST_FLAG                          (0x80U)
@@ -46,7 +44,7 @@
                     "Runtime error (%s, %s): %s at %s:%d, %s.\r\n",         \
                     #error_code, salt_mode2str(p_channel->mode), #x,        \
                     __FILE__, __LINE__, __func__);                          \
-                p_channel->state = SALT_ERR_CONNECTION_CLOSED;              \
+                p_channel->state = SALT_SESSION_CLOSED;                     \
                 return SALT_ERROR;                                          \
             }                                                               \
         } while (0)
@@ -55,7 +53,7 @@
         do {                                                                \
             if (!(x)) {                                                     \
                 p_channel->err_code = error_code;                           \
-                p_channel->state = SALT_ERR_CONNECTION_CLOSED;              \
+                p_channel->state = SALT_SESSION_CLOSED;                     \
                 return SALT_ERROR;                                          \
             }                                                               \
         } while (0)

@@ -135,7 +135,7 @@ static void host_delay_threshold_m1_m4(void **state)
     host_ret = salt_handshake(&host_channel, NULL);   /* Recieved M4, expected delay_threshold */
 
     assert_true(host_ret == SALT_ERROR);
-    assert_int_equal(host_channel.err_code, SALT_ERR_TIMEOUT);
+    assert_int_equal(host_channel.err_code, SALT_ERR_DELAY_DETECTED);
 
 }
 

@@ -28,10 +28,6 @@ void salti_create_m1(salt_channel_t *p_channel,
                      uint8_t *p_hash,
                      uint8_t *p_with);
 
-salt_ret_t salti_handle_a1_or_m1(salt_channel_t *p_channel,
-                                 uint8_t *p_data,
-                                 uint32_t size);
-
 salt_ret_t salti_handle_m1(salt_channel_t *p_channel,
                            uint8_t *p_data,
                            uint32_t size,
@@ -47,11 +43,11 @@ salt_ret_t salti_handle_m2(salt_channel_t *p_channel,
                            uint32_t size,
                            uint8_t *p_hash);
 
-salt_ret_t salti_create_m3m4(salt_channel_t *p_channel,
+salt_ret_t salti_create_m3m4_sig(salt_channel_t *p_channel,
                              uint8_t *p_data,
                              uint32_t *size);
 
-salt_ret_t salti_handle_m3m4(salt_channel_t *p_channel,
+salt_ret_t salti_verify_m3m4_sig(salt_channel_t *p_channel,
                              uint8_t *p_data,
                              uint32_t size);
 

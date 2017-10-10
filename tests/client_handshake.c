@@ -193,7 +193,7 @@ static void client_handshake_multi_echo(void **state)
     ret = salt_read_begin(&channel, hndsk_buffer, sizeof(hndsk_buffer), &msg_in);
     assert_true(ret == SALT_ERROR);
     assert_int_equal(channel.err_code, SALT_ERR_INVALID_STATE);
-    assert_int_equal(channel.state, SALT_ERR_CONNECTION_CLOSED);
+    assert_int_equal(channel.state, SALT_SESSION_CLOSED);
 
 }
 

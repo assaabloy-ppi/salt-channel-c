@@ -70,6 +70,7 @@ typedef enum salt_err_e {
     SALT_ERR_BAD_PROTOCOL,          /**< Package doesn't follow specification. */
     SALT_ERR_IO_WRITE,              /**< Error occured during I/O. */
     SALT_ERR_TIMEOUT,
+    SALT_ERR_BAD_PEER,
     SALT_ERR_CONNECTION_CLOSED,
 } salt_err_t;
 
@@ -360,7 +361,7 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
  *      uint8_t protocols_supported[400];
  *      uint32_t protocols_size = sizeof(protocols_supported);
  *      salt_protocols_t protocols;
- *      salt_ret_t ret_code = salt_a1a2(&channel, protocols_supported, protocols_size, &protocols);
+ *      salt_ret_t ret_code = salt_a1a2(&channel, protocols_supported, protocols_size, &protocols, NULL, 0);
  *      if (ret_code == SALT_SUCCESS) {
  *          printf("Supported protocol:\r\n");
  *          for (uint8_t i = 0; i < host_protocols.count; i+= 2) {
@@ -381,7 +382,9 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
 salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                      uint8_t *p_buffer,
                      uint32_t size,
-                     salt_protocols_t *p_protocols);
+                     salt_protocols_t *p_protocols,
+                     uint8_t *p_with,
+                     uint16_t with_size);
 
 /**
  * @brief Sets the signature used for the salt channel.
@@ -455,13 +458,14 @@ salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel,
  * through the whole handshaking process in one call. Otherwise, the function must be polled.
  *
  * @param p_channel Pointer to salt channel handle.
+ * @param p_with    Pointer to expected public key (32 bytes) of peer. May be NULL.
  *
  * @return SALT_SUCCESS When the handshake process is completed.
  * @return SALT_PENDING When the handshake process is still pending.
  * @return SALT_ERROR   If any error occured during the handshake process. At this time the session should be ended.
  *
  */
-salt_ret_t salt_handshake(salt_channel_t *p_channel);
+salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with);
 
 /**
  * @brief Reads one or multiple encrypted message.

@@ -55,7 +55,7 @@ int main(void) {
     ret = salt_set_signature(&channel, sig);
     ret = salt_init_session(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE);
     salt_protocols_t host_protocols;
-    ret = salt_a1a2(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE, &host_protocols);
+    ret = salt_a1a2(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE, &host_protocols, NULL, 0);
 
     if (ret == SALT_ERROR) {
         return 0;

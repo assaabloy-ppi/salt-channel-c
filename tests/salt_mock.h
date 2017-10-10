@@ -68,6 +68,8 @@ void salt_io_mock_init(salt_channel_t *channel, salt_io_mock_t *mock);
 void salt_io_mock_set_next_read(salt_io_mock_t *mock, uint8_t *p_data, uint32_t size, bool add_size);
 void salt_io_mock_expect_next_write(salt_io_mock_t *mock, uint8_t *p_data, uint32_t size, bool add_size);
 
+void salt_channels_create(salt_mock_t *mock);
+void salt_channels_delete(salt_mock_t *mock);
 
 salt_ret_t salt_write_mock(salt_io_channel_t *p_wchannel);
 salt_ret_t salt_read_mock(salt_io_channel_t *p_rchannel);

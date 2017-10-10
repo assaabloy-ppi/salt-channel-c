@@ -209,7 +209,7 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
     p_data[32] = header;
     p_data[33] = 0x00;
 
-    uint32_t time;
+    uint32_t time = 0;
     salti_get_time(p_channel, &time);
     time -= p_channel->my_epoch;
     salti_u32_to_bytes(&p_data[34], time);
@@ -360,12 +360,16 @@ uint32_t salti_bytes_to_u32(uint8_t *src)
 
 salt_ret_t salti_get_time(salt_channel_t *p_channel, uint32_t *p_time)
 {
+    salt_ret_t ret = SALT_ERROR;
     if (p_channel->time_impl != NULL && p_channel->time_impl->get_time != NULL) {
-        return p_channel->time_impl->get_time(p_channel->time_impl, p_time);
+        ret = p_channel->time_impl->get_time(p_channel->time_impl, p_time);
     }
 
-    memset(p_time, 0x00, 4);
-    return SALT_ERROR;
+    if (ret == SALT_ERROR) {
+        memset(p_time, 0x00, 4);
+    }
+
+    return ret;
 
 }
 

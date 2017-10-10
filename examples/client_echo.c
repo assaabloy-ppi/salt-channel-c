@@ -83,7 +83,7 @@ static void *connection_handler(void *context)
 
     salt_set_delay_threshold(&channel, 1000);
 
-    ret = salt_handshake(&channel);
+    ret = salt_handshake(&channel, NULL);
 
     while (ret != SALT_SUCCESS) {
 
@@ -95,7 +95,7 @@ static void *connection_handler(void *context)
 
         assert(ret != SALT_ERROR);
 
-        salt_handshake(&channel);
+        salt_handshake(&channel, NULL);
 
     }
 

@@ -31,8 +31,6 @@
 #define SALT_READ_NONCE_INIT_SERVER             (1U)
 #define SALT_READ_NONCE_INIT_CLIENT             (2U)
 
-
-
 /*======= Type Definitions ====================================================*/
 
 /*======= Local variable declarations =========================================*/
@@ -54,7 +52,7 @@ salt_ret_t salt_create(
 
     SALT_VERIFY_VALID_CHANNEL(p_channel);
 
-    SALT_VERIFY(mode <= SALT_CLIENT,
+    SALT_VERIFY(mode == SALT_CLIENT || mode == SALT_SERVER,
                 SALT_ERR_NOT_SUPPORTED);
 
     p_channel->mode = mode;
@@ -161,22 +159,18 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                      uint8_t *p_buffer,
                      uint32_t size,
                      salt_protocols_t *p_protocols,
-                     uint8_t *p_with,
-                     uint16_t with_size)
+                     uint8_t *p_with)
 {
 
     salt_ret_t ret_code = SALT_PENDING;
     uint8_t proceed = 1;
+    uint32_t a1_size = 0;
 
     SALT_VERIFY_VALID_CHANNEL(p_channel);
     SALT_VERIFY_NOT_NULL(p_buffer);
 
     SALT_VERIFY(p_channel->state >= SALT_CREATED && p_channel->state < SALT_M1_IO,
                 SALT_ERR_INVALID_STATE);
-
-    if (p_with != NULL || with_size > 0) {
-        SALT_ERROR(SALT_ERR_NOT_SUPPORTED);
-    }
 
     while (proceed) {
         proceed = 0;
@@ -186,12 +180,25 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
         case SALT_SESSION_INITIATED:
             p_buffer[SALT_LENGTH_SIZE] = SALT_A1_HEADER;
             p_buffer[SALT_LENGTH_SIZE + 1] = 0;
-            salti_u32_to_bytes(p_buffer, 2);
+
+            if (p_with != NULL) {
+                p_buffer[SALT_LENGTH_SIZE + 2] = 0x01;
+                p_buffer[SALT_LENGTH_SIZE + 3] = 0x00;
+                p_buffer[SALT_LENGTH_SIZE + 4] = 0x00;
+                a1_size = 37;
+            } else {
+                p_buffer[SALT_LENGTH_SIZE + 2] = 0x01;
+                salti_u16_to_bytes(&p_buffer[SALT_LENGTH_SIZE + 3], 32);
+                a1_size = 5;
+            }
+
+            salti_u32_to_bytes(p_buffer, a1_size);
+            a1_size += SALT_LENGTH_SIZE;
             p_channel->state = SALT_A1_IO;
             proceed = 1;
             break;
         case SALT_A1_IO:
-            ret_code = salti_io_write(p_channel, p_buffer, 6);
+            ret_code = salti_io_write(p_channel, p_buffer, a1_size);
             if (SALT_SUCCESS == ret_code) {
                 proceed = 1;
                 p_channel->state = SALT_A2_IO;
@@ -255,6 +262,19 @@ salt_ret_t salt_init_session(salt_channel_t *p_channel,
                              uint8_t *hdshk_buffer,
                              uint32_t hdshk_buffer_size)
 {
+    return salt_init_session_using_key(p_channel,
+                                       hdshk_buffer,
+                                       hdshk_buffer_size,
+                                       NULL,
+                                       NULL);
+}
+
+salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
+                                       uint8_t *hdshk_buffer,
+                                       uint32_t hdshk_buffer_size,
+                                       uint8_t *ek_pub,
+                                       uint8_t *ek_sec)
+{
     SALT_VERIFY_VALID_CHANNEL(p_channel);
     SALT_VERIFY(p_channel->state >= SALT_SIGNATURE_SET,
                 SALT_ERR_NO_SIGNATURE);
@@ -269,10 +289,10 @@ salt_ret_t salt_init_session(salt_channel_t *p_channel,
     p_channel->time_supported = (p_channel->time_impl == NULL) ? 0 : 1;
 
     /* Clear previous history */
-    MEMSET_ZERO(p_channel->ek_common);
-    MEMSET_ZERO(p_channel->peer_sk_pub);
-    MEMSET_ZERO(p_channel->write_nonce);
-    MEMSET_ZERO(p_channel->read_nonce);
+    memset(p_channel->ek_common, 0x00U, sizeof(p_channel->ek_common));
+    memset(p_channel->peer_sk_pub, 0x00U, sizeof(p_channel->peer_sk_pub));
+    memset(p_channel->write_nonce, 0x00U, sizeof(p_channel->write_nonce));
+    memset(p_channel->read_nonce, 0x00U, sizeof(p_channel->read_nonce));
 
     /* Initiate write and read nonce */
     if (p_channel->mode == SALT_SERVER) {
@@ -291,14 +311,21 @@ salt_ret_t salt_init_session(salt_channel_t *p_channel,
     p_channel->write_channel.state = SALT_IO_READY;
     p_channel->read_channel.state = SALT_IO_READY;
 
-    /*
-     * Create ephemeral keypair used for only this session.
-     * hdshk_buffer[0:31]:  Public key
-     * hdshk_buffer[32:63]: Private key
-     * The ephemeral keypair is kept where the signature later will be
-     * until the common key is calculated.
-     */
-    crypto_box_keypair(hdshk_buffer, &hdshk_buffer[32]);
+
+    if (ek_pub == NULL || ek_sec == NULL) {
+        /*
+         * Create ephemeral keypair used for only this session.
+         * hdshk_buffer[0:31]:  Public key
+         * hdshk_buffer[32:63]: Private key
+         * The ephemeral keypair is kept where the signature later will be
+         * until the common key is calculated.
+         */
+        crypto_box_keypair(hdshk_buffer, &hdshk_buffer[32]);
+    } else {
+        memcpy(hdshk_buffer, ek_pub, 32);
+        memcpy(&hdshk_buffer[32], ek_sec, 32);
+    }
+    
 
     p_channel->err_code = SALT_ERR_NONE;
     p_channel->state = SALT_SESSION_INITIATED;
@@ -350,6 +377,11 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
 
     if (ret == SALT_SUCCESS) {
 
+        /*
+         * salti_unwrap returns pointer to clear text message to
+         * p_buffer and the length of the clear text message to
+         * size.
+         */
         ret = salti_unwrap(p_channel,
                            p_buffer,
                            size,
@@ -359,9 +391,9 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
 
         SALT_VERIFY(SALT_SUCCESS == ret, p_channel->err_code);
 
-        SALT_VERIFY((SALT_APP_PKG_MSG_HEADER_VALUE == header[0]) ||
-                    (SALT_MULTI_APP_PKG_MSG_HEADER_VALUE == header[0]),
-                    SALT_ERR_BAD_PROTOCOL);
+        SALT_VERIFY(((SALT_APP_PKG_MSG_HEADER_VALUE == header[0]) ||
+                     (SALT_MULTI_APP_PKG_MSG_HEADER_VALUE == header[0])) &&
+                    (header[1] == 0x00U), SALT_ERR_BAD_PROTOCOL);
 
         salt_err_t err_code = salt_read_init(header[0], p_buffer, size, p_msg);
         SALT_VERIFY(err_code == SALT_ERR_NONE, err_code);

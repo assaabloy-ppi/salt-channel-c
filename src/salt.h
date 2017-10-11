@@ -26,6 +26,7 @@
 #define SALT_READ_OVERHEAD_SIZE     (38U)       /**< Encryption buffer overhead size for read. */
 #define SALT_WRITE_OVERHEAD_SIZE    (42U)       /**< Encryption buffer overhead size for write. */
 #define SALT_HNDSHK_BUFFER_SIZE     (502)       /**< Buffer used for handshake. */
+#define SALT_PROTOCOLS_MIN_BUF_SIZE (27U)
 
 /*======= Type Definitions and declarations ===================================*/
 
@@ -135,7 +136,7 @@ typedef enum salt_io_state_e {
  * The read operation is always done in two steps:
  *  1. Read 4 size bytes, derive length n.
  *  2. Read the package of length n.
- *  
+ *
  * The write opration is done in one step:
  *  1. Write { size[4] , package[n] }
  *
@@ -158,69 +159,31 @@ struct salt_io_channel_s {
     salt_io_state_t state;                              /**< I/O channel state. */
 };
 
-/**
- * @brief Function to receive current time stamp implementation.
- *
- * If a clock is present, a get time implementation can be provided. The time returned must be in
- * milliseconds. The time may prevents "delay"-attacks. The range of the time is [0:2^32-1].
- *
- * @param p_time    Pointer where current time will be copied to.
- */
 
 /**
  * @brief Function for dependency injection to make salt channel protected against
  * delay attacks.
- * 
- * 
+ *
+ *
  * @param p_time    Pointer to time structure.
  * @param time      Return time parameter.
- * 
+ *
  * @return SALT_SUCCESS The time could be retreived.
  * @return SALT_ERROR   The time could not be retrieved.
- * 
+ *
  */
 typedef struct salt_time_s salt_time_t; /* Forward declaration */
 typedef salt_ret_t (*salt_get_time)(salt_time_t *p_time, uint32_t *time);
 
 /**
  * @brief Time implementation structure.
- * 
+ *
  */
 struct salt_time_s {
     salt_get_time   get_time;
     void            *p_context;
 };
 
-
-
-/**
- * Supported protocol of salt-channel. The user support what protocols is used by the
- * salt-channel. Usage (After creation of salt-channel):
- *
- *  uint8_t protocol_buffer[128];
- *  salt_protocols_t protocols;
- *  salt_ret_t ret = salt_protocols_init(&channel, &protocols, buffer, sizeof(buffer));
- *  ret = salt_protocol_append(&protocols, "ECHO", 4);
- *  ret = salt_protocol_append(&protocols, "Temp", 4);
- *  
- *  Since the A2 package have this structure:
- *  
- *  A2 = { header[2] , count[1] , p01[10] , p02[10] , pN1[10] , pN2[10] }
- *  
- *  The required buffer size for n supported protocols is:
- *  
- *  buffer_size = 3 + n * 20
- *
- *  When the client sends an A1 request the following will be the response:
- *  Response = {
- *      "SC2-------",
- *      "Echo------",
- *      "SC2-------",
- *      "Temp------",
- *      "Sensor----"
- *  }
- *
- */
 typedef char salt_protocol_t[10];
 
 typedef struct salt_protocols_s {
@@ -238,7 +201,6 @@ typedef struct salt_protocols_s {
 typedef struct salt_channel_s {
     salt_mode_t     mode;                               /**< Salt channel mode CLIENT/HOST. */
     salt_state_t    state;                              /**< Salt channel state. */
-    salt_state_t    next_state;                         // TODO: Check if used
     salt_err_t      err_code;                           /**< Latest error code. */
 
     /* Encryption and signature stuff */
@@ -256,6 +218,7 @@ typedef struct salt_channel_s {
     uint32_t    peer_epoch;
     uint32_t    time_supported;
     uint32_t    delay_threshold;
+    /* TODO: Should we have time required? Or if delay_threshold > 0 => time required? */
 
     salt_io_channel_t   write_channel;                  /**< Write channel structure. */
     salt_io_impl        write_impl;                     /**< Function pointer to write implementation. */
@@ -266,7 +229,7 @@ typedef struct salt_channel_s {
     salt_protocols_t    *p_protocols;                   /**< Function pointer to get supported protocols. */
 
     uint8_t     *hdshk_buffer;                          /**< Handshake buffer, used only during handshake. */
-    uint32_t    hdshk_buffer_size;                      /**< Handshake buffer size> = SALT_HNDSHK_BUFFER_SIZE. */
+    uint32_t    hdshk_buffer_size;                      /**< Handshake buffer size >= SALT_HNDSHK_BUFFER_SIZE. */
 } salt_channel_t;
 
 /**
@@ -325,18 +288,70 @@ salt_ret_t salt_create(
  * @param p_read_context    Pointer to read context.
  *
  * @return SALT_SUCCESS The context was successfully set.
- * @return SALT_ERROR   Any input pointer was a NULL pointer.
+ * @return SALT_ERROR   p_channel was a NULL pointer.
  */
 salt_ret_t salt_set_context(
     salt_channel_t *p_channel,
     void *p_write_context,
     void *p_read_context);
 
+/**
+ * @brief Initiates to add information about supported protocols to host.
+ *
+ * Supported protocol of salt-channel. The user support what protocols is used by the
+ * salt-channel. Usage (After creation of salt-channel):
+ *
+ *  Example usage:
+ *      uint8_t protocol_buffer[128];
+ *      salt_protocols_t protocols;
+ *      salt_ret_t ret = salt_protocols_init(&channel, &protocols, buffer, sizeof(buffer));
+ *      ret = salt_protocol_append(&protocols, "ECHO", 4);
+ *      ret = salt_protocol_append(&protocols, "Temp", 4);
+ *
+ *  Since the A2 package have this structure:
+ *
+ *  A2 = { header[2] , count[1] , p01[10] , p02[10] , pN1[10] , pN2[10] }
+ *
+ *  The required buffer size for n supported protocols is:
+ *
+ *  buffer_size = 3 + n * 20
+ *
+ *  When the client sends an A1 request the following will be the response:
+ *  Response = {
+ *      "SC2-------",
+ *      "ECHO------",
+ *      "SC2-------",
+ *      "TEMP------",
+ *  }
+ *
+ *
+ *
+ * @param p_channel     Pointer to channel handle.
+ * @param p_protocols   Pointer to protocol structure.
+ * @param p_buffer      Pointer to buffer.
+ * @param size          Size of protocol buffer. size >= 3 + n_protocols * 20
+ *
+ * @return SALT_SUCCESS Supported protocols was initiated.
+ * @return SALT_ERROR   Any input pointer was NULL or buffer size < SALT_PROTOCOLS_MIN_BUF_SIZE
+ *
+ */
 salt_ret_t salt_protocols_init(salt_channel_t *p_channel,
                                salt_protocols_t *p_protocols,
                                uint8_t *p_buffer,
                                uint32_t size);
 
+/**
+ * @brief Add a protocol to supported protocols.
+ *
+ * See \ref salt_protocols_init
+ *
+ * @param p_protocols   Pointer to protocol structure.
+ * @param p_buffer      Pointer to protocol string.
+ * @param size          Size of protocol, <= 10.
+ *
+ * @return SALT_ERROR   Protocol buffer is too small or size > 10.
+ * @return SALT_SUCCESS Protocol was added.
+ */
 salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
                                  char *p_buffer,
                                  uint8_t size);
@@ -358,7 +373,7 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
  *      salt_ret_t ret_code = salt_a1a2(&channel, protocols_supported, protocols_size, &protocols, NULL, 0);
  *      if (ret_code == SALT_SUCCESS) {
  *          printf("Supported protocol:\r\n");
- *          for (uint8_t i = 0; i < host_protocols.count; i+= 2) {
+ *          for (uint8_t i = 0; i < protocols.count; i+= 2) {
  *              printf("Salt channel version: %*.*s\r\n", 0, 10, protocols.p_protocols[i]);
  *              printf("With protocol: %*.*s\r\n", 0, 10, protocols.p_protocols[i+1]);
  *          }
@@ -370,33 +385,38 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
  * @param p_channel Pointer to channel handle.
  * @param p_buffer  Buffer where to put the supported protocols.
  * @param p_size    Maximum size of buffer.
- * @return p_size   Size of supported protocols responded from host.
- * @return [description]
+ * @param p_with    Expected public key of host, 32 bytes.
+ *
+ * @return SALT_SUCCESS The A1 was sent successfully and the A2 was received successfully.
+ * @return SALT_PENDING The A1/A2 session is still pending.
+ * @return SALT_ERROR   If any error occured.
  */
 salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                      uint8_t *p_buffer,
                      uint32_t size,
                      salt_protocols_t *p_protocols,
-                     uint8_t *p_with,
-                     uint16_t with_size);
+                     uint8_t *p_with);
 
 /**
  * @brief Sets the signature used for the salt channel.
- * 
+ *
  * This function will copy the signature in p_signature to the salt-channel structure.
+ *
+ * TODO: Consider adding size?
  *
  * @param p_channel     Pointer to channel handle.
  * @param p_signature   Pointer to signature. Must be crypto_sign_SECRETKEYBYTES bytes long.
  *
- * @return SALT_SUCCESS The A1 was sent successfully and the A2 was received successfully.
- * @return SALT_PENDING The A1/A2 session is still pending.
- * @return SALT_ERROR   If any error occured.
+ * @return SALT_SUCCESS The signature was successfully set.
+ * @return SALT_ERROR   Any input pointer was a NULL pointer.
  */
 salt_ret_t salt_set_signature(salt_channel_t *p_channel,
                               const uint8_t *p_signature);
 
 /**
  * @brief Creates and sets the signature used for the salt channel.
+ *
+ * Signature will be set to p_channel->my_sk_sec and is 64 bytes long.
  *
  * @param p_channel Pointer to channel handle.
  *
@@ -417,27 +437,50 @@ salt_ret_t salt_create_signature(salt_channel_t *p_channel);
  * @param hdshk_buffer_size Size of the handshake buffer.
  *
  * @return SALT_SUCCESS The session was successfully initiated.
- * @return SALT_ERROR   The channel handle was a NULL pointer.
+ * @return SALT_ERROR   The channel handle or buffer was a NULL pointer.
  *
  */
 salt_ret_t salt_init_session(salt_channel_t *p_channel,
                              uint8_t *hdshk_buffer,
                              uint32_t hdshk_buffer_size);
 
+/**
+ * @brief Initiates a session using a provided ephemeral encryption key pair.
+ * 
+ * See \ref salt_init_session.
+ * 
+ * If ANY of ek_pub or ek_sec is NULL a new keypair is generated.
+ * 
+ * @param p_channel         Pointer to channel handle.
+ * @param hdshk_buffer      Pointer to buffer used for handsize. Must be at least
+ *                          SALT_HNDSHK_BUFFER_SIZE bytes large.
+ * @param hdshk_buffer_size Size of the handshake buffer.]
+ * @param ek_pub            Public ephemeral encryption key, 32 bytes long.
+ * @param ek_sec            Secret ephemeral encryption key, 32 bytes long.
+ * 
+ * @return SALT_SUCCESS The session was successfully initiated.
+ * @return SALT_ERROR   The channel handle or buffer was a NULL pointer.
+
+ */
+salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
+                                       uint8_t *hdshk_buffer,
+                                       uint32_t hdshk_buffer_size,
+                                       uint8_t *ek_pub,
+                                       uint8_t *ek_sec);
 
 /**
  * @brief Set threshold for delay protection.
- * 
+ *
  * The salt-channel-c implements a delay attack protection. This means that both peers
  * sends a time relative to the first messages sent. This means that from the timestamp
  * in a package an expected time could be derived. If this one differs more than the
  * threshold a delay attack might be present and the salt-channel implementation
  * will return error. For this feature to work the used must inject a get time implementation.
  * See \ref salt_create.
- * 
+ *
  * @param p_channel         Pointer to channel handle.
  * @param delay_threshold   Threshold for differense in milliseconds.
- * 
+ *
  * @return SALT_SUCCESS The new threshold was successfully updated.
  * @return SALT_ERROR   The channel handle was a NULL pointer.
  */
@@ -463,7 +506,7 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with);
 
 /**
  * @brief Reads one or multiple encrypted message.
- * 
+ *
  * The actual I/O operation of the read process. Usage: See example at \ref salt_read_next
  *
  * @param p_channel     Pointer to salt channel handle.
@@ -528,7 +571,7 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg);
  *
  * The content of p_buffer will be modified during the authenticated encryption.
  * Usage: See example at \ref salt_write_execute
- * 
+ *
  * After this procedure the available size for writing can be derived
  * using available = p_msg->buffer_size - p_msg->buffer_used.
  *
@@ -549,7 +592,7 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
  * If this function is called more than once after \ref salt_write_begin all
  * following clear text packages will be sent as one encrypted package. The
  * content of p_buffer will be copied to the buffer of the p_msg structure.
- * 
+ *
  * The available buffer is in p_msg->buffer_available.
  *
  * @param p_msg     Pointer to message state structure.
@@ -561,22 +604,22 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
  *
  */
 salt_ret_t salt_write_next(salt_msg_t *p_msg,
-                                uint8_t *p_buffer,
-                                uint16_t size);
+                           uint8_t *p_buffer,
+                           uint16_t size);
 
 /**
  * @brief Add a clear text message to be encrypted to next encrypted package.
- * 
+ *
  * The difference from this function and \ref salt_write_next is that this function
  * assumes that the used have already put the message in the buffer of the message structure.
  * Used for instance when a write is initiated on a buffer, and then messages are appended into
  * that buffer using e.g. a message serialized.
- * 
+ *
  * Example usage see \ref salt_write_execute
- * 
+ *
  * @param p_msg     Pointer to message state structure.
  * @param size      Size of bytes that where written into the buffer.
- * 
+ *
  * @return SALT_SUCCESS A message was successfully appended to the state structure.
  * @return SALT_ERROR   The message was to large to fit in the state structure.
  */
@@ -608,7 +651,7 @@ salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint16_t size);
  *      if (ret == SALT_ERROR) {
  *          // tx_buffer is full
  *      }
- *      
+ *
  *      my_object m;
  *      uint16_t size = serialize_my_object(&m, tx_msg.write.p_payload,
  *                                          tx_msg.write.buffer_available);

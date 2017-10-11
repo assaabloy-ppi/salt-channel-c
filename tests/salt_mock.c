@@ -30,6 +30,15 @@ static salt_ret_t salt_channel_write(salt_io_channel_t *p_wchannel);
 
 /*======= Global function implementations ===================================*/
 
+void randombytes(unsigned char *p_bytes, unsigned long long length)
+{
+   FILE* fr = fopen("/dev/urandom", "r");
+   if (!fr) perror("urandom"), exit(EXIT_FAILURE);
+   size_t tmp = fread(p_bytes, sizeof(unsigned char), length, fr);
+   assert_true(tmp == length);
+   fclose(fr);
+}
+
 salt_mock_t *salt_mock_create(void)
 {
     salt_mock_t *mock = malloc(sizeof(salt_mock_t));

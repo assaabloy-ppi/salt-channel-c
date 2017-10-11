@@ -36,8 +36,8 @@
  *                      p_channel->read_channel.err_code.
  */
 salt_ret_t salti_io_read(salt_channel_t *p_channel,
-                                uint8_t *p_data,
-                                uint32_t *size)
+                         uint8_t *p_data,
+                         uint32_t *size)
 {
     salt_ret_t ret_code = SALT_ERROR;
     salt_io_channel_t *channel = &p_channel->read_channel;
@@ -59,7 +59,7 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
             break;
         }
 
-        channel->size_expected = salti_bytes_to_u32(p_data);
+        channel->size_expected = salti_bytes_to_u32(channel->p_data);
 
         if (channel->size_expected > channel->max_size) {
             p_channel->err_code = SALT_ERR_BUFF_TO_SMALL;
@@ -98,8 +98,8 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
  *
  * { size[4] , data[n] }
  *
- * Where the size bytes must be the length of n described in network
- * byte order. I.e.:
+ * Where the size bytes must be the length of n described in little
+ * endian byte order. I.e.:
  *
  * n = 4    =>  size[4] = { 0x04, 0x00, 0x00, 0x00 }
  * n = 389  =>  size[4] = { 0x01, 0x85, 0x00, 0x00 }
@@ -110,8 +110,8 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
  *                      see p_channel->err_code.
  */
 salt_ret_t salti_io_write(salt_channel_t *p_channel,
-                                 uint8_t *p_data,
-                                 uint32_t size)
+                          uint8_t *p_data,
+                          uint32_t size)
 {
     salt_ret_t ret_code = SALT_ERROR;
     salt_io_channel_t *channel = &p_channel->write_channel;
@@ -265,11 +265,11 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
  * @return [description]
  */
 salt_ret_t salti_unwrap(salt_channel_t *p_channel,
-                               uint8_t *p_data,
-                               uint32_t size,
-                               uint8_t **header,
-                               uint8_t **unwrapped,
-                               uint32_t *unwrapped_length)
+                        uint8_t *p_data,
+                        uint32_t size,
+                        uint8_t **header,
+                        uint8_t **unwrapped,
+                        uint32_t *unwrapped_length)
 {
     /* Header in p_data[14:15] must be { 0x06 , 0x00 } */
     SALT_VERIFY(p_data[14] == 0x06U,
@@ -298,10 +298,10 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
     if (p_channel->time_supported && p_channel->delay_threshold > 0) {
         uint32_t t_package = salti_bytes_to_u32(&p_data[34]);
-        uint32_t t_arrival;
+        uint32_t t_arrival = 0;
         salti_get_time(p_channel, &t_arrival);
         if (t_arrival - p_channel->peer_epoch > t_package + p_channel->delay_threshold) {
-            /* Timeout */
+            /* Delay detected */
             SALT_ERROR(SALT_ERR_DELAY_DETECTED);
         }
     }
@@ -351,11 +351,11 @@ void salti_u32_to_bytes(uint8_t *dest, uint32_t size)
 uint32_t salti_bytes_to_u32(uint8_t *src)
 {
     return (
-        (src[0] & 0x000000FFU) |
-        ((src[1] << 8U) & 0x0000FF00U) |
-        ((src[2] << 16U) & 0x00FF0000U) |
-        ((src[3] << 24U) & 0xFFU)
-    );
+               (src[0] & 0x000000FFU) |
+               ((src[1] << 8U) & 0x0000FF00U) |
+               ((src[2] << 16U) & 0x00FF0000U) |
+               ((src[3] << 24U) & 0xFFU)
+           );
 }
 
 salt_ret_t salti_get_time(salt_channel_t *p_channel, uint32_t *p_time)
@@ -386,9 +386,9 @@ salt_ret_t salti_get_time(salt_channel_t *p_channel, uint32_t *p_time)
  *                      receive buffer is to small.
  */
 salt_err_t salt_read_init(uint8_t type,
-                                 uint8_t *p_buffer,
-                                 uint32_t buffer_size,
-                                 salt_msg_t *p_msg)
+                          uint8_t *p_buffer,
+                          uint32_t buffer_size,
+                          salt_msg_t *p_msg)
 {
 
     p_msg->read.p_buffer = p_buffer;
@@ -508,12 +508,12 @@ uint8_t salt_write_create(salt_msg_t *p_msg)
 char *salt_mode2str(salt_mode_t mode)
 {
     switch (mode) {
-        case SALT_SERVER:
-            return "SALT_SERVER";
-        case SALT_CLIENT:
-            return "SALT_CLIENT";
-        default:
-            return "UNKNOWN MODE";
+    case SALT_SERVER:
+        return "SALT_SERVER";
+    case SALT_CLIENT:
+        return "SALT_CLIENT";
+    default:
+        return "UNKNOWN MODE";
     }
 }
 

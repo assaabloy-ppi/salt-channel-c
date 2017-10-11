@@ -118,7 +118,7 @@ int main(int argc, char **argv)
     binson_write_name(&w, "c");
     binson_write_string(&w, "u");
     binson_write_name(&w, "i");
-    binson_write_integer(&w, 1);
+    binson_write_integer(&w, 2);
     binson_write_name(&w, "t");
     binson_write_bytes(&w, t, 2);
     binson_write_object_end(&w);

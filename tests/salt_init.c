@@ -11,10 +11,6 @@
 #include "salt_mock.h"
 #include "test_data.h"
 
-void randombytes(unsigned char *p_bytes, unsigned long long length)
-{
-    memcpy(p_bytes, salt_example_session_1_data.client_ek_sec, length);
-}
 
 static void test_salt_create(void **state)
 {

@@ -22,16 +22,6 @@ static int teardown(void **state) {
     return 0;
 }
 
-
-void randombytes(unsigned char *p_bytes, unsigned long long length)
-{
-    FILE* fr = fopen("/dev/urandom", "r");
-    if (!fr) perror("urandom"), exit(EXIT_FAILURE);
-    size_t tmp = fread(p_bytes, sizeof(unsigned char), length, fr);
-    (void) tmp;
-    fclose(fr);
-}
-
 static void host_client_session_handshake(void **state)
 {
 

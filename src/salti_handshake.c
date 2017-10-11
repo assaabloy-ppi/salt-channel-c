@@ -81,8 +81,11 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
 
                 payload = &p_channel->hdshk_buffer[SALT_M1_HASH_OFFSET];
 
+                /* Smallest size for A1 is 5 bytes. */
+                SALT_VERIFY(5U <= size, SALT_ERR_BAD_PROTOCOL);
+
                 /* Check if this is an A2 request. */
-                if (size == 2 && payload[0] == SALT_A1_HEADER && payload[1] == 0x00U) {
+                if (payload[0] == SALT_A1_HEADER && payload[1] == 0x00U) {
                     p_channel->state = SALT_A1_HANDLE;
                 } else {
                     /* Otherwise try to handle M1 */
@@ -94,34 +97,19 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
             }
             break;
         case SALT_A1_HANDLE:
+
             /*
-             * If no supported protocols is set we answer that we supporting
-             * salt-channel v2 and reveals nothing about overlying protocol(s).
-             * I.e., the answer will be:
-             *
-             * SupportedProtocols = "SC2-------","----------"
-             *
-             * This message is created in p_channel->hdshk_buffer[64] since
-             * we have the ephemeral keypair in p_channel->hdshk_buffer[0:63]
+             * salti_handle_a1_create_a2 handles A1, creates A2
+             * and points p_channel->write_channel.p_data to A2
+             * with size in p_channel->write_channel.size.
              */
-            if (p_channel->p_protocols == NULL || p_channel->p_protocols->count == 0) {
-                salt_protocols_t protocols;
-                salt_protocols_init(p_channel,
-                                    &protocols,
-                                    &p_channel->hdshk_buffer[64],
-                                    p_channel->hdshk_buffer_size - 64);
-                salt_protocols_append(&protocols, "----------", 10);
-                p_channel->write_channel.p_data = p_channel->hdshk_buffer;
-                p_channel->write_channel.size = p_channel->hdshk_buffer_size;
-            } else {
-                p_channel->write_channel.p_data = p_channel->p_protocols->p_buffer;
-                p_channel->write_channel.size = p_channel->p_protocols->buf_used;
-            }
+            ret_code = salti_handle_a1_create_a2(p_channel, payload, size);
 
             if (SALT_SUCCESS == ret_code) {
                 p_channel->state = SALT_A2_IO;
-                proceed = 1;
+                proceed = 1;  
             }
+
             break;
         case SALT_A2_IO:
             ret_code = salti_io_write(p_channel,
@@ -465,8 +453,84 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
     return ret_code;
 }
 
-/*
- ** @brief Creates the M1 message to initiate a salt channel.
+/**
+ * @brief Handles A1 in p_data with size *size.
+ * 
+ */
+salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
+                                     uint8_t *p_data,
+                                     uint32_t size)
+{
+
+    /*
+     * AddressType in p_data[3], must be 1 for ed25519 pub key, 0 for any.
+     */
+    if (0U == p_data[3]) {
+
+        /*
+         * If AddressType == any, the size of A1 MUST be 5 bytes:
+         * A1 = { header[2] , AddressType[1] , size[2] }
+         * And size == { 0x00, 0x00 }
+         */
+
+        SALT_VERIFY(5 == size, SALT_ERR_BAD_PROTOCOL);
+
+        SALT_VERIFY(0x00 == p_data[3] && 0x00 == p_data[4],
+            SALT_ERR_BAD_PROTOCOL);
+
+    } else if (1U == p_data[3]) {
+
+        SALT_VERIFY(37 == size, SALT_ERR_BAD_PROTOCOL);
+
+        /* AddressSize in p_data[3:4], must be 32. */
+        SALT_VERIFY(salti_bytes_to_u16(&p_data[3]) == 32U,
+            SALT_ERR_BAD_PROTOCOL);
+
+        /* Check is address is us */
+        if (memcmp(&p_data[5], p_channel->my_sk_pub, 32) != 0) {
+            p_channel->write_channel.p_data = &p_channel->hdshk_buffer[64];
+            p_channel->write_channel.p_data[0] = SALT_M2_HEADER_VALUE;
+            p_channel->write_channel.p_data[1] = SALT_M2_NO_SUCH_SERVER_FLAG;
+            p_channel->write_channel.p_data[1] |= SALT_LAST_FLAG;
+            p_channel->write_channel.p_data[2] = 0x00U;
+            p_channel->write_channel.p_data[3] = 0x00U;
+            p_channel->write_channel.size = 4U;
+            return SALT_SUCCESS;
+        }
+    } else {
+        SALT_ERROR(SALT_ERR_BAD_PROTOCOL);
+    }
+
+    /*
+     * If no supported protocols is set we answer that we supporting
+     * salt-channel v2 and reveals nothing about overlying protocol(s).
+     * I.e., the answer will be:
+     *
+     * SupportedProtocols = "SC2-------","----------"
+     *
+     * This message is created in p_channel->hdshk_buffer[64] since
+     * we have the ephemeral keypair in p_channel->hdshk_buffer[0:63]
+     */
+    if (p_channel->p_protocols == NULL || p_channel->p_protocols->count == 0) {
+        salt_protocols_t protocols;
+        salt_protocols_init(p_channel,
+                            &protocols,
+                            &p_channel->hdshk_buffer[64],
+                            p_channel->hdshk_buffer_size - 64);
+        salt_protocols_append(&protocols, "----------", 10);
+        p_channel->write_channel.p_data = protocols.p_buffer;
+        p_channel->write_channel.size = protocols.buf_used;
+    } else {
+        p_channel->write_channel.p_data = p_channel->p_protocols->p_buffer;
+        p_channel->write_channel.size = p_channel->p_protocols->buf_used;
+    }
+
+    return SALT_SUCCESS;
+
+}
+
+/**
+ * @brief Creates the M1 message to initiate a salt channel.
  *
  * Resume feature and virtual host mode is not supported at this time.
  *

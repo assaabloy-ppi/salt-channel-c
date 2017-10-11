@@ -109,7 +109,7 @@ static void host_client_session_handshake_with(void **state)
     while (host_ret == SALT_PENDING && client_ret == SALT_PENDING)
     {
         if (client_ret == SALT_PENDING) {
-            client_ret = salt_handshake(mock->client_channel, NULL);
+            client_ret = salt_handshake(mock->client_channel, mock->host_channel->my_sk_pub);
             assert_int_not_equal(SALT_ERROR, client_ret);
         }
 
@@ -121,7 +121,7 @@ static void host_client_session_handshake_with(void **state)
     }
 
     while (client_ret == SALT_PENDING) {
-        client_ret = salt_handshake(mock->client_channel, NULL);
+        client_ret = salt_handshake(mock->client_channel, mock->host_channel->my_sk_pub);
         assert_int_not_equal(SALT_ERROR, client_ret);
     }
 

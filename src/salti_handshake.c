@@ -461,11 +461,10 @@ salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
                                      uint8_t *p_data,
                                      uint32_t size)
 {
-
     /*
-     * AddressType in p_data[3], must be 1 for ed25519 pub key, 0 for any.
+     * AddressType in p_data[2], must be 1 for ed25519 pub key, 0 for any.
      */
-    if (0U == p_data[3]) {
+    if (0U == p_data[2]) {
 
         /*
          * If AddressType == any, the size of A1 MUST be 5 bytes:
@@ -478,7 +477,7 @@ salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
         SALT_VERIFY(0x00 == p_data[3] && 0x00 == p_data[4],
             SALT_ERR_BAD_PROTOCOL);
 
-    } else if (1U == p_data[3]) {
+    } else if (1U == p_data[2]) {
 
         SALT_VERIFY(37 == size, SALT_ERR_BAD_PROTOCOL);
 
@@ -555,7 +554,7 @@ void salti_create_m1(salt_channel_t *p_channel,
     if (p_with != NULL) {
         p_data[SALT_LENGTH_SIZE + 5] = SALT_M1_SIG_KEY_INCLUDED_FLAG;
         memcpy(&p_data[SALT_LENGTH_SIZE + 10 + 32], p_with, 32);
-        (*size) += 32;
+        (*size) += 32U;
     } else {
         p_data[SALT_LENGTH_SIZE + 5] = 0x00U; /* No tickets */
     }
@@ -570,7 +569,9 @@ void salti_create_m1(salt_channel_t *p_channel,
            crypto_box_PUBLICKEYBYTES);
 
     crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
-    salti_u32_to_bytes(&p_data[0], (*size));
+    salti_u32_to_bytes(p_data, (*size));
+
+    SALT_HEXDUMP_DEBUG(p_data, *size);
 
     (*size) += SALT_LENGTH_SIZE;
 

@@ -179,16 +179,17 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
         case SALT_SIGNATURE_SET:
         case SALT_SESSION_INITIATED:
             p_buffer[SALT_LENGTH_SIZE] = SALT_A1_HEADER;
-            p_buffer[SALT_LENGTH_SIZE + 1] = 0;
+            p_buffer[SALT_LENGTH_SIZE + 1] = 0x00U;
 
             if (p_with != NULL) {
                 p_buffer[SALT_LENGTH_SIZE + 2] = 0x01;
-                p_buffer[SALT_LENGTH_SIZE + 3] = 0x00;
-                p_buffer[SALT_LENGTH_SIZE + 4] = 0x00;
+                salti_u16_to_bytes(&p_buffer[SALT_LENGTH_SIZE + 3], 32);
+                memcpy(&p_buffer[SALT_LENGTH_SIZE + 5], p_with, 32);
                 a1_size = 37;
             } else {
-                p_buffer[SALT_LENGTH_SIZE + 2] = 0x01;
-                salti_u16_to_bytes(&p_buffer[SALT_LENGTH_SIZE + 3], 32);
+                p_buffer[SALT_LENGTH_SIZE + 2] = 0x00;
+                p_buffer[SALT_LENGTH_SIZE + 3] = 0x00;
+                p_buffer[SALT_LENGTH_SIZE + 4] = 0x00;
                 a1_size = 5;
             }
 

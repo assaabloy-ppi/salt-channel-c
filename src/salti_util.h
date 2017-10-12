@@ -1,5 +1,10 @@
 #ifndef _SALTI_UTIL_H_
 #define _SALTI_UTIL_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @file salti_util.h
  *
@@ -137,5 +142,9 @@ uint8_t salt_write_create(salt_msg_t *p_msg);
  * @return Return a pointer to salt mode string
  */
 char *salt_mode2str(salt_mode_t mode);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SALTI_UTIL_H_ */

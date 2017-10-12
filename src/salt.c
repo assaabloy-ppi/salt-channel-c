@@ -52,6 +52,8 @@ salt_ret_t salt_create(
 
     SALT_VERIFY_VALID_CHANNEL(p_channel);
 
+    memset(p_channel, 0x00U, sizeof(salt_channel_t));
+
     SALT_VERIFY(mode == SALT_CLIENT || mode == SALT_SERVER,
                 SALT_ERR_NOT_SUPPORTED);
 

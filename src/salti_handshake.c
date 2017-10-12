@@ -16,17 +16,24 @@
 
 /*======= Local Macro Definitions ===========================================*/
 
+/* A1 Message defines */
+#define A1_ADDRESSTYPE_ANY                      (0x00U)
+#define A1_ADDRESSTYPE_ANY_SIZE                 (0x05U)
+#define A1_ADDRESSTYPE_ED25519                  (0x01U)
+#define A1_ADDRESSTYPE_ED25519_SIZE             (37U)
+
+
 /* M1 Message defines */
 #define SALT_M1_HEADER_VALUE                    (0x01U)
-#define SALT_M1_SIG_KEY_INCLUDED_FLAG           (0x10U)
+#define SALT_M1_SIG_KEY_INCLUDED_FLAG           (0x01U)
 #define SALT_M1_TICKED_INCLUDED_FLAG            (0x20U)
 #define SALT_M1_TICKED_REQUEST_FLAG             (0x40U)
 
 /* M2 Message defines */
+#define SALT_M2_SIZE                            (38U)
 #define SALT_M2_HEADER_VALUE                    (0x02U)
 #define SALT_M2_ENC_KEY_INCLUDED_FLAG           (0x10U)
 #define SALT_M2_RESUME_SUPPORTED_FLAG           (0x20U)
-#define SALT_M2_NO_SUCH_SERVER_FLAG             (0x40U)
 #define SALT_M2_BAD_TICKET_FLAG                 (0x80U)
 
 /* M3 Message defines */
@@ -107,7 +114,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
 
             if (SALT_SUCCESS == ret_code) {
                 p_channel->state = SALT_A2_IO;
-                proceed = 1;  
+                proceed = 1;
             }
 
             break;
@@ -133,31 +140,32 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
              * After this the session is considered closed.
              */
 
-            ret_code = salti_handle_m1(p_channel,
-                                       &p_channel->hdshk_buffer[SALT_M1_HASH_OFFSET],
-                                       size,
-                                       &p_channel->hdshk_buffer[SALT_M1_HASH_OFFSET]);
-
-            SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
-            p_channel->state = SALT_M2_INIT;
+            p_channel->state = salti_handle_m1(p_channel,
+                                               &p_channel->hdshk_buffer[SALT_M1_HASH_OFFSET],
+                                               size,
+                                               &p_channel->hdshk_buffer[SALT_M1_HASH_OFFSET]);
             proceed = 1;
             break;
+        case SALT_M2_INIT_NO_SUCH_SERVER:
         case SALT_M2_INIT:
-            ret_code = salti_create_m2(p_channel,
-                                       &p_channel->hdshk_buffer[200],
-                                       &size,
-                                       &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET]);
-
-            if (p_channel->err_code == SALT_ERR_NO_SUCH_SERVER) {
-                proceed = 1;
-                p_channel->state = SALT_M2_IO;
-                break;
-            }
-
-            SALT_VERIFY(SALT_ERROR != ret_code, p_channel->err_code);
-
+            /*
+             * If an invalid sig key was created
+             *
+             */
+            p_channel->state = salti_create_m2(p_channel,
+                                               &p_channel->hdshk_buffer[200],
+                                               &size,
+                                               &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET]);
             salti_get_time(p_channel, &p_channel->my_epoch);
+            proceed = 1;
+            break;
 
+        case SALT_M2_IO_AND_SESSION_KEY:
+
+            /*
+             * We initiate the I/O. If the I/O is slow, we can calculate the
+             * common session key during the I/O.
+             */
             ret_code = salti_io_write(p_channel,
                                       &p_channel->hdshk_buffer[200],
                                       size);
@@ -193,11 +201,9 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
             }
             break;
         case SALT_M3_INIT:
-            ret_code = salti_create_m3m4_sig(p_channel,
-                                         &p_channel->hdshk_buffer[200 + 38],
-                                         &size);
-
-            SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
+            salti_create_m3m4_sig(p_channel,
+                                  &p_channel->hdshk_buffer[200 + 38],
+                                  &size);
 
             ret_code = salti_wrap(p_channel,
                                   &p_channel->hdshk_buffer[200],
@@ -205,8 +211,6 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
                                   SALT_M3_HEADER_VALUE,
                                   &p_channel->write_channel.p_data,
                                   &p_channel->write_channel.size, false);
-
-            SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
 
             if (SALT_SUCCESS == ret_code) {
                 p_channel->state = SALT_M3_IO;
@@ -252,8 +256,8 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
             SALT_VERIFY(SALT_M4_HEADER_VALUE == header[0], SALT_ERR_BAD_PROTOCOL);
 
             ret_code = salti_verify_m3m4_sig(p_channel,
-                                         p_channel->write_channel.p_data,
-                                         p_channel->write_channel.size);
+                                             p_channel->write_channel.p_data,
+                                             p_channel->write_channel.size);
 
             if (SALT_SUCCESS == ret_code) {
 
@@ -263,7 +267,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
                  */
                 if (p_with != NULL) {
                     SALT_VERIFY(memcmp(p_with, p_channel->peer_sk_pub, 32) == 0,
-                        SALT_ERR_BAD_PEER);
+                                SALT_ERR_BAD_PEER);
                 }
 
                 p_channel->state = SALT_SESSION_ESTABLISHED;
@@ -337,16 +341,12 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
             break;
         case SALT_M2_HANDLE:
 
-            ret_code = salti_handle_m2(p_channel,
-                                       &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET],
-                                       size, &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET]);
-            
-            SALT_VERIFY(SALT_ERROR != ret_code, p_channel->err_code);
+            p_channel->state = salti_handle_m2(p_channel,
+                                               &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET],
+                                               size, &p_channel->hdshk_buffer[SALT_M2_HASH_OFFSET]);
 
-            if (SALT_SUCCESS == ret_code) {
-                p_channel->state = SALT_M3_INIT;
-                proceed = 1;
-            }
+            proceed = 1;
+            break;
         case SALT_M3_INIT:
 
             /*
@@ -372,14 +372,12 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
              *
              *
              */
-            ret_code = salti_create_m3m4_sig(p_channel,
-                                         &p_channel->hdshk_buffer[406],
-                                         &p_channel->write_channel.size);
+            salti_create_m3m4_sig(p_channel,
+                                  &p_channel->hdshk_buffer[406],
+                                  &p_channel->write_channel.size);
 
-            if (SALT_SUCCESS == ret_code) {
-                p_channel->state = SALT_M3_IO;
-                proceed = 1;
-            }
+            p_channel->state = SALT_M3_IO;
+            proceed = 1;
             break;
 
         case SALT_M3_IO:
@@ -411,29 +409,31 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
             SALT_VERIFY(SALT_M3_HEADER_VALUE == header[0], SALT_ERR_BAD_PROTOCOL);
 
             ret_code = salti_verify_m3m4_sig(p_channel,
-                                         p_channel->read_channel.p_data,
-                                         p_channel->read_channel.size);
+                                             p_channel->read_channel.p_data,
+                                             p_channel->read_channel.size);
 
-            if (SALT_SUCCESS == ret_code) {
-                if (p_with != NULL) {
-                    SALT_VERIFY(memcmp(p_with, p_channel->peer_sk_pub, 32) == 0,
-                        SALT_ERR_BAD_PEER);
-                }
-                p_channel->state = SALT_M4_IO;
-                proceed = 1;
+            SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
+
+            if (p_with != NULL) {
+                SALT_VERIFY(memcmp(p_with, p_channel->peer_sk_pub, 32) == 0,
+                            SALT_ERR_BAD_PEER);
             }
+            p_channel->state = SALT_M3_WRAP;
+            proceed = 1;
 
             break;
-        case SALT_M4_IO:
-
+        case SALT_M3_WRAP:
             ret_code = salti_wrap(p_channel,
                                   &p_channel->hdshk_buffer[406 - 38],
                                   p_channel->write_channel.size,
                                   SALT_M4_HEADER_VALUE,
                                   &p_channel->write_channel.p_data,
                                   &p_channel->write_channel.size, false);
-
             SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
+            p_channel->state = SALT_M4_IO;
+            proceed = 1;
+            break;
+        case SALT_M4_IO:
 
             ret_code = salti_io_write(p_channel,
                                       p_channel->write_channel.p_data,
@@ -442,10 +442,12 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
             if (SALT_SUCCESS == ret_code) {
                 p_channel->state = SALT_SESSION_ESTABLISHED;
             }
+
             memset(p_channel->hdshk_buffer, 0x00, p_channel->hdshk_buffer_size);
             break;
+        case SALT_ERROR_STATE:
         default:
-            SALT_ERROR(SALT_ERR_INVALID_STATE);
+            return SALT_ERROR;
             break;
         }
     }
@@ -455,7 +457,7 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
 
 /**
  * @brief Handles A1 in p_data with size *size.
- * 
+ *
  */
 salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
                                      uint8_t *p_data,
@@ -464,7 +466,7 @@ salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
     /*
      * AddressType in p_data[2], must be 1 for ed25519 pub key, 0 for any.
      */
-    if (0U == p_data[2]) {
+    if (A1_ADDRESSTYPE_ANY == p_data[2]) {
 
         /*
          * If AddressType == any, the size of A1 MUST be 5 bytes:
@@ -472,28 +474,29 @@ salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
          * And size == { 0x00, 0x00 }
          */
 
-        SALT_VERIFY(5 == size, SALT_ERR_BAD_PROTOCOL);
+        SALT_VERIFY(A1_ADDRESSTYPE_ANY_SIZE == size, SALT_ERR_BAD_PROTOCOL);
 
         SALT_VERIFY(0x00 == p_data[3] && 0x00 == p_data[4],
-            SALT_ERR_BAD_PROTOCOL);
+                    SALT_ERR_BAD_PROTOCOL);
 
-    } else if (1U == p_data[2]) {
+    } else if (A1_ADDRESSTYPE_ED25519 == p_data[2]) {
 
-        SALT_VERIFY(37 == size, SALT_ERR_BAD_PROTOCOL);
+        SALT_VERIFY(A1_ADDRESSTYPE_ED25519_SIZE == size, SALT_ERR_BAD_PROTOCOL);
 
         /* AddressSize in p_data[3:4], must be 32. */
         SALT_VERIFY(salti_bytes_to_u16(&p_data[3]) == 32U,
-            SALT_ERR_BAD_PROTOCOL);
+                    SALT_ERR_BAD_PROTOCOL);
 
-        /* Check is address is us */
+        /* Check is address is us, if not response with NO_SUCH_SERVER */
         if (memcmp(&p_data[5], p_channel->my_sk_pub, 32) != 0) {
             p_channel->write_channel.p_data = &p_channel->hdshk_buffer[64];
-            p_channel->write_channel.p_data[0] = SALT_M2_HEADER_VALUE;
-            p_channel->write_channel.p_data[1] = SALT_M2_NO_SUCH_SERVER_FLAG;
-            p_channel->write_channel.p_data[1] |= SALT_LAST_FLAG;
-            p_channel->write_channel.p_data[2] = 0x00U;
-            p_channel->write_channel.p_data[3] = 0x00U;
-            p_channel->write_channel.size = 4U;
+            p_channel->write_channel.p_data[SALT_LENGTH_SIZE + 0] = SALT_A2_HEADER;
+            p_channel->write_channel.p_data[SALT_LENGTH_SIZE + 1] = SALT_NO_SUCH_SERVER_FLAG;
+            p_channel->write_channel.p_data[SALT_LENGTH_SIZE + 1] |= SALT_LAST_FLAG;
+            p_channel->write_channel.p_data[SALT_LENGTH_SIZE + 2] = 0x00U;
+            p_channel->write_channel.p_data[SALT_LENGTH_SIZE + 3] = 0x00U;
+            salti_u32_to_bytes(p_channel->write_channel.p_data, 4);
+            p_channel->write_channel.size = 8U;
             return SALT_SUCCESS;
         }
     } else {
@@ -531,7 +534,36 @@ salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
 /**
  * @brief Creates the M1 message to initiate a salt channel.
  *
- * Resume feature and virtual host mode is not supported at this time.
+ * Also the Hash of M1 is saved for later signing.
+ *
+ * Message structure:
+ *
+ * If the client is expecting to handshake with a specific host, this is provided
+ * in M1. If just any, this is the structure:
+ *
+ * M1 = {
+ *  protocolIndicator[4] ,  // ASCII "Scv2"
+ *  header[2] ,             // 0x01, 0x00
+ *  time[4] ,
+ *  pubEncryptionKey[32]
+ * }
+ *
+ * Otherwise:
+ *
+ * M1 = {
+ *  protocolIndicator[4] ,  // ASCII "Scv2"
+ *  header[2] ,             // 0x01, 0x01
+ *  time[4] ,
+ *  pubEncryptionKey[32] ,
+ *  hostPubSigKey[32] ,
+ * }
+ *
+ * If time is supported, the time 1 (0x01, 0x00, 0x00, 0x00) is set in the
+ * time data. Otherwise, it is set to 0x00 for all bytes.
+ *
+ * Further, we create the message with the size bytes included:
+ *
+ * M1WithSize = { size[4] , M1[n] }
  *
  */
 void salti_create_m1(salt_channel_t *p_channel,
@@ -571,26 +603,41 @@ void salti_create_m1(salt_channel_t *p_channel,
     crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
     salti_u32_to_bytes(p_data, (*size));
 
-    SALT_HEXDUMP_DEBUG(p_data, *size);
-
     (*size) += SALT_LENGTH_SIZE;
 
 }
 
-salt_ret_t salti_handle_m1(salt_channel_t *p_channel,
-                           uint8_t *p_data,
-                           uint32_t size,
-                           uint8_t *p_hash)
+/**
+ * @brief Parses and verifies M1 message.
+ *
+ * The hash of M1 message is also saved and used for later signing.
+ * Message details: see \ref salti_create_m1
+ *
+ * The the time field in M1 differs from 0x00 time is supported by the peer
+ * and we set the peer_epoch time.
+ *
+ */
+salt_state_t salti_handle_m1(salt_channel_t *p_channel,
+                             uint8_t *p_data,
+                             uint32_t size,
+                             uint8_t *p_hash)
 {
-    SALT_VERIFY(size == 42U || size == 74U,
-                SALT_ERR_BAD_PROTOCOL);
 
-    /* Protocol indicator should be "SCv2" */
-    SALT_VERIFY(memcmp(p_data, "SCv2", 4) == 0,
-                SALT_ERR_BAD_PROTOCOL);
+    /* Sig key not included => size = 42, else 74. */
+    if (!(size == 42U || size == 74U)) {
+        p_channel->err_code = SALT_ERR_BAD_PROTOCOL;
+        return SALT_ERROR_STATE;
+    }
 
-    SALT_VERIFY(p_data[4] == SALT_M1_HEADER_VALUE,
-                SALT_ERR_BAD_PROTOCOL);
+    if (memcmp(p_data, "SCv2", 4) != 0) {
+        p_channel->err_code = SALT_ERR_BAD_PROTOCOL;
+        return SALT_ERROR_STATE;
+    }
+
+    if (p_data[4] != SALT_M1_HEADER_VALUE) {
+        p_channel->err_code = SALT_ERR_BAD_PROTOCOL;
+        return SALT_ERROR_STATE;
+    }
 
     if (salti_bytes_to_u32(&p_data[6]) == 1) {
         salti_get_time(p_channel, &p_channel->peer_epoch);
@@ -614,7 +661,7 @@ salt_ret_t salti_handle_m1(salt_channel_t *p_channel,
          */
         if (memcmp(&p_data[42], p_channel->my_sk_pub, crypto_sign_PUBLICKEYBYTES) != 0) {
             p_channel->err_code = SALT_ERR_NO_SUCH_SERVER;
-            return SALT_SUCCESS;
+            return SALT_M2_INIT_NO_SUCH_SERVER;
         }
     }
 
@@ -624,19 +671,44 @@ salt_ret_t salti_handle_m1(salt_channel_t *p_channel,
     /* Save the hash of M1 */
     crypto_hash(p_hash, p_data, size);
 
-    return SALT_SUCCESS;
+    return SALT_M2_INIT;
 
 }
 
-salt_ret_t salti_create_m2(salt_channel_t *p_channel,
-                           uint8_t *p_data,
-                           uint32_t *size,
-                           uint8_t *p_hash)
+/**
+ * @brief Creates the M2 message and saves the Hash of it.
+ *
+ * If a public signing key was included in the received M1, and does not
+ * match the hosts public signature, the M2 message sends a NO_SUCH_SERVER
+ * exception in M2. Also, the LAST_FLAG is in that case included in the header.
+ *
+ * Message details:
+ *
+ * With valid or no sig key in M1:
+ * M2 = {
+ *  header[2] ,             // 0x02, 0x00
+ *  time[4] ,
+ *  pubEncryptionKey[32]    // Ephemeral public encryption key for host
+ * }
+ *
+ * If invalid sig key in M1:
+ * M2 = {
+ *  header[2] ,             // 0x02, 0x81 = (SALT_NO_SUCH_SERVER_FLAG | SALT_LAST_FLAG)
+ *  time[4] ,
+ *  pubEncryptionKey[32]    // Set to 0x00.
+ * }
+ *
+ * If time is supported, the time 1 (0x01, 0x00, 0x00, 0x00) is set in the
+ * time data. Otherwise, it is set to 0x00 for all bytes.
+ *
+ */
+salt_state_t salti_create_m2(salt_channel_t *p_channel,
+                             uint8_t *p_data,
+                             uint32_t *size,
+                             uint8_t *p_hash)
 {
-    /*
-     * Depending on how M1 was handeled, we will have the error code in
-     * p_channel->err_code.
-     */
+
+    salt_state_t next_state;
 
     /* First four bytes are reserved for size */
     p_data[SALT_LENGTH_SIZE] = SALT_M2_HEADER_VALUE;
@@ -649,46 +721,66 @@ salt_ret_t salti_create_m2(salt_channel_t *p_channel,
 
     (*size) = 38U;
 
-    if (p_channel->err_code == SALT_ERR_NO_SUCH_SERVER) {
-        p_data[SALT_LENGTH_SIZE + 1] = SALT_M2_NO_SUCH_SERVER_FLAG;
+    if (p_channel->state == SALT_M2_INIT_NO_SUCH_SERVER) {
+        p_data[SALT_LENGTH_SIZE + 1] |= SALT_NO_SUCH_SERVER_FLAG;
         p_data[SALT_LENGTH_SIZE + 1] |= SALT_LAST_FLAG;
         memset(&p_data[SALT_LENGTH_SIZE + 6], 0x00,
                crypto_box_PUBLICKEYBYTES);
+        next_state = SALT_M2_IO;
     } else {
         /* Copy ephemeral public key to M2 */
-       memcpy(&p_data[SALT_LENGTH_SIZE + 6],
-              &p_channel->hdshk_buffer[SALT_PUB_ENC_OFFSET],
-              crypto_box_PUBLICKEYBYTES);
+        memcpy(&p_data[SALT_LENGTH_SIZE + 6],
+               &p_channel->hdshk_buffer[SALT_PUB_ENC_OFFSET],
+               crypto_box_PUBLICKEYBYTES);
 
-       crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
-
+        crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
+        next_state = SALT_M2_IO_AND_SESSION_KEY;
     }
 
     salti_u32_to_bytes(&p_data[0], (*size));
     (*size) += SALT_LENGTH_SIZE;
 
-    return SALT_SUCCESS;
+    return next_state;
 }
 
-salt_ret_t salti_handle_m2(salt_channel_t *p_channel,
-                           uint8_t *p_data,
-                           uint32_t size,
-                           uint8_t *p_hash)
+/**
+ * @brief Parses and verifies M2 message.
+ *
+ * The hash of M2 message is also saved and used for later signing.
+ * Message details: see \ref salti_create_m2
+ *
+ * The the time field in M2 differs from 0x00 time is supported by the peer
+ * and we set the peer_epoch time.
+ *
+ * If the server sends the NO_SUCH_SERVER flag in the header, we close the session
+ * and returns error.
+ *
+ */
+salt_state_t salti_handle_m2(salt_channel_t *p_channel,
+                             uint8_t *p_data,
+                             uint32_t size,
+                             uint8_t *p_hash)
 {
 
-    SALT_VERIFY(size >= 38U,
-                SALT_ERR_BAD_PROTOCOL);
+    if (SALT_M2_SIZE != size) {
+        p_channel->err_code = SALT_ERR_BAD_PROTOCOL;
+        return SALT_ERROR_STATE;
+    }
 
-    SALT_VERIFY(p_data[0] == SALT_M2_HEADER_VALUE,
-                SALT_ERR_BAD_PROTOCOL);
+    if (SALT_M2_HEADER_VALUE != p_data[0]) {
+        p_channel->err_code = SALT_ERR_BAD_PROTOCOL;
+        return SALT_ERROR_STATE;
+    }
 
     /*
      * If no such server condition occurs, the session is considered closed.
      * I.e., we return error here and the application will stop the handshake
      * procedure.
      */
-    SALT_VERIFY((p_data[1] & SALT_M2_NO_SUCH_SERVER_FLAG) == 0U,
-                SALT_ERR_NO_SUCH_SERVER);
+    if ((SALT_NO_SUCH_SERVER_FLAG & p_data[1]) > 0U) {
+        p_channel->err_code = SALT_ERR_NO_SUCH_SERVER;
+        return SALT_ERROR_STATE;
+    }
 
 
     if (salti_bytes_to_u32(&p_data[2]) == 1) {
@@ -699,20 +791,50 @@ salt_ret_t salti_handle_m2(salt_channel_t *p_channel,
         p_channel->time_supported = 0;
     }
 
-    SALT_VERIFY(crypto_box_beforenm(p_channel->ek_common,
-                                    &p_data[6],
-                                    &p_channel->hdshk_buffer[SALT_SEC_ENC_OFFSET]) == 0, SALT_ERR_COMMON_KEY);
+    /* crypto_box_beforenm always returns 0 */
+    int tmp = crypto_box_beforenm(p_channel->ek_common,
+                                  &p_data[6],
+                                  &p_channel->hdshk_buffer[SALT_SEC_ENC_OFFSET]);
+    (void) tmp;
 
     crypto_hash(p_hash, p_data, size);
 
-    return SALT_SUCCESS;
+    return SALT_M3_INIT;
 }
 
-salt_ret_t salti_create_m3m4_sig(salt_channel_t *p_channel,
-                             uint8_t *p_data,
-                             uint32_t *size)
+/**
+ * @brief Creates the signature for M3 or M4 based on the hash from m1 and m2.
+ *
+ * If mode is server the signature prefix "SC-SIG01" is prepended to
+ * the hashes of M1 and M2. If client, "SC-SIG02".
+ *
+ * The handshake buffers now looks like this:
+ *
+ * hdshk_buffer = {
+ *  dummy[64] ,
+ *  reservedForPrefix[8] ,
+ *  m1hash[64] ,
+ *  m2hash[64]
+ * }
+ *
+ * The message to sign is starts at hdshk_buffer[64] with length
+ * 8 + 64 + 64 = 136. We put the signed message in hdshk_buffer and
+ * will get the buffer to look like:
+ *
+ * hdshk_buffer = {
+ *  sig[64] ,
+ *  sigPrefix[8] ,
+ *  m1hash[64] ,
+ *  m2hash[64]
+ * }
+ *
+ */
+void salti_create_m3m4_sig(salt_channel_t *p_channel,
+                           uint8_t *p_data,
+                           uint32_t *size)
 {
     unsigned long long sign_msg_size;
+    int tmp;
 
     memcpy(p_data, p_channel->my_sk_pub, 32);
 
@@ -725,25 +847,67 @@ salt_ret_t salti_create_m3m4_sig(salt_channel_t *p_channel,
 
     /*
      * crypto_sign will sign a message { m[n] } into a signed message
-     * { sign[64] , m[n] }.
+     * { sign[64] , m[n] }. crypto_sign always returns 0.
      *
      */
-    SALT_VERIFY(crypto_sign(
-                    p_channel->hdshk_buffer,
-                    &sign_msg_size,
-                    &p_channel->hdshk_buffer[64],
-                    136,
-                    p_channel->my_sk_sec) == 0, SALT_ERR_SIGNING);
+    tmp = crypto_sign(
+              p_channel->hdshk_buffer,
+              &sign_msg_size,
+              &p_channel->hdshk_buffer[64],
+              136,
+              p_channel->my_sk_sec);
+    (void) tmp;
+
     memcpy(&p_data[32], p_channel->hdshk_buffer, 64);
 
     (*size) = 96U;
 
-    return SALT_SUCCESS;
 }
 
+/**
+ * @brief Verifies the signature from M3 or M4 based on the hash from m1 and m2.
+ *
+ * If mode is server the signature prefix "SC-SIG02" is prepended to
+ * the hashes of M1 and M2. If client, "SC-SIG01".
+ *
+ * The handshake buffers now looks like this:
+ *
+ * hdshk_buffer = {
+ *  dummy[64] ,
+ *  reservedForPrefix[8] ,
+ *  m1hash[64] ,
+ *  m2hash[64]
+ * }
+ *
+ * The signature starts in p_data[32] and is 64 bytes.
+ * The public signing key of the peer starts in p_data and is 32 bytes.
+ *
+ * The message can't be verified on itselfs buffer.
+ *
+ * Procedure:
+ *  1. Copy signature to hdshk_buffer
+ *  2. Add sig prefix
+ *
+ *  hdshk_buffer = {
+ *      sig[64] ,
+ *      sigPrefix[8] ,
+ *      m1hash[64] ,
+ *      m2hash[64]
+ *  }
+ *
+ *  3. Verify signature (open it) to hdshk_buffer[200]
+ *  hdshk_buffer = {
+ *      sig[64] ,
+ *      sigPrefix[8] ,
+ *      m1hash[64] ,
+ *      m2hash[64] ,
+ *      verifid[8 + 64 + 64]
+ *  }
+ *
+ */
 salt_ret_t salti_verify_m3m4_sig(salt_channel_t *p_channel,
-                             uint8_t *p_data,
-                             uint32_t size)
+                                 uint8_t *p_data,
+                                 uint32_t size)
 {
     unsigned long long sign_msg_size;
 
@@ -764,6 +928,7 @@ salt_ret_t salti_verify_m3m4_sig(salt_channel_t *p_channel,
                     p_channel->hdshk_buffer,
                     200,
                     p_channel->peer_sk_pub) == 0, SALT_ERR_BAD_PEER);
+
     return SALT_SUCCESS;
 }
 

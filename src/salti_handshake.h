@@ -16,7 +16,7 @@
 
 /*======= Public macro definitions ==========================================*/
 
-#define SALT_NO_SUCH_SERVER_FLAG             (0x40U)
+#define SALT_NO_SUCH_SERVER_FLAG             (0x01U)
 
 /*======= Type Definitions and declarations =================================*/
 /*======= Public function declarations ======================================*/
@@ -45,7 +45,7 @@ salt_state_t salti_create_m2(salt_channel_t *p_channel,
                              uint32_t *size,
                              uint8_t *p_hash);
 
-salt_ret_t salti_handle_m2(salt_channel_t *p_channel,
+salt_state_t salti_handle_m2(salt_channel_t *p_channel,
                            uint8_t *p_data,
                            uint32_t size,
                            uint8_t *p_hash);
@@ -54,7 +54,7 @@ void salti_create_m3m4_sig(salt_channel_t *p_channel,
                            uint8_t *p_data,
                            uint32_t *size);
 
-salt_state_t salti_verify_m3m4_sig(salt_channel_t *p_channel,
+salt_ret_t salti_verify_m3m4_sig(salt_channel_t *p_channel,
                                    uint8_t *p_data,
                                    uint32_t size);
 

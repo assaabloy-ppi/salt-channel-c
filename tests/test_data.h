@@ -27,7 +27,7 @@ typedef struct salt_example_session_2_s {
     uint8_t host_sk_sec[64];
     uint8_t host_ek_sec[32];
     uint8_t host_ek_pub[32];
-    uint8_t a1[6];
+    uint8_t a1[9];
     uint8_t a2[27];
 } salt_example_session_2_t;
 

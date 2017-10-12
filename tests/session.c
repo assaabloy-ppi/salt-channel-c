@@ -22,16 +22,6 @@ static int teardown(void **state) {
     return 0;
 }
 
-
-void randombytes(unsigned char *p_bytes, unsigned long long length)
-{
-    FILE* fr = fopen("/dev/urandom", "r");
-    if (!fr) perror("urandom"), exit(EXIT_FAILURE);
-    size_t tmp = fread(p_bytes, sizeof(unsigned char), length, fr);
-    (void) tmp;
-    fclose(fr);
-}
-
 static void host_client_session_handshake(void **state)
 {
 
@@ -119,7 +109,7 @@ static void host_client_session_handshake_with(void **state)
     while (host_ret == SALT_PENDING && client_ret == SALT_PENDING)
     {
         if (client_ret == SALT_PENDING) {
-            client_ret = salt_handshake(mock->client_channel, NULL);
+            client_ret = salt_handshake(mock->client_channel, mock->host_channel->my_sk_pub);
             assert_int_not_equal(SALT_ERROR, client_ret);
         }
 
@@ -131,7 +121,7 @@ static void host_client_session_handshake_with(void **state)
     }
 
     while (client_ret == SALT_PENDING) {
-        client_ret = salt_handshake(mock->client_channel, NULL);
+        client_ret = salt_handshake(mock->client_channel, mock->host_channel->my_sk_pub);
         assert_int_not_equal(SALT_ERROR, client_ret);
     }
 

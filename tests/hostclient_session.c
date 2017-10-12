@@ -10,83 +10,29 @@
 #include "salt.h"
 #include "salti_util.h"
 
-typedef struct salt_test_s {
-    salt_channel_t  *channel;
-    cfifo_t         *write_queue;
-    cfifo_t         *read_queue;
-} salt_test_t;
+#include "salti_util.h"
+#include "salt.h"
+#include "salt_mock.h"
+#include "test_data.h"
 
-void randombytes(unsigned char *p_bytes, unsigned long long length)
-{
-   FILE* fr = fopen("/dev/urandom", "r");
-   if (!fr) perror("urandom"), exit(EXIT_FAILURE);
-   size_t tmp = fread(p_bytes, sizeof(unsigned char), length, fr);
-   (void) tmp;
-   fclose(fr);
+static int setup(void **state) {
+    salt_mock_t *mock = salt_mock_create();
+    *state = mock;
+    return (mock == NULL) ? -1 : 0;
 }
-
-static salt_ret_t my_write(salt_io_channel_t *p_wchannel)
-{
-
-    static uint8_t i = 0;
-
-    i++;
-    /* Simulate polling and slow I/O */
-    if (i > 10) {
-        salt_test_t *context = (salt_test_t *) p_wchannel->p_context;
-        cfifo_t *write_queue = context->write_queue;
-        uint32_t size = p_wchannel->size_expected;
-
-        assert_true(cfifo_write(write_queue, p_wchannel->p_data,
-            &size) == CFIFO_SUCCESS);
-        assert_true(size == p_wchannel->size_expected);
-        p_wchannel->size = p_wchannel->size_expected;
-        return SALT_SUCCESS;
-        i = 0;
-    }
-
-    return SALT_PENDING;
-    
+static int teardown(void **state) {
+    salt_mock_t *mock = (salt_mock_t *) *state;
+    salt_mock_delete(mock);
+    return 0;
 }
-
-static salt_ret_t my_read(salt_io_channel_t *p_rchannel)
-{
-    static uint8_t i = 0;
-
-    i++;
-    /* Simulate polling and slow I/O */
-    if (i > 10) {
-        salt_test_t *context = (salt_test_t *) p_rchannel->p_context;
-        cfifo_t *read_queue = context->read_queue;
-        uint32_t size = p_rchannel->size_expected;
-
-        if (cfifo_size(context->read_queue) < size) {
-            return SALT_PENDING;
-        }
-
-        assert_true(cfifo_read(read_queue, p_rchannel->p_data,
-            &size) == CFIFO_SUCCESS);
-
-        assert_true(size == p_rchannel->size_expected);
-        p_rchannel->size = p_rchannel->size_expected;
-
-        return SALT_SUCCESS;
-    }
-    return SALT_PENDING;
-}
-
 
 static void hostclient_session(void **state)
 {
-    (void) state;
-    salt_channel_t  host_channel;
-    salt_channel_t  client_channel;
+    salt_mock_t *mock = (salt_mock_t *) *state;
+    salt_channel_t  *host_channel = mock->host_channel;
+    salt_channel_t  *client_channel = mock->client_channel;
     salt_ret_t      host_ret;
     salt_ret_t      client_ret;
-    cfifo_t         *host_fifo;
-    cfifo_t         *client_fifo;
-    salt_test_t     host_context;
-    salt_test_t     client_context;
     salt_msg_t      host_msg;
     salt_msg_t      client_msg;
 
@@ -96,33 +42,14 @@ static void hostclient_session(void **state)
     memset(host_buffer, 0xCC, sizeof(host_buffer));
     memset(client_buffer, 0xEE, sizeof(client_buffer));
 
-    CFIFO_CREATE(client_fifo, 1, 1024);
-    CFIFO_CREATE(host_fifo, 1, 1024);
-
-    setbuf(stdout, NULL);
-
-    host_ret = salt_create(&host_channel, SALT_SERVER, my_write, my_read, NULL);
-    host_context.channel = &host_channel;
-    host_context.write_queue = host_fifo;
-    host_context.read_queue = client_fifo;
+    host_ret = salt_create_signature(host_channel);
     assert_true(host_ret == SALT_SUCCESS);
-    host_ret = salt_create_signature(&host_channel);
-    assert_true(host_ret == SALT_SUCCESS);
-    host_ret = salt_init_session(&host_channel, host_buffer, SALT_HNDSHK_BUFFER_SIZE);
-    assert_true(host_ret == SALT_SUCCESS);
-    host_ret = salt_set_context(&host_channel, &host_context, &host_context); /* Write, read */
+    host_ret = salt_init_session(host_channel, host_buffer, SALT_HNDSHK_BUFFER_SIZE);
     assert_true(host_ret == SALT_SUCCESS);
 
-    client_ret = salt_create(&client_channel, SALT_CLIENT, my_write, my_read, NULL);
-    client_context.channel = &client_channel;
-    client_context.write_queue = client_fifo;
-    client_context.read_queue = host_fifo;
+    client_ret = salt_create_signature(client_channel);
     assert_true(client_ret == SALT_SUCCESS);
-    client_ret = salt_create_signature(&client_channel);
-    assert_true(client_ret == SALT_SUCCESS);
-    client_ret = salt_init_session(&client_channel, client_buffer, SALT_HNDSHK_BUFFER_SIZE);
-    assert_true(client_ret == SALT_SUCCESS);
-    client_ret = salt_set_context(&client_channel, &client_context, &client_context); /* Write, read */
+    client_ret = salt_init_session(client_channel, client_buffer, SALT_HNDSHK_BUFFER_SIZE);
     assert_true(client_ret == SALT_SUCCESS);
 
     host_ret = SALT_PENDING;
@@ -130,17 +57,17 @@ static void hostclient_session(void **state)
 
     while ((host_ret | client_ret) != SALT_SUCCESS)
     {
-        client_ret = salt_handshake(&client_channel, NULL);
+        client_ret = salt_handshake(client_channel, NULL);
         assert_true(client_buffer[SALT_HNDSHK_BUFFER_SIZE] == 0xEE);
         assert_true(client_ret != SALT_ERROR);
 
-        host_ret = salt_handshake(&host_channel, NULL);
+        host_ret = salt_handshake(host_channel, NULL);
         assert_true(host_buffer[SALT_HNDSHK_BUFFER_SIZE] == 0xCC);
         assert_true(host_ret != SALT_ERROR);
     }
 
-    assert_true(memcmp(host_channel.my_sk_pub, client_channel.peer_sk_pub, 32) == 0);
-    assert_true(memcmp(host_channel.peer_sk_pub, client_channel.my_sk_pub, 32) == 0);
+    assert_true(memcmp(host_channel->my_sk_pub, client_channel->peer_sk_pub, 32) == 0);
+    assert_true(memcmp(host_channel->peer_sk_pub, client_channel->my_sk_pub, 32) == 0);
 
     uint8_t host_message[16];
     uint8_t client_message[16];
@@ -154,7 +81,7 @@ static void hostclient_session(void **state)
     client_ret = salt_write_next(&client_msg, client_message, sizeof(client_message));
     assert_true(SALT_SUCCESS == client_ret);
     do {
-        client_ret = salt_write_execute(&client_channel, &client_msg, false);
+        client_ret = salt_write_execute(client_channel, &client_msg, false);
     } while (client_ret == SALT_PENDING);
 
     /* Test multi app package */
@@ -171,12 +98,12 @@ static void hostclient_session(void **state)
     client_ret = salt_write_next(&client_msg, client_message, 16);
     assert_true(SALT_SUCCESS == client_ret);
     do {
-        client_ret = salt_write_execute(&client_channel, &client_msg, false);
+        client_ret = salt_write_execute(client_channel, &client_msg, false);
     } while (client_ret == SALT_PENDING);
 
     /* Host reads first message */
     do {
-        host_ret = salt_read_begin(&host_channel, host_buffer, sizeof(host_buffer), &host_msg);
+        host_ret = salt_read_begin(host_channel, host_buffer, sizeof(host_buffer), &host_msg);
     } while (host_ret == SALT_PENDING);
 
     assert_true(host_ret == SALT_SUCCESS);
@@ -184,7 +111,7 @@ static void hostclient_session(void **state)
 
     /* Host reads next messages */
     do {
-        host_ret = salt_read_begin(&host_channel, host_buffer, sizeof(host_buffer), &host_msg);
+        host_ret = salt_read_begin(host_channel, host_buffer, sizeof(host_buffer), &host_msg);
     } while (host_ret == SALT_PENDING);
 
     assert_true(host_ret == SALT_SUCCESS);
@@ -225,7 +152,7 @@ static void hostclient_session(void **state)
     host_ret = salt_write_next(&host_msg, host_message, sizeof(host_message));
     assert_true(SALT_SUCCESS == host_ret);
     do {
-        host_ret = salt_write_execute(&host_channel, &host_msg, false);
+        host_ret = salt_write_execute(host_channel, &host_msg, false);
     } while (host_ret == SALT_PENDING);
 
     /* Test multi app package */
@@ -242,12 +169,12 @@ static void hostclient_session(void **state)
     host_ret = salt_write_next(&host_msg, host_message, 16);
     assert_true(SALT_SUCCESS == host_ret);
     do {
-        host_ret = salt_write_execute(&host_channel, &host_msg, false);
+        host_ret = salt_write_execute(host_channel, &host_msg, false);
     } while (host_ret == SALT_PENDING);
 
     /* Host reads first message */
     do {
-        client_ret = salt_read_begin(&client_channel, client_buffer, sizeof(client_buffer), &client_msg);
+        client_ret = salt_read_begin(client_channel, client_buffer, sizeof(client_buffer), &client_msg);
     } while (client_ret == SALT_PENDING);
 
     assert_true(client_ret == SALT_SUCCESS);
@@ -255,7 +182,7 @@ static void hostclient_session(void **state)
 
     /* Host reads next messages */
     do {
-        client_ret = salt_read_begin(&client_channel, client_buffer, sizeof(client_buffer), &client_msg);
+        client_ret = salt_read_begin(client_channel, client_buffer, sizeof(client_buffer), &client_msg);
     } while (client_ret == SALT_PENDING);
 
     assert_true(client_ret == SALT_SUCCESS);
@@ -294,7 +221,7 @@ static void hostclient_session(void **state)
 
 int main(void) {
     const struct CMUnitTest tests[] = {
-        cmocka_unit_test(hostclient_session),
+        cmocka_unit_test_setup_teardown(hostclient_session, setup, teardown),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

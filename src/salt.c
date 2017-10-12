@@ -214,8 +214,13 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                  *  { header[2] , count[1] , protocols[ count * 2 * sizeof(salt_protocol_t) ] }
                  */
 
-                SALT_VERIFY(p_buffer[0] == SALT_A2_HEADER && p_buffer[1] == SALT_LAST_FLAG,
+                SALT_VERIFY(p_buffer[0] == SALT_A2_HEADER && (p_buffer[1] & SALT_LAST_FLAG) > 0,
                             SALT_ERR_BAD_PROTOCOL);
+
+                if ((p_buffer[1] & SALT_NO_SUCH_SERVER_FLAG) > 0) {
+                    p_channel->err_code = SALT_ERR_NO_SUCH_SERVER;
+                    return SALT_ERROR;
+                }
 
                 /* Remove header and count from read size */
                 size -= 3;

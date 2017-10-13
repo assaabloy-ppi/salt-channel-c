@@ -32,6 +32,23 @@ $ make
 $ make test
 ```
 
+### Importing to eclipse
+Eclipse can be used for development and debugging. Assumed that this repository is cloned to your home folder and that the eclipse workspace is located in **~/workspace** the setup could be done similar to this:
+
+1. Clone this repository and initiate the eclipse workspace:
+
+```
+$cd ~/
+$ git clone https://github.com/assaabloy-ppi/salt-channel-c
+$ mkdir -p ~/workspace/salt-channel-c
+$ cmake -G "Eclipse CDT4 - Unix Makefiles" ~/salt-channel-c
+
+2. In eclipse: **File > Import > General > Existing Projects into Workspace**
+3. Check **Select root directory** and chose ~/workspace/salt-channel-c, make sure **Copy projects into workspace** is NOT checked.
+4. Press **Finish**.
+
+Note: If any cmake configuration files is modified you need to repeat **step 1**.
+
 ### A simple example
 An echo salt-channel host is provided. If a message that is sent to the host starts with the byte **0x01** the host will echo the same message to the client.
 

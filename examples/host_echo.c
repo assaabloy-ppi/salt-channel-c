@@ -126,7 +126,15 @@ static void *connection_handler(void *context)
     uint8_t tx_buffer[1024];
     salt_msg_t msg_out;
 
+    uint8_t protocol_buffer[128];
+    salt_protocols_t protocols;
+
+
     ret = salt_create(&client->channel, SALT_SERVER, my_write, my_read, &my_time);
+    assert(ret == SALT_SUCCESS);
+    ret = salt_protocols_init(&client->channel, &protocols, protocol_buffer, sizeof(protocol_buffer));
+    assert(ret == SALT_SUCCESS);
+    ret = salt_protocols_append(&protocols, "ECHO", 4);
     assert(ret == SALT_SUCCESS);
     ret = salt_set_signature(&client->channel, host_sk_sec);
     assert(ret == SALT_SUCCESS);
@@ -145,9 +153,16 @@ static void *connection_handler(void *context)
             printf("Salt error: 0x%02x\r\n", client->channel.err_code);
             printf("Salt error read: 0x%02x\r\n", client->channel.read_channel.err_code);
             printf("Salt error write: 0x%02x\r\n", client->channel.write_channel.err_code);
-        }
 
-        assert(ret != SALT_ERROR);
+            close(sock);
+
+            printf("Connection closed.\r\n");
+
+            free(client);
+            pthread_exit(NULL);
+
+            break;
+        }
 
         salt_handshake(&client->channel, NULL);
 

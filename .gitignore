@@ -1,4 +1,5 @@
 Debug
+DebugSan
 build/
 
 # Object files

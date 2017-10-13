@@ -1,6 +1,10 @@
 #ifndef _SALT_V2_H_
 #define _SALT_V2_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @file salt.h
  *
@@ -685,4 +689,8 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
                               bool last_msg);
 
 
-#endif /* _SALT_V2_H_ */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _SALT_H_ */

@@ -39,6 +39,7 @@ static void salt_write_begin_buffer_size(void **state)
 static void salt_write_message_buff_size(void **state)
 {
     uint8_t buffer[256];
+    uint8_t dummy[256];
     salt_msg_t message;
     salt_ret_t ret;
     for (uint8_t i = 0; i < SALT_WRITE_OVERHEAD_SIZE; i++) {
@@ -61,11 +62,11 @@ static void salt_write_message_buff_size(void **state)
     assert_true(SALT_SUCCESS == ret);
 
     ret = salt_write_begin(buffer, 128, &message);
-    ret = salt_write_next(&message, buffer, 128 - SALT_WRITE_OVERHEAD_SIZE);
+    ret = salt_write_next(&message, dummy, 128 - SALT_WRITE_OVERHEAD_SIZE);
     assert_true(SALT_SUCCESS == ret);
 
     ret = salt_write_begin(buffer, 128, &message);
-    ret = salt_write_next(&message, buffer, 128 - SALT_WRITE_OVERHEAD_SIZE + 1);
+    ret = salt_write_next(&message, dummy, 128 - SALT_WRITE_OVERHEAD_SIZE + 1);
     assert_true(SALT_ERROR == ret);
 
     ret = salt_write_begin(buffer, SALT_WRITE_OVERHEAD_SIZE + 3, &message);

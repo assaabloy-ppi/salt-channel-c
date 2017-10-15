@@ -42,6 +42,7 @@ $cd ~/
 $ git clone https://github.com/assaabloy-ppi/salt-channel-c
 $ mkdir -p ~/workspace/salt-channel-c
 $ cmake -G "Eclipse CDT4 - Unix Makefiles" ~/salt-channel-c
+```
 
 2. In eclipse: **File > Import > General > Existing Projects into Workspace**
 3. Check **Select root directory** and chose ~/workspace/salt-channel-c, make sure **Copy projects into workspace** is NOT checked.

@@ -48,6 +48,8 @@ static void host_client_session_handshake(void **state)
     host_ret = SALT_PENDING;
     client_ret = SALT_PENDING;
 
+    uint32_t timeout = 0;
+
     while (host_ret == SALT_PENDING && client_ret == SALT_PENDING)
     {
         if (client_ret == SALT_PENDING) {
@@ -59,17 +61,9 @@ static void host_client_session_handshake(void **state)
             host_ret = salt_handshake(mock->host_channel, NULL);
             assert_int_not_equal(SALT_ERROR, host_ret);
         }
+        timeout++;
+        assert_true(timeout < 1000);
 
-    }
-
-    while (client_ret == SALT_PENDING) {
-        client_ret = salt_handshake(mock->client_channel, NULL);
-        assert_int_not_equal(SALT_ERROR, client_ret);
-    }
-
-    while (host_ret == SALT_PENDING) {
-        host_ret = salt_handshake(mock->host_channel, NULL);
-        assert_int_not_equal(SALT_ERROR, host_ret);
     }
 
     assert_memory_equal(mock->client_channel->peer_sk_pub,
@@ -106,6 +100,8 @@ static void host_client_session_handshake_with(void **state)
     host_ret = SALT_PENDING;
     client_ret = SALT_PENDING;
 
+    uint32_t timeout = 0;
+
     while (host_ret == SALT_PENDING && client_ret == SALT_PENDING)
     {
         if (client_ret == SALT_PENDING) {
@@ -118,16 +114,10 @@ static void host_client_session_handshake_with(void **state)
             assert_int_not_equal(SALT_ERROR, host_ret);
         }
 
-    }
+        timeout++;
 
-    while (client_ret == SALT_PENDING) {
-        client_ret = salt_handshake(mock->client_channel, mock->host_channel->my_sk_pub);
-        assert_int_not_equal(SALT_ERROR, client_ret);
-    }
+        assert_true(timeout < 1000);
 
-    while (host_ret == SALT_PENDING) {
-        host_ret = salt_handshake(mock->host_channel, NULL);
-        assert_int_not_equal(SALT_ERROR, host_ret);
     }
 
     assert_memory_equal(mock->client_channel->peer_sk_pub,
@@ -165,7 +155,9 @@ static void host_client_session_handshake_bad_peer(void **state)
     client_ret = SALT_PENDING;
 
     uint8_t dummy[32];
-    memset(dummy, 0x00, sizeof(dummy));
+    memcpy(dummy, mock->client_channel, 32);
+    dummy[5] += 1;
+    uint32_t timeout = 0;
 
     while (host_ret == SALT_PENDING && client_ret == SALT_PENDING)
     {
@@ -178,19 +170,13 @@ static void host_client_session_handshake_bad_peer(void **state)
             host_ret = salt_handshake(mock->host_channel, dummy);
         }
 
+        timeout++;
+        assert_true(timeout < 1000);
+
     }
 
-    while (client_ret == SALT_PENDING) {
-        client_ret = salt_handshake(mock->client_channel, NULL);
-        assert_int_not_equal(SALT_ERROR, client_ret);
-    }
-
-    while (host_ret == SALT_PENDING) {
-        host_ret = salt_handshake(mock->host_channel, dummy);
-    }
-
-    //assert_int_equal(host_ret, SALT_ERROR);
-    //assert_int_equal(mock->host_channel->err_code, SALT_ERR_BAD_PEER);
+    assert_int_equal(host_ret, SALT_ERROR);
+    assert_int_equal(mock->host_channel->err_code, SALT_ERR_BAD_PEER);
 
 }
 
@@ -221,7 +207,9 @@ static void host_client_session_handshake_with_no_such(void **state)
     client_ret = SALT_PENDING;
 
     uint8_t dummy[32];
-    memset(dummy, 0x00, sizeof(dummy));
+    memcpy(dummy, mock->host_channel->my_sk_pub, 32);
+    dummy[5] += 1;
+    uint32_t timeout = 0;
 
     while (host_ret == SALT_PENDING && client_ret == SALT_PENDING)
     {
@@ -232,6 +220,9 @@ static void host_client_session_handshake_with_no_such(void **state)
         if (host_ret == SALT_PENDING) {
             host_ret = salt_handshake(mock->host_channel, NULL);
         }
+
+        timeout++;
+        assert_true(timeout < 1000);
 
     }
 

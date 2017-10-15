@@ -106,8 +106,8 @@ static void host_handshake_single_echo(void **state) {
     salt_channel_t channel;
     salt_ret_t ret;
     salt_mock_t *mock = (salt_mock_t *) *state;
-    uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
-    memset(hndsk_buffer, 0xcc, SALT_HNDSHK_BUFFER_SIZE);
+    uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE * 2];
+    memset(hndsk_buffer, 0xcc, sizeof(hndsk_buffer));
 
     ret = salt_create(&channel, SALT_SERVER, salt_write_mock, salt_read_mock, NULL);
     ret = salt_set_signature(&channel, salt_example_session_1_data.host_sk_sec);

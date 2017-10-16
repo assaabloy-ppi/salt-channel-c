@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -8,7 +7,8 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <assert.h>
-
+#include <string.h>
+#include <strings.h>
 
 #include "salt.h"
 #include "salt_io.h"

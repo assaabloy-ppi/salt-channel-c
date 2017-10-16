@@ -1,7 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include "libfuzzer.inc"
 
 #include "salt.h"
 #include "test_data.h"
@@ -88,3 +86,5 @@ int main(void) {
 
     return 0;
 }
+
+

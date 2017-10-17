@@ -81,7 +81,7 @@ extern "C" {
         uint8_t *iptr = (uint8_t *) ptr;                                    \
         printf("%s:%d: %s (%d):\r\n",                                       \
             __FILE__, __LINE__, #ptr, (size));                              \
-        for (i = 0; i < (size); i++) {                                      \
+        for (i = 0; i < (uint32_t) (size); i++) {                           \
             printf("%02x", iptr[i]);                                        \
         } printf("\r\n");                                                   \
     } while(0)

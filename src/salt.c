@@ -95,14 +95,29 @@ salt_ret_t salt_protocols_init(salt_channel_t *p_channel,
     SALT_VERIFY_NOT_NULL(p_protocols);
     SALT_VERIFY_NOT_NULL(p_buffer);
 
+    SALT_VERIFY(salt_protocols_create(p_protocols,
+                                      p_buffer, size) == SALT_SUCCESS,
+                                      SALT_ERR_BUFF_TO_SMALL);
+
+    p_channel->p_protocols = p_protocols;
+
+    return SALT_SUCCESS;
+
+}
+
+salt_ret_t salt_protocols_create(salt_protocols_t *p_protocols,
+                                 uint8_t *p_buffer,
+                                 uint32_t size)
+{
     /*
      * At least one protocol must fit. Seralization of this will result in:
      * { size[4] , header[2] , count[1] , p1[10], p2[10] }
      *
      */
-    SALT_VERIFY(size >= 7U + 2 * sizeof(salt_protocol_t), SALT_ERR_BUFF_TO_SMALL);
+    if(size < (7U + 2 * sizeof(salt_protocol_t))) {
+        return SALT_ERROR;
+    }
 
-    p_channel->p_protocols = p_protocols;
     p_protocols->count = 0;
     p_protocols->p_buffer = p_buffer;
     p_protocols->buf_size = size;
@@ -333,7 +348,7 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
         memcpy(hdshk_buffer, ek_pub, 32);
         memcpy(&hdshk_buffer[32], ek_sec, 32);
     }
-    
+
 
     p_channel->err_code = SALT_ERR_NONE;
     p_channel->state = SALT_SESSION_INITIATED;

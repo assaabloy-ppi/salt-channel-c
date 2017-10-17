@@ -348,6 +348,22 @@ salt_ret_t salt_protocols_init(salt_channel_t *p_channel,
                                uint32_t size);
 
 /**
+ * @brief Same as salt_protocols_init but does not initiate it to a channel.
+ * 
+ * 
+ * @param p_protocols   Pointer to protocol structure.
+ * @param p_buffer      Pointer to buffer.
+ * @param size          Size of protocol buffer. size >= 3 + n_protocols * 20
+ *
+ * @return SALT_SUCCESS Supported protocols was initiated.
+ * @return SALT_ERROR   Any input pointer was NULL or buffer size < SALT_PROTOCOLS_MIN_BUF_SIZE
+ *
+ */
+salt_ret_t salt_protocols_create(salt_protocols_t *p_protocols,
+                                 uint8_t *p_buffer,
+                                 uint32_t size);
+
+/**
  * @brief Add a protocol to supported protocols.
  *
  * See \ref salt_protocols_init
@@ -453,18 +469,18 @@ salt_ret_t salt_init_session(salt_channel_t *p_channel,
 
 /**
  * @brief Initiates a session using a provided ephemeral encryption key pair.
- * 
+ *
  * See \ref salt_init_session.
- * 
+ *
  * If ANY of ek_pub or ek_sec is NULL a new keypair is generated.
- * 
+ *
  * @param p_channel         Pointer to channel handle.
  * @param hdshk_buffer      Pointer to buffer used for handsize. Must be at least
  *                          SALT_HNDSHK_BUFFER_SIZE bytes large.
  * @param hdshk_buffer_size Size of the handshake buffer.]
  * @param ek_pub            Public ephemeral encryption key, 32 bytes long.
  * @param ek_sec            Secret ephemeral encryption key, 32 bytes long.
- * 
+ *
  * @return SALT_SUCCESS The session was successfully initiated.
  * @return SALT_ERROR   The channel handle or buffer was a NULL pointer.
 

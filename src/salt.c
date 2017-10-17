@@ -36,7 +36,7 @@
 /*======= Local variable declarations =========================================*/
 
 /* Salt-channel v2 protocol, ASCII "SC2-------" */
-static uint8_t sc2protocol[10] = { 0x53, 0x43, 0x32, 0x2d, 0x2d, 0x2d, 0x2d, 0x2d, 0x2d, 0x2d };
+static uint8_t sc2protocol[10] = { 0x53, 0x43, 0x76, 0x32, 0x2d, 0x2d, 0x2d, 0x2d, 0x2d, 0x2d };
 
 /*======= Local function prototypes ===========================================*/
 

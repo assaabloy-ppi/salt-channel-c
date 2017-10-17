@@ -93,7 +93,7 @@ static void a1a2_any_host_defined_prot(void **state)
 
     assert_true(2 == host_protocols.count);
 
-    assert_true(memcmp("SC2-------",
+    assert_true(memcmp("SCv2------",
                        host_protocols.p_protocols[0],
                        sizeof(salt_protocol_t)) == 0);
 

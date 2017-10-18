@@ -19,34 +19,63 @@ salt_time_t my_time = {
 salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 {
     int sock = *((int *) p_wchannel->p_context);
-    int n = write(sock, p_wchannel->p_data, p_wchannel->size_expected);
+    uint32_t to_write = p_wchannel->size_expected - p_wchannel->size;
 
-    if (n < 0 || (uint32_t) n != p_wchannel->size_expected) {
-        if (n == 0)
-        {
-            p_wchannel->err_code = SALT_ERR_CONNECTION_CLOSED;
-        }
+    if (sock <= 0) {
         return SALT_ERROR;
     }
 
-    p_wchannel->size = p_wchannel->size_expected;
+    printf("p_rchannel->p_data: 0x%p\r\n", p_wchannel->p_data);
 
-    return SALT_SUCCESS;
+    if (to_write > 20) {
+        to_write = 20;
+    }
+
+    int n = write(sock,
+                  &p_wchannel->p_data[p_wchannel->size],
+                  to_write);
+
+    SALT_HEXDUMP_DEBUG(&p_wchannel->p_data[p_wchannel->size], n);
+
+    if (n <= 0) {
+        p_wchannel->err_code = SALT_ERR_CONNECTION_CLOSED;
+        return SALT_ERROR;
+    }
+
+    p_wchannel->size += n;
+
+    return (p_wchannel->size == p_wchannel->size_expected) ? SALT_SUCCESS : SALT_PENDING;
 }
 
 salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 {
     int sock = *((int *) p_rchannel->p_context);
-    int n = read(sock, p_rchannel->p_data, p_rchannel->size_expected);
+    uint32_t to_read = p_rchannel->size_expected - p_rchannel->size;
 
-    if (n < 0 || (uint32_t) n != p_rchannel->size_expected) {
+    if (sock <= 0) {
+        return SALT_ERROR;
+    }
+
+    if (to_read > 20) {
+        to_read = 20;
+    }
+
+    int n = read(sock,
+                 &p_rchannel->p_data[p_rchannel->size],
+                 to_read);
+
+    SALT_HEXDUMP_DEBUG(&p_rchannel->p_data[p_rchannel->size], n);
+
+
+    if (n <= 0) {
         p_rchannel->err_code = SALT_ERR_CONNECTION_CLOSED;
         return SALT_ERROR;
     }
 
-    p_rchannel->size = p_rchannel->size_expected;
+    p_rchannel->size += n;
 
-    return SALT_SUCCESS;
+    return (p_rchannel->size == p_rchannel->size_expected) ? SALT_SUCCESS : SALT_PENDING;
+
 }
 
 static salt_ret_t get_time(salt_time_t *p_time, uint32_t *time)

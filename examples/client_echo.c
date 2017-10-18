@@ -25,13 +25,13 @@ int main(int argc, char **argv)
     char localhost[] = "127.0.0.1";
     char *addr = localhost;
 
-    if (argc > 1)
-    {
+    if (argc > 1) {
         addr = argv[1];
     }
 
-    if ((sock_desc = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if ((sock_desc = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("Failed creating socket\n");
+    }
 
     bzero((char *) &serv_addr, sizeof (serv_addr));
 
@@ -47,8 +47,7 @@ int main(int argc, char **argv)
 
     pthread_t sniffer_thread;
 
-    if (pthread_create(&sniffer_thread, NULL,  connection_handler, (void*) &sock_desc) < 0)
-    {
+    if (pthread_create(&sniffer_thread, NULL,  connection_handler, (void*) &sock_desc) < 0) {
         perror("could not create thread");
         return 1;
     }
@@ -83,43 +82,42 @@ static void *connection_handler(void *context)
 
     salt_set_delay_threshold(&channel, 1000);
 
-    ret = salt_handshake(&channel, NULL);
+    ret = SALT_PENDING;
 
-    while (ret != SALT_SUCCESS) {
-
+    do {
+        ret = salt_handshake(&channel, NULL);
         if (ret == SALT_ERROR) {
             printf("Salt error: 0x%02x\r\n", channel.err_code);
             printf("Salt error read: 0x%02x\r\n", channel.read_channel.err_code);
             printf("Salt error write: 0x%02x\r\n", channel.write_channel.err_code);
+            assert(ret != SALT_ERROR);
         }
-
-        assert(ret != SALT_ERROR);
-
-        salt_handshake(&channel, NULL);
-
-    }
+    } while (ret == SALT_PENDING);
 
     printf("Salt handshake succeeded.\r\n");
     pthread_t write_thread;
-    if (pthread_create(&write_thread, NULL,  write_handler, (void*) &channel) < 0)
-    {
+    if (pthread_create(&write_thread, NULL,  write_handler, (void*) &channel) < 0) {
         puts("could not create write thread");
         pthread_exit(NULL);
     }
 
-    do
-    {
+    do {
         memset(hndsk_buffer, 0, sizeof(hndsk_buffer));
-        ret = salt_read_begin(&channel, hndsk_buffer, sizeof(hndsk_buffer), &msg_in);
-        if (ret == SALT_SUCCESS)
-        {
+        ret = SALT_PENDING;
+        do {
+            ret = salt_read_begin(&channel, hndsk_buffer, sizeof(hndsk_buffer), &msg_in);
+        } while (ret == SALT_PENDING);
+        
+        if (ret == SALT_SUCCESS) {
             do {
                 printf("\33[2K\rhost: %*.*s", 0, msg_in.read.message_size - 1, &msg_in.read.p_payload[1]);
                 printf("Enter message: ");
-            } while (salt_read_next(&msg_in) == SALT_SUCCESS);
+            }
+            while (salt_read_next(&msg_in) == SALT_SUCCESS);
 
         }
-    } while (ret == SALT_SUCCESS);
+    }
+    while (ret == SALT_SUCCESS);
 
     pthread_exit(NULL);
 }
@@ -133,8 +131,7 @@ static void *write_handler(void *context)
     salt_ret_t ret_code;
     salt_msg_t out_msg;
 
-    do
-    {
+    do {
         printf("Enter message: ");
         tx_size = read(0, &input[1], sizeof(input) - 1);
         input[0] = 0x01;
@@ -142,9 +139,13 @@ static void *write_handler(void *context)
             salt_write_begin(tx_buffer, sizeof(tx_buffer), &out_msg);
             salt_write_next(&out_msg, (uint8_t *)input, tx_size + 1);
             printf("\r\n\033[A\33[2K\rclient: %*.*s\r\n", 0, tx_size - 1, &input[1]);
-            ret_code = salt_write_execute(channel, &out_msg, false);
+            ret_code = SALT_PENDING;
+            do {
+                ret_code = salt_write_execute(channel, &out_msg, false);
+            } while(ret_code == SALT_PENDING);
         }
-    } while (ret_code == SALT_SUCCESS);
+    }
+    while (ret_code == SALT_SUCCESS);
 
 
     pthread_exit(NULL);

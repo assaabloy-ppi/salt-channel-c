@@ -35,12 +35,12 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
                   &p_wchannel->p_data[p_wchannel->size],
                   to_write);
 
-    SALT_HEXDUMP_DEBUG(&p_wchannel->p_data[p_wchannel->size], n);
-
     if (n <= 0) {
         p_wchannel->err_code = SALT_ERR_CONNECTION_CLOSED;
         return SALT_ERROR;
     }
+
+    SALT_HEXDUMP_DEBUG(&p_wchannel->p_data[p_wchannel->size], n);
 
     p_wchannel->size += n;
 
@@ -64,13 +64,12 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
                  &p_rchannel->p_data[p_rchannel->size],
                  to_read);
 
-    SALT_HEXDUMP_DEBUG(&p_rchannel->p_data[p_rchannel->size], n);
-
-
     if (n <= 0) {
         p_rchannel->err_code = SALT_ERR_CONNECTION_CLOSED;
         return SALT_ERROR;
     }
+
+    SALT_HEXDUMP_DEBUG(&p_rchannel->p_data[p_rchannel->size], n);
 
     p_rchannel->size += n;
 

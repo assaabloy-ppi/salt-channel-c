@@ -463,7 +463,7 @@ salt_err_t salt_read_init(uint8_t type,
         p_msg->read.message_size = salti_bytes_to_u16(&p_msg->read.p_buffer[2]);
         p_msg->read.p_payload = &p_msg->read.p_buffer[4];
         p_msg->read.messages_left--;
-        p_msg->read.buffer_used = 2 + p_msg->read.message_size;
+        p_msg->read.buffer_used = 4 + p_msg->read.message_size;
 
         break;
     default:

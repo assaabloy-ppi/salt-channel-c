@@ -432,16 +432,29 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg)
         return SALT_ERROR;
     }
 
+    /*
+     * Increase p_payload to end of current message.
+     */
     p_msg->read.p_payload += p_msg->read.message_size;
-    p_msg->read.message_size = salti_bytes_to_u16(p_msg->read.p_payload);
-    p_msg->read.p_payload += 2;
-    p_msg->read.buffer_used = 2 + p_msg->read.message_size;
-
-    if (p_msg->read.buffer_used + 2 + p_msg->read.message_size > p_msg->read.buffer_size) {
+    
+    if (p_msg->read.buffer_size < p_msg->read.buffer_used + 2) {
         return SALT_ERROR;
     }
 
+    /*
+     * Get next message size.
+     */
+    p_msg->read.message_size = salti_bytes_to_u16(p_msg->read.p_payload);
+    /*
+     * Increase p_payload to next message.
+     */
+    p_msg->read.p_payload += 2;
     p_msg->read.buffer_used += 2 + p_msg->read.message_size;
+
+
+    if (p_msg->read.buffer_used > p_msg->read.buffer_size) {
+        return SALT_ERROR;
+    }
 
     p_msg->read.messages_left--;
 

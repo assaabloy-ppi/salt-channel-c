@@ -23,6 +23,6 @@
  */
 
 /* Used for the examples and tests here. */
-#include "tweetnacl.h"
+#include "tweetnacl_modified.h"
 
 #endif

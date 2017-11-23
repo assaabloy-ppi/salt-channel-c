@@ -240,6 +240,8 @@ static void host_handshake_multi_echo(void **state) {
 }
 
 int main(void) {
+    salt_crypto_init(NULL);
+    
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(host_handshake, setup, teardown),
         cmocka_unit_test_setup_teardown(host_handshake_m1, setup, teardown),

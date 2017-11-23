@@ -599,10 +599,10 @@ int crypto_sign_keypair(u8 *pk, u8 *sk)
   int i;
 
   randombytes(sk, 32);
-  crypto_hash_sha512_state hash_state;
-  crypto_hash_sha512_init(&hash_state);
-  crypto_hash_sha512_update(&hash_state, sk, 32);
-  crypto_hash_sha512_final(&hash_state, d);
+  crypto_hash_sha512_state_tweet hash_state;
+  crypto_hash_sha512_init_tweet(&hash_state);
+  crypto_hash_sha512_update_tweet(&hash_state, sk, 32);
+  crypto_hash_sha512_final_tweet(&hash_state, d);
   d[0] &= 248;
   d[31] &= 127;
   d[31] |= 64;
@@ -656,11 +656,11 @@ int crypto_sign(u8 *sm,u64 *smlen,const u8 *m,u64 n,const u8 *sk)
   i64 j,x[64];
   u64 i;
   gf p[4];
-  crypto_hash_sha512_state hash_state;
+  crypto_hash_sha512_state_tweet hash_state;
 
-  crypto_hash_sha512_init(&hash_state);
-  crypto_hash_sha512_update(&hash_state, sk, 32);
-  crypto_hash_sha512_final(&hash_state, d);
+  crypto_hash_sha512_init_tweet(&hash_state);
+  crypto_hash_sha512_update_tweet(&hash_state, sk, 32);
+  crypto_hash_sha512_final_tweet(&hash_state, d);
   d[0] &= 248;
   d[31] &= 127;
   d[31] |= 64;
@@ -669,17 +669,17 @@ int crypto_sign(u8 *sm,u64 *smlen,const u8 *m,u64 n,const u8 *sk)
   FOR(i,n) sm[64 + i] = m[i];
   FOR(i,32) sm[32 + i] = d[32 + i];
 
-  crypto_hash_sha512_init(&hash_state);
-  crypto_hash_sha512_update(&hash_state, sm+32, n+32);
-  crypto_hash_sha512_final(&hash_state, r);
+  crypto_hash_sha512_init_tweet(&hash_state);
+  crypto_hash_sha512_update_tweet(&hash_state, sm+32, n+32);
+  crypto_hash_sha512_final_tweet(&hash_state, r);
   reduce(r);
   scalarbase(p,r);
   pack(sm,p);
 
   FOR(i,32) sm[i+32] = sk[i+32];
-  crypto_hash_sha512_init(&hash_state);
-  crypto_hash_sha512_update(&hash_state, sm, n + 64);
-  crypto_hash_sha512_final(&hash_state, h);
+  crypto_hash_sha512_init_tweet(&hash_state);
+  crypto_hash_sha512_update_tweet(&hash_state, sm, n + 64);
+  crypto_hash_sha512_final_tweet(&hash_state, h);
   reduce(h);
 
   FOR(i,64) x[i] = 0;
@@ -739,10 +739,10 @@ int crypto_sign_open(u8 *m,u64 *mlen,const u8 *sm,u64 n,const u8 *pk)
 
   FOR(i,n) m[i] = sm[i];
   FOR(i,32) m[i+32] = pk[i];
-  crypto_hash_sha512_state hash_state;
-  crypto_hash_sha512_init(&hash_state);
-  crypto_hash_sha512_update(&hash_state, m,n);
-  crypto_hash_sha512_final(&hash_state, h);
+  crypto_hash_sha512_state_tweet hash_state;
+  crypto_hash_sha512_init_tweet(&hash_state);
+  crypto_hash_sha512_update_tweet(&hash_state, m,n);
+  crypto_hash_sha512_final_tweet(&hash_state, h);
   reduce(h);
   scalarmult(p,q,h);
 
@@ -761,13 +761,13 @@ int crypto_sign_open(u8 *m,u64 *mlen,const u8 *sm,u64 n,const u8 *pk)
   return 0;
 }
 
-int crypto_sign_verify_detached(const unsigned char *sig,
+int crypto_sign_verify_detached_tweet(const unsigned char *sig,
                                 const unsigned char *m,
                                 unsigned long long mlen,
                                 const unsigned char *pk)
 {
 
-    crypto_hash_sha512_state hash_state;
+    crypto_hash_sha512_state_tweet hash_state;
     unsigned long long i;
     u8 t[32],h[64];
     gf p[4],q[4];
@@ -775,14 +775,14 @@ int crypto_sign_verify_detached(const unsigned char *sig,
     if (mlen < 64) return -1;
     if (unpackneg(q,pk)) return -1;
 
-    crypto_hash_sha512_init(&hash_state);
+    crypto_hash_sha512_init_tweet(&hash_state);
 
     FOR(i,32) h[i] = sig[i];
     FOR(i,32) h[i+32] = pk[i];
 
-    crypto_hash_sha512_update(&hash_state, h, 64);
-    crypto_hash_sha512_update(&hash_state, m, mlen);
-    crypto_hash_sha512_final(&hash_state, h);
+    crypto_hash_sha512_update_tweet(&hash_state, h, 64);
+    crypto_hash_sha512_update_tweet(&hash_state, m, mlen);
+    crypto_hash_sha512_final_tweet(&hash_state, h);
     reduce(h);
     scalarmult(p,q,h);
     scalarbase(q,sig + 32);
@@ -930,7 +930,7 @@ static const uint8_t PAD[128] = {
 };
 
 static void
-SHA512_Pad(crypto_hash_sha512_state *state, uint64_t tmp64[80 + 8])
+SHA512_Pad(crypto_hash_sha512_state_tweet *state, uint64_t tmp64[80 + 8])
 {
     unsigned int r;
     unsigned int i;
@@ -953,15 +953,15 @@ SHA512_Pad(crypto_hash_sha512_state *state, uint64_t tmp64[80 + 8])
 
 int crypto_hash(u8 *out,const u8 *m,u64 n)
 {
-    crypto_hash_sha512_state hash_state;
-    crypto_hash_sha512_init(&hash_state);
-    crypto_hash_sha512_update(&hash_state, m, n);
-    crypto_hash_sha512_final(&hash_state, out);
+    crypto_hash_sha512_state_tweet hash_state;
+    crypto_hash_sha512_init_tweet(&hash_state);
+    crypto_hash_sha512_update_tweet(&hash_state, m, n);
+    crypto_hash_sha512_final_tweet(&hash_state, out);
     return 0;
 }
 
 int
-crypto_hash_sha512_init(crypto_hash_sha512_state *state)
+crypto_hash_sha512_init_tweet(crypto_hash_sha512_state_tweet *state)
 {
     static const uint64_t sha512_initial_state[8] = {
         0x6a09e667f3bcc908ULL, 0xbb67ae8584caa73bULL, 0x3c6ef372fe94f82bULL,
@@ -976,7 +976,7 @@ crypto_hash_sha512_init(crypto_hash_sha512_state *state)
 }
 
 int
-crypto_hash_sha512_update(crypto_hash_sha512_state *state,
+crypto_hash_sha512_update_tweet(crypto_hash_sha512_state_tweet *state,
                           const unsigned char *in, unsigned long long inlen)
 {
     uint64_t           tmp64[80 + 8];
@@ -1025,7 +1025,7 @@ crypto_hash_sha512_update(crypto_hash_sha512_state *state,
 }
 
 int
-crypto_hash_sha512_final(crypto_hash_sha512_state *state, unsigned char *out)
+crypto_hash_sha512_final_tweet(crypto_hash_sha512_state_tweet *state, unsigned char *out)
 {
     uint64_t tmp64[80 + 8];
 

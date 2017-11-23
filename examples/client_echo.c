@@ -16,6 +16,8 @@
 static void *connection_handler(void *context);
 static void *write_handler(void *context);
 
+extern randombytes_t my_randombytes;
+
 int main(int argc, char **argv)
 {
     //test();
@@ -24,6 +26,8 @@ int main(int argc, char **argv)
     setbuf(stdout, NULL);
     char localhost[] = "127.0.0.1";
     char *addr = localhost;
+
+    salt_crypto_init(my_randombytes);
 
     if (argc > 1) {
         addr = argv[1];

@@ -11,6 +11,7 @@
 #include "salt.h"
 #include "salt_io.h"
 
+extern randombytes_t my_randombytes;
 
 static void *connection_handler(void *context);
 
@@ -40,8 +41,9 @@ int main(int argc , char *argv[])
 
     int socket_desc;
     int client_sock;
-
-
+    
+    salt_crypto_init(my_randombytes);
+    
     struct clientInfo *client_info;
 
     int c;

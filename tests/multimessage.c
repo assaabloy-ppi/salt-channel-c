@@ -120,6 +120,8 @@ static void multimessage(void **state)
 }
 
 int main(void) {
+    salt_crypto_init(NULL);
+    
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(multimessage, setup, teardown),
 

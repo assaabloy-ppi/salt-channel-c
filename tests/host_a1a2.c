@@ -62,6 +62,8 @@ static void host_a1a2(void **state) {
 }
 
 int main(void) {
+    salt_crypto_init(NULL);
+    
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(host_a1a2, setup, teardown),
     };

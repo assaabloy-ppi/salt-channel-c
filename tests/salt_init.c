@@ -122,6 +122,8 @@ static void test_salt_init_session(void **state)
 
 int main(void)
 {
+    salt_crypto_init(NULL);
+    
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_salt_create),
         cmocka_unit_test(test_salt_set_signature),

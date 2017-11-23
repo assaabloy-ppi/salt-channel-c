@@ -11,6 +11,7 @@
 #include "salt_mock.h"
 #include "test_data.h"
 
+
 static int setup(void **state) {
     salt_mock_t *mock = salt_mock_create();
     *state = mock;
@@ -206,6 +207,8 @@ static void client_handshake_multi_echo(void **state)
 
 int main(void)
 {
+    salt_crypto_init(NULL);
+
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(client_handshake, setup, teardown),
         cmocka_unit_test_setup_teardown(client_handshake_single_echo, setup, teardown),

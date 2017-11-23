@@ -243,6 +243,8 @@ static void host_client_session_handshake_with_no_such(void **state)
 }
 
 int main(void) {
+    salt_crypto_init(NULL);
+    
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(host_client_session_handshake, setup, teardown),
         cmocka_unit_test_setup_teardown(host_client_session_handshake_with, setup, teardown),

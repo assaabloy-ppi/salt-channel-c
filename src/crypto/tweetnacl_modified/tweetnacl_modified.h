@@ -269,4 +269,27 @@ extern int crypto_verify_32_tweet(const unsigned char *,const unsigned char *);
 #define crypto_verify_32_BYTES crypto_verify_32_tweet_BYTES
 #define crypto_verify_32_VERSION crypto_verify_32_tweet_VERSION
 #define crypto_verify_32_IMPLEMENTATION "crypto_verify/32/tweet"
+
+#include <stdint.h>
+
+typedef struct crypto_hash_sha512_state_tweet {
+    uint64_t state[8];
+    uint64_t count[2];
+    uint8_t  buf[128];
+} crypto_hash_sha512_state_tweet;
+
+int crypto_hash_sha512_init_tweet(crypto_hash_sha512_state_tweet *state);
+
+int crypto_hash_sha512_update_tweet(crypto_hash_sha512_state_tweet *state,
+                              const unsigned char *in,
+                              unsigned long long inlen);
+
+int crypto_hash_sha512_final_tweet(crypto_hash_sha512_state_tweet *state,
+                             unsigned char *out);
+
+int crypto_sign_verify_detached_tweet(const unsigned char *sig,
+                                const unsigned char *m,
+                                unsigned long long mlen,
+                                const unsigned char *pk);
+
 #endif

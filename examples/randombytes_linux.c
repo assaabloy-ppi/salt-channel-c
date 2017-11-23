@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void randombytes(unsigned char *p_bytes, unsigned long long length)
+void my_randombytes(unsigned char *p_bytes, unsigned long long length)
 {
    FILE* fr = fopen("/dev/urandom", "r");
    if (!fr) perror("urandom"), exit(EXIT_FAILURE);

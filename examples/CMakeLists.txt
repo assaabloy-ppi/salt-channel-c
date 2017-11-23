@@ -13,12 +13,12 @@ include_directories(../src ./)
 
 add_executable(host_echo host_echo.c salt_io.c randombytes_linux.c)
 add_sanitizers(host_echo)
-target_link_libraries(host_echo salt)
+target_link_libraries(host_echo crypto salt )
 
 add_executable(client_echo client_echo.c salt_io.c randombytes_linux.c)
 add_sanitizers(client_echo)
-target_link_libraries(client_echo salt)
+target_link_libraries(client_echo crypto salt )
 
 add_executable(client client.c salt_io.c randombytes_linux.c binson_light.c)
 add_sanitizers(client)
-target_link_libraries(client salt)
+target_link_libraries(client crypto salt ) 

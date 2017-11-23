@@ -17,6 +17,7 @@
 /*======= Type Definitions ==================================================*/
 /*======= Local function prototypes =========================================*/
 /*======= Local variable declarations =======================================*/
+extern salt_crypto_t *crypto;
 /*======= Global function implementations ===================================*/
 
 /**
@@ -214,7 +215,7 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
     time -= p_channel->my_epoch;
     salti_u32_to_bytes(&p_data[34], time);
 
-    ret = crypto_box_afternm(
+    ret = salt_crypto_api_default()->crypto_box_afternm(
               p_data,
               p_data,
               size + 6U + crypto_secretbox_ZEROBYTES,
@@ -284,7 +285,7 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
     memset(p_data, 0x00U, crypto_secretbox_BOXZEROBYTES);
     size = size + crypto_secretbox_BOXZEROBYTES - 2U;
 
-    int ret = crypto_box_open_afternm(
+    int ret = salt_crypto_api_default()->crypto_box_open_afternm(
                   p_data,
                   p_data,
                   size,

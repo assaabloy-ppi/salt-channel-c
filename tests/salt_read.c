@@ -11,7 +11,7 @@
 #include "salti_util.h"
 #include "salti_handshake.h"
 
-void randombytes(unsigned char *p_bytes, unsigned long long length)
+void my_randombytes(unsigned char *p_bytes, unsigned long long length)
 {
     (void) p_bytes;
     (void) length;
@@ -92,9 +92,11 @@ static void second_test(void **state) {
 
 int main(void)
 {
+    salt_crypto_init(my_randombytes);
+
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(read_test),
         cmocka_unit_test(second_test),
-    };
+    };    
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

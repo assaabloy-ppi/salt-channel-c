@@ -25,11 +25,13 @@
 #include "binson_light.h"
 #include "salt_io.h"
 
+#include "crypto/salt_crypto.h"
 /*======= Local Macro Definitions ===========================================*/
 /*======= Type Definitions ==================================================*/
 /*======= Local variable declarations =======================================*/
 /*======= Local function prototypes =========================================*/
 /*======= Global function implementations ===================================*/
+extern randombytes_t my_randombytes;
 
 int main(int argc, char **argv)
 {
@@ -39,6 +41,8 @@ int main(int argc, char **argv)
     setbuf(stdout, NULL);
     char localhost[] = "127.0.0.1";
     char *addr = localhost;
+
+    salt_crypto_init(my_randombytes);
 
     if (argc > 1)
     {

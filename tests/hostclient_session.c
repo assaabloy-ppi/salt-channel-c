@@ -220,6 +220,8 @@ static void hostclient_session(void **state)
 }
 
 int main(void) {
+    salt_crypto_init(NULL);
+    
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(hostclient_session, setup, teardown),
     };

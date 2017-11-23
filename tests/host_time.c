@@ -74,6 +74,7 @@ static void host_delay_threshold_m1_m4(void **state)
 }
 
 int main(void) {
+    salt_crypto_init(NULL);
 
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(host_delay_threshold_m1_m4, setup, teardown)

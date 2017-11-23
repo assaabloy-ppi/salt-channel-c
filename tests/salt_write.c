@@ -11,7 +11,7 @@
 #include "salti_util.h"
 #include "salti_handshake.h"
 
-void randombytes(unsigned char *p_bytes, unsigned long long length)
+void my_randombytes(unsigned char *p_bytes, unsigned long long length)
 {
     (void) p_bytes;
     (void) length;
@@ -180,6 +180,8 @@ static void write_append_no_copy(void **state)
 }
 
 int main(void) {
+    salt_crypto_init(my_randombytes);
+    
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(salt_write_begin_buffer_size),
         cmocka_unit_test(salt_write_messages),

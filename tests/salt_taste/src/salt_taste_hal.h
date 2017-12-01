@@ -5,9 +5,14 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <stdbool.h>
+/* include platform-dependant type definitions */
+#include "salt_taste_hal_def.h"
+#include "salt_taste_event.h"
 
+struct salt_taste_hal_api_s;
+
+/* HAL entry point should invode this portable entry_point */
+extern int salt_taste_entry_point(struct salt_taste_hal_api_s *hal, int argc, char *argv[]);
 
 typedef enum salt_taste_hal_flags_e {
     ST_HAL_HAS_CONSOLE   = 0x01,
@@ -16,20 +21,30 @@ typedef enum salt_taste_hal_flags_e {
 
 } salt_taste_hal_flags_t;
 
+typedef enum salt_taste_hal_counter_action_e {
+    ST_HAL_CNT_START    = 1,
+    ST_HAL_CNT_STOP,
+    ST_HAL_CNT_TOGGLE,    
+
+} salt_taste_hal_counter_action_t;
 
 struct salt_taste_hal_api_s {
     uint32_t cfg; 
 
     uint32_t (*get_info)();       /* request platform-dependant functionality implemeted in ???_hal.c */
-    int (*entry_point)();         /* usually just a pointer to main() */
+    int (*entry_point)(struct salt_taste_hal_api_s *hal, int argc, char *argv[]);
     int (*init)();                /* hal initialization: retarget printf(), etc */
 
     int (*write)(int fd, const char *buf, int count);  /* */
+    int (*write_str)(int fd, const char *msg);
     int (*printf)(const char *format, ...);
+    void (*assert)(int expr, const char *msg);
 
     void (*rng)(uint8_t *buf, uint64_t count);
-    uint64_t (*get_ticks)();          /* returns highest available resolution timer value */
-    float    (*ticks_to_ms_ratio)();  /* ticks() * ticks_to_ms_ratio() = ms */
+
+    int  (*get_elapsed_counters_num)();  /* return number of elapsed counters supported by HAL */    
+    uint64_t (*trigger_elapsed_counter)(int counter_idx, bool start_it);
+
     void (*notify)(enum salt_taste_event_e event, enum salt_taste_status_e status);
 };
 typedef struct salt_taste_hal_api_s salt_taste_hal_api_t;

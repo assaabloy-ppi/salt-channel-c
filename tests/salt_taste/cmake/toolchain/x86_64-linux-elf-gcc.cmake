@@ -5,7 +5,7 @@ set(CMAKE_SYSTEM_NAME Linux)
 
 set(CMAKE_C_COMPILER gcc)
 #set(CMAKE_C_COMPILER_TARGET ${triple})
-set(CMAKE_CXX_COMPILER gcc++)
+#set(CMAKE_CXX_COMPILER gcc++)
 #set(CMAKE_CXX_COMPILER_TARGET ${triple})
 
 # where is the target environment 

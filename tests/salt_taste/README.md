@@ -2,3 +2,9 @@ Salt Taste = multiplatform testing suite for SaltChannel with different crypto l
 ===========================
 
 Salt taste is secure way to test :)
+
+
+Features
+========
+* ANSI C  (need to check this)
+

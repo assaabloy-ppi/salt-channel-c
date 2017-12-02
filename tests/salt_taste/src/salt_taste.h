@@ -5,6 +5,14 @@
 extern "C" {
 #endif
 
+/* define it to be cmake friendly when using options */
+#ifndef ON
+#define ON 1
+#endif
+#ifndef OFF
+#define OFF 0
+#endif
+
 /*
 opt:
 use_printf
@@ -21,10 +29,10 @@ test_rng
 
 int salt_taste_entry_point(salt_taste_hal_api_t *hal, int argc, char *argv[]);
 
-//bool test_platform(salt_taste_hal_api_t *hal);
-//bool test_sanity(salt_crypto_api_t *crypto_api, struct crypto_test_hal *test_hal);
-//bool test_performance(salt_crypto_api_t *crypto_api, struct crypto_test_hal *test_hal);
-//uint32_t ms_for_handshake((salt_crypto_api_t *crypto_api, struct crypto_test_hal *test_hal); 
+/*bool test_platform(salt_taste_hal_api_t *hal); */
+/*bool test_sanity(salt_crypto_api_t *crypto_api, struct crypto_test_hal *test_hal);*/
+/*bool test_performance(salt_crypto_api_t *crypto_api, struct crypto_test_hal *test_hal);*/
+/*uint32_t ms_for_handshake((salt_crypto_api_t *crypto_api, struct crypto_test_hal *test_hal); */
 
 
 #ifdef __cplusplus

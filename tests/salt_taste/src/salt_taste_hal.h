@@ -34,14 +34,16 @@ struct salt_taste_hal_api_s {
     uint32_t (*get_info)();       /* request platform-dependant functionality implemeted in ???_hal.c */
     int (*entry_point)(struct salt_taste_hal_api_s *hal, int argc, char *argv[]);
     int (*init)();                /* hal initialization: retarget printf(), etc */
+    int (*shutdown)();            /* hal shutdown: flush buffers, etc */
 
     int (*write)(int fd, const char *buf, int count);  /* */
     int (*write_str)(int fd, const char *msg);
-    int (*printf)(const char *format, ...);
+    int (*dprintf)(int fd, const char *format, ...);
     void (*assert)(int expr, const char *msg);
 
     void (*rng)(uint8_t *buf, uint64_t count);
-
+    
+    void (*sleep)(uint32_t ms);
     int  (*get_elapsed_counters_num)();  /* return number of elapsed counters supported by HAL */    
     uint64_t (*trigger_elapsed_counter)(int counter_idx, bool start_it);
 
@@ -51,6 +53,7 @@ typedef struct salt_taste_hal_api_s salt_taste_hal_api_t;
 
 
 int salt_test_hal_init(salt_taste_hal_api_t *hal);
+int salt_test_hal_shutdown(salt_taste_hal_api_t *hal);
 int salt_test_hal_set_cfg(salt_taste_hal_api_t *hal, uint32_t flags);
 
 

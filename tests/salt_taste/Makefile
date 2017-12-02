@@ -14,4 +14,5 @@ build__x86_64-linux-stdout_full: clean  ## Build for HAL 'x86_64-linux-stdout_fu
 	mkdir build && cd build && \
 	cmake -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain/x86_64-linux-elf-gcc.cmake \
 		  -DHAL=x86_64-linux-stdout_full .. && \
-	cmake --build .
+	cmake --build . && \
+	./salt_taste

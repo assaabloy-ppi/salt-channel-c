@@ -73,7 +73,7 @@ static bool test_elapsed_timer(salt_taste_hal_api_t *hal)
 	hal->sleep(1500);
 
 	ms = hal->trigger_elapsed_counter(0, false);
-	success = (ms > 1490 && ms < 1510)? true : false; 
+	success = (ms > 1480 && ms < 1520)? true : false; 
 	/* checks done */
 
 
@@ -85,9 +85,10 @@ static bool test_elapsed_timer(salt_taste_hal_api_t *hal)
 static bool test_rng(salt_taste_hal_api_t *hal)
 {	
 	bool success = false;
-	const uint8_t sample_len = 128;
-	const uint8_t low_ci_point = 128-20;
-	const uint8_t high_ci_point = 128+20;
+	/*const uint8_t sample_len = 128;*/
+	enum { sample_len = 10 };
+	const uint8_t low_ci_point = 128-25;
+	const uint8_t high_ci_point = 128+25;
 
 	uint8_t i, buf[sample_len];
 	uint64_t val_acc = 0;

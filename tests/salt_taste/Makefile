@@ -19,7 +19,7 @@ build__x86_64-linux-stdout_full: clean  ## Build for HAL 'x86_64-linux-stdout_fu
 
 build__msp430-none-iar_test: clean  ## Build for HAL 'msp430-none-iar_test'
 	mkdir build && cd build && \
-	cmake -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain/msp430-none-eabi-iar.cmake \
+	cmake -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain/msp430-none-eabi-iar.cmake \
 		  -DHAL=msp430-none-iar_test .. && \
 	cmake --build .
 

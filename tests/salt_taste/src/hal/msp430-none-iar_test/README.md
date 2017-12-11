@@ -1,5 +1,5 @@
-x86_64-linux-stdout_full
+msp430-none-iar_test
 =========================
 
-Full implementation of all hooks/notifications for demo/test/debug purposes.
-For minimal overhead HAL implementation please see: 'x86_64-linux-stdout' directory.
+HAL calls implementation for msp430 platform, 
+to write MCU specific code please use preprocessor variable __${CMAKE_SYSTEM_PROCESSOR}__.

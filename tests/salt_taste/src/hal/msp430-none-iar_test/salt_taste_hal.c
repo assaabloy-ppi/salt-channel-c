@@ -1,17 +1,22 @@
-#define _BSD_SOURCE
-#define _POSIX_C_SOURCE 199309L
-#include <time.h>  
+#include "io430.h"
+#include <intrinsics.h>  /* delays */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#include <unistd.h>
+#include <time.h>  
+#include <time.h>  
 
 #include "salt_taste_hal.h"
 
 #define ST_HAL_ELAPSED_COUNTERS    3
 
+#ifndef SIMULATE
+void initUART()
+{ 
+}
+#endif
 
 uint32_t get_info()
 {
@@ -20,25 +25,33 @@ uint32_t get_info()
 
 int init()
 {
-	/*nothing to do on Linux */
+	time_t t;
+
+	srand((unsigned) time(&t));
+
+#ifndef SIMULATE
+  initUART();
+#endif
+
 	return 0;
 }
 
 
 int my_write(int fd, const char *buf, int count)
 {
-	return write(fd, buf, count);
+	/* do it via printf() for now, since DLIB configs (Normal, Full) seems missing in my (ppmag's) inst. */
+	return printf("%.*s", count, buf);	
+	//return write(fd, buf, count);
 }
 
 int my_write_str(int fd, const char *msg)
 {
-	return my_write(fd, msg, strlen(msg)+1);  /* strlen() overhead, but let's simplify things for now */
+	return printf("%s", msg);	
 }
 
 int my_shutdown()
 {
 	/* flush buffers, etc*/
-	fsync(STDOUT_FILENO);
 	return 0;
 }
 
@@ -59,25 +72,21 @@ void my_assert(int expr, const char *msg)
 {
 	if (!expr)
 		{
-			my_write_str(STDOUT_FILENO, msg);
-			fsync(STDOUT_FILENO);
+			my_write_str(0, msg);
 			abort();
 		}
 }
 
 void rng(uint8_t *buf, uint64_t count)
 {
-   FILE* fr = fopen("/dev/urandom", "r");
-   my_assert(fr != NULL, "can't open /dev/urandom.");
-
-   size_t tmp = fread(buf, sizeof(unsigned char), count, fr);
-   my_assert(tmp == count, "can't read requested number of random bytes");
-   fclose(fr);
+  for (int i=0; i<count; i++)
+  	buf[i] = rand() % 0xff;
 }
 
 void my_sleep(uint32_t ms)
 {
-	usleep(ms * 1000);
+	for(int i = 0; i < ms; i++)
+	  __delay_cycles(CLOCKS_PER_SEC / 1000);
 }
 
 /* return number of elapsed counters supported by HAL */    
@@ -88,36 +97,28 @@ int get_elapsed_counters_num()
 
 uint64_t trigger_elapsed_counter(int counter_idx, bool start_it)
 {
-	static struct timespec ts[ST_HAL_ELAPSED_COUNTERS];
-	struct timespec end, diff;
-
+	clock_t ts[ST_HAL_ELAPSED_COUNTERS];
+	clock_t end, diff;
+ 
 	if (start_it)
 	{
-		clock_gettime(CLOCK_MONOTONIC, &ts[counter_idx]);
+		/* see https://www.iar.com/support/resources/articles/using-c-standard-library-time-and-clock-functions/ */
+		ts[counter_idx] = clock();  
 		return 0ULL;
 	}
-	else
-	{
-		clock_gettime(CLOCK_MONOTONIC, &end);
-
-	    if ((end.tv_nsec - ts[counter_idx].tv_nsec) < 0)
-	    {
-		  diff.tv_sec = end.tv_sec-ts[counter_idx].tv_sec-1;
-		  diff.tv_nsec = 1000000000 + end.tv_nsec - ts[counter_idx].tv_nsec;
-	    } else {
-		  diff.tv_sec = end.tv_sec - ts[counter_idx].tv_sec;
-		  diff.tv_nsec = end.tv_nsec - ts[counter_idx].tv_nsec;
-	    }
-		return diff.tv_sec * 1000ULL + diff.tv_nsec / 1000000ULL;
+	else {
+		end = clock();
+		diff = end - ts[counter_idx];
 	}
 
+	return diff * 1000 / CLOCKS_PER_SEC;
 }
 
 
 void notify(enum salt_taste_event_e event, enum salt_taste_status_e status)
 {
 	/* just debug output */
-	my_dprintf(STDOUT_FILENO, "EVENT: id=%-10s status=%-10s\n", salt_taste_event_tostr(event), 
+	my_dprintf(0, "EVENT: id=%-10s status=%-10s\n", salt_taste_event_tostr(event), 
 		 													salt_taste_status_tostr(status));
 }
 
@@ -126,6 +127,9 @@ int main(int argc, char *argv[])
 {
 	int ret;
 	salt_taste_hal_api_t hal;
+
+ 	// Stop watchdog timer to prevent time out reset
+  	WDTCTL = WDTPW + WDTHOLD;
 
 	salt_test_hal_init(&hal);
 	ret = hal.entry_point(&hal, argc, argv);

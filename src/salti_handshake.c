@@ -70,7 +70,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
     uint32_t size = 0;
     salt_ret_t ret_code = SALT_ERROR;
     uint8_t proceed = 1;
-    uint8_t *payload;
+    uint8_t *payload = NULL;
 
     while (proceed) {
         proceed = 0;
@@ -111,6 +111,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
                  * and points p_channel->write_channel.p_data to A2
                  * with size in p_channel->write_channel.size.
                  */
+                SALT_VERIFY(payload != NULL, SALT_ERR_BAD_PROTOCOL);
                 ret_code = salti_handle_a1_create_a2(p_channel, payload, size);
 
                 if (SALT_SUCCESS == ret_code) {

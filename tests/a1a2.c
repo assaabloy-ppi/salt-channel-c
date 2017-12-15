@@ -31,6 +31,8 @@
 /*======= Global function implementations ===================================*/
 /*======= Local function implementations ====================================*/
 
+extern void my_randombytes(unsigned char *p_bytes, unsigned long long length);
+
 static int setup(void **state) {
     salt_mock_t *mock = salt_mock_create();
     *state = mock;
@@ -225,7 +227,7 @@ static void a1a2_no_such_host(void **state)
 }
 
 int main(void) {
-    salt_crypto_init(NULL);
+    salt_crypto_init(my_randombytes);
         
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(a1a2_any_host_no_prot, setup, teardown),

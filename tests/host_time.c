@@ -11,6 +11,7 @@
 #include "salti_util.h"
 #include "salt_mock.h"
 
+extern void my_randombytes(unsigned char *p_bytes, unsigned long long length);
 
 static int setup(void **state) {
     salt_mock_t *mock = salt_mock_create();
@@ -74,7 +75,7 @@ static void host_delay_threshold_m1_m4(void **state)
 }
 
 int main(void) {
-    salt_crypto_init(NULL);
+    salt_crypto_init(my_randombytes);
 
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(host_delay_threshold_m1_m4, setup, teardown)

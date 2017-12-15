@@ -30,6 +30,7 @@ static salt_ret_t salt_channel_write(salt_io_channel_t *p_wchannel);
 
 /*======= Global function implementations ===================================*/
 
+
 void my_randombytes(unsigned char *p_bytes, unsigned long long length)
 {
    FILE* fr = fopen("/dev/urandom", "r");

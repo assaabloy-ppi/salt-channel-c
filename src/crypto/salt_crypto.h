@@ -45,28 +45,8 @@ extern "C" {
 //#define crypto_secretbox_OVERHEADBYTES             16
 //#define crypto_secretbox_INTERNAL_OVERHEAD_BYTES    32
 
-enum salt_crypto_api_e {
-    SALT_CRYPTO_API_TWEETNACL = 0,
-    SALT_CRYPTO_API_LIBSODIUM, 
-
-    SALT_CRYPTO_API_COUNT
-};
-typedef enum salt_crypto_api_e salt_crypto_api_e_t;
-
-#define SALT_CRYPTO_API_DEFAULT    0
-#define SALT_CRYPTO_API_FALLBACK   1  /* use 1 if fallback to first api allowed (e.g. if no method available) */
-
-
-typedef struct salt_crypto_s {
-    salt_crypto_api_t   api[SALT_CRYPTO_API_COUNT];
-} salt_crypto_t ;
-
-
 void salt_crypto_init(randombytes_t rng);
-void salt_crypto_set_rng(int api_idx, randombytes_t rng);
-
-salt_crypto_api_t* salt_crypto_api(int api_idx);
-salt_crypto_api_t* salt_crypto_api_default();
+void salt_crypto_set_rng(salt_crypto_api_t *api, randombytes_t rng);
 
 
 #ifdef __cplusplus

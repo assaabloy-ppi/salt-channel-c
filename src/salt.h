@@ -23,7 +23,6 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
-//#include "salt_crypto_wrapper.h"
 #include "crypto/salt_crypto.h"
 
 /*======= Public macro definitions ==========================================*/

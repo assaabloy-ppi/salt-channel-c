@@ -6,11 +6,11 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
 
 typedef unsigned long long crypto_len_t;
 
 typedef void (*randombytes_t)(uint8_t *const buf, const crypto_len_t buf_len);
-
 
 
 struct salt_crypto_api_s {

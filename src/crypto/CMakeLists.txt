@@ -1,14 +1,33 @@
-project(salt-channel-crypto C)
+cmake_minimum_required(VERSION 3.5)
+project(salt-crypto C)
 
-include_directories ("libsodium")
-include_directories ("libsodium/include")
-set(EXTRA_LIBS ${EXTRA_LIBS} libsodium.a)
-include_directories ("tweetnacl_modified")
-set(EXTRA_LIBS ${EXTRA_LIBS} tweetnacl_modified)
+# OPTION
+# CRYPTO_BACKEND is one of the directory names in 'lib' directory 
+set(CRYPTO_BACKEND "tweetnacl_modified" CACHE STRING "Crypro library backend")
 
-#set_source_files_properties(tweetnacl_modified.c PROPERTIES COMPILE_FLAGS -Wno-sign-compare)
-add_library(tweetnacl_modified tweetnacl_modified/tweetnacl_modified.c)
-#add_sanitizers(tweetnacl_modified)
+# passed as preprocessor definition to let C code know which crypto backend is used
+set(CRYPTO_BACKEND_ID ${CRYPTO_BACKEND})
 
-add_library(crypto salt_crypto.c salt_crypto_sodium.c salt_crypto_tweet.c)
-target_link_libraries(crypto libsodium.a tweetnacl_modified)
+# Directory where api wrapper for selected backend is located 
+set(WRAPPER_DIR wrap/${CRYPTO_BACKEND})
+
+
+# BACKEND LIBRARY
+if(CRYPTO_BACKEND MATCHES "libsodium")
+    message("NOTE: CRYPTO_BACKEND set to libsodium type (${CRYPTO_BACKEND_ID})")
+    file(GLOB BACKEND_SRC ${WRAPPER_DIR}/*.c)
+    add_library(crypto_backend ${BACKEND_SRC})
+    target_include_directories(crypto_backend PRIVATE . wrap libsodium libsodium/include)
+    set(EXTRA_LIBS ${EXTRA_LIBS} libsodium.a)
+else()
+    message("NOTE: CRYPTO_BACKEND set to generic type (${CRYPTO_BACKEND_ID})")
+	file(GLOB BACKEND_SRC lib/${CRYPTO_BACKEND}/*.c
+		                  ${WRAPPER_DIR}/*.c)
+	add_library(crypto_backend ${BACKEND_SRC})
+	target_include_directories(crypto_backend PRIVATE . lib/${CRYPTO_BACKEND} wrap)
+endif()
+
+# CRYPTO 
+add_library(crypto salt_crypto.c)
+target_link_libraries(crypto crypto_backend ${EXTRA_LIBS})
+target_compile_definitions(crypto PRIVATE CRYPTO_BACKEND_ID=${CRYPTO_BACKEND_ID})

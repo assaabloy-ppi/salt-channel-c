@@ -33,7 +33,7 @@
 
 /*======= Type Definitions ====================================================*/
 /*======= Local variable declarations =========================================*/
-extern salt_crypto_t *crypto;
+extern salt_crypto_api_t crypto;
 
 /* Salt-channel v2 protocol, ASCII "SC2-------" */
 static uint8_t sc2protocol[10] = { 0x53, 0x43, 0x76, 0x32, 0x2d, 0x2d, 0x2d, 0x2d, 0x2d, 0x2d };
@@ -275,7 +275,7 @@ salt_ret_t salt_set_signature(salt_channel_t *p_channel,
 salt_ret_t salt_create_signature(salt_channel_t *p_channel)
 {
     SALT_VERIFY_VALID_CHANNEL(p_channel);
-    salt_crypto_api_default()->crypto_sign_keypair(p_channel->my_sk_pub, p_channel->my_sk_sec);
+    crypto.crypto_sign_keypair(p_channel->my_sk_pub, p_channel->my_sk_sec);
     p_channel->state = SALT_SIGNATURE_SET;
     return SALT_SUCCESS;
 }
@@ -342,7 +342,7 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
          * The ephemeral keypair is kept where the signature later will be
          * until the common key is calculated.
          */
-        salt_crypto_api_default()->crypto_box_keypair(hdshk_buffer, &hdshk_buffer[32]);
+        crypto.crypto_box_keypair(hdshk_buffer, &hdshk_buffer[32]);
     } else {
         memcpy(hdshk_buffer, ek_pub, 32);
         memcpy(&hdshk_buffer[32], ek_sec, 32);

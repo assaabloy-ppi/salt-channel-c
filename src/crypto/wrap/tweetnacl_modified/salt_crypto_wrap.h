@@ -6,6 +6,8 @@
 extern "C" {
 #endif
 
+#include "tweetnacl_modified.h"
+
 /* to redefine API names we must undefine them first */
 #undef crypto_sign_keypair
 #undef crypto_sign
@@ -17,10 +19,8 @@ extern "C" {
 #undef crypto_hash
 #undef randombytes  
 
-#include "../salt_crypto_api.h"
-
-void salt_crypto_api_init(salt_crypto_api_t *api, randombytes_t rng);
-
+/* map impl-dependent to unified naming */
+typedef struct crypto_hash_sha512_state_tweet crypto_hash_sha512_state;
 
 #ifdef __cplusplus
 }

@@ -22,7 +22,7 @@ extern "C" {
 
 #include "salt_crypto_api.h"
 
-#define crypto_sign_PUBLICKEYBYTES  32
+/*#define crypto_sign_PUBLICKEYBYTES  32
 #define crypto_sign_SECRETKEYBYTES  64
 #define crypto_sign_BYTES           64
 #define crypto_sign_SEEDBYTES       32
@@ -41,9 +41,8 @@ extern "C" {
 #define crypto_secretbox_NONCEBYTES                 24
 #define crypto_secretbox_ZEROBYTES                  32
 #define crypto_secretbox_BOXZEROBYTES               16
+*/
 
-//#define crypto_secretbox_OVERHEADBYTES             16
-//#define crypto_secretbox_INTERNAL_OVERHEAD_BYTES    32
 
 void salt_crypto_init(randombytes_t rng);
 void salt_crypto_set_rng(salt_crypto_api_t *api, randombytes_t rng);

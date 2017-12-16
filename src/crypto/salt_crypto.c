@@ -7,7 +7,7 @@
 
 /*======= Includes ==========================================================*/
 #include "salt_crypto.h"
-#include "wrap/salt_crypto_wrap.h"
+#include "salt_crypto_wrap.h"
 
 /* global structure */
 salt_crypto_api_t crypto;

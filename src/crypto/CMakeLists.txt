@@ -8,26 +8,33 @@ set(CRYPTO_BACKEND "tweetnacl_modified" CACHE STRING "Crypro library backend")
 # passed as preprocessor definition to let C code know which crypto backend is used
 set(CRYPTO_BACKEND_ID ${CRYPTO_BACKEND})
 
-# Directory where api wrapper for selected backend is located 
-set(WRAPPER_DIR wrap/${CRYPTO_BACKEND})
-
 
 # BACKEND LIBRARY
 if(CRYPTO_BACKEND MATCHES "libsodium")
     message("NOTE: CRYPTO_BACKEND set to libsodium type (${CRYPTO_BACKEND_ID})")
-    file(GLOB BACKEND_SRC ${WRAPPER_DIR}/*.c)
+    file(GLOB BACKEND_SRC wrap/${CRYPTO_BACKEND}/*.c)
     add_library(crypto_backend ${BACKEND_SRC})
-    target_include_directories(crypto_backend PRIVATE . wrap libsodium libsodium/include)
+    target_include_directories(crypto_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+                                                     ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CRYPTO_BACKEND}/include
+                                                     ${CMAKE_CURRENT_SOURCE_DIR}/wrap/${CRYPTO_BACKEND})
     set(EXTRA_LIBS ${EXTRA_LIBS} libsodium.a)
 else()
     message("NOTE: CRYPTO_BACKEND set to generic type (${CRYPTO_BACKEND_ID})")
 	file(GLOB BACKEND_SRC lib/${CRYPTO_BACKEND}/*.c
-		                  ${WRAPPER_DIR}/*.c)
+		                  wrap/${CRYPTO_BACKEND}/*.c)
 	add_library(crypto_backend ${BACKEND_SRC})
-	target_include_directories(crypto_backend PRIVATE . lib/${CRYPTO_BACKEND} wrap)
+    target_include_directories(crypto_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+                                                     ${CMAKE_CURRENT_SOURCE_DIR}/wrap/${CRYPTO_BACKEND}
+                                                     ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CRYPTO_BACKEND})
 endif()
+
+add_library(crypto_api INTERFACE)
+target_include_directories(crypto_api INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/wrap/${CRYPTO_BACKEND})
+target_link_libraries(crypto_api INTERFACE crypto_backend libsodium.a)
+set(EXTRA_LIBS ${EXTRA_LIBS} crypto_api)
 
 # CRYPTO 
 add_library(crypto salt_crypto.c)
+target_include_directories(crypto PUBLIC . lib/${CRYPTO_BACKEND} wrap/${CRYPTO_BACKEND})
 target_link_libraries(crypto crypto_backend ${EXTRA_LIBS})
-target_compile_definitions(crypto PRIVATE CRYPTO_BACKEND_ID=${CRYPTO_BACKEND_ID})
+target_compile_definitions(crypto PUBLIC CRYPTO_BACKEND_ID=${CRYPTO_BACKEND_ID})

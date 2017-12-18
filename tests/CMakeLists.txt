@@ -20,6 +20,7 @@ ExternalProject_Add (
         
 add_library(cmocka_lib SHARED IMPORTED) 
 #add_sanitizers(cmocka_lib)      
+include_directories(${CMAKE_BINARY_DIR}/external/cmocka/include)
 set_target_properties( cmocka_lib PROPERTIES IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/external/cmocka/lib/libcmocka.so" )
 add_dependencies( cmocka_lib cmocka )
 

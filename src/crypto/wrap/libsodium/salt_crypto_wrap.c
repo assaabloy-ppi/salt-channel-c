@@ -3,7 +3,7 @@
 #include "salt_crypto_wrap.h" /* must be last included header */
 
 /* libsodium already defined own randombytes() */
-//extern void randombytes(unsigned char *p_bytes, unsigned long long length);
+/*extern void randombytes(unsigned char *p_bytes, unsigned long long length); */
 
 
 void salt_crypto_api_init(salt_crypto_api_t *api, randombytes_t rng)

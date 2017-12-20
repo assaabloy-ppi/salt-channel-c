@@ -23,5 +23,3 @@ void salt_crypto_set_rng(salt_crypto_api_t *api, randombytes_t rng)
 	api->randombytes = rng;
 }
 
-
-/*======= private functions  =================================================*/

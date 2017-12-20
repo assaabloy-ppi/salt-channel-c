@@ -31,6 +31,5 @@ void salt_crypto_api_init(salt_crypto_api_t *api, randombytes_t rng)
         .crypto_sign_verify_detached = (f_crypto_sign_verify_detached)crypto_sign_verify_detached_tweet
 	};
 
-
 	*api = _api;
 }

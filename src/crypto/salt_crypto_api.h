@@ -39,19 +39,18 @@ typedef     int (*f_crypto_box_open_afternm)(uint8_t *m, const uint8_t *c,
 typedef     int (*f_crypto_hash)(uint8_t *out, const uint8_t *in, crypto_len_t inlen);    
 typedef     void (*f_randombytes)(uint8_t *const buf, const crypto_len_t buf_len);
 
-    /* detached mode calls */
+/* detached mode calls */
 typedef     int (*f_crypto_hash_sha512_init)(crypto_hash_sha512_state *state);
 
 typedef     int (*f_crypto_hash_sha512_update)(crypto_hash_sha512_state *state,
-                                    const unsigned char *in,
-                                    unsigned long long inlen);
+                                    const unsigned char *in, crypto_len_t inlen);
 
 typedef     int (*f_crypto_hash_sha512_final)(crypto_hash_sha512_state *state,
                                     unsigned char *out);
 
 typedef     int (*f_crypto_sign_verify_detached)(const unsigned char *sig,
                                      const unsigned char *m,
-                                      unsigned long long mlen,
+                                      crypto_len_t mlen,
                                       const unsigned char *pk);
 
 struct salt_crypto_api_s {
@@ -65,6 +64,7 @@ struct salt_crypto_api_s {
   f_crypto_hash                 crypto_hash;
   f_randombytes                 randombytes;
 
+  /* detached mode calls */
   f_crypto_hash_sha512_init     crypto_hash_sha512_init;
   f_crypto_hash_sha512_update   crypto_hash_sha512_update;
   f_crypto_hash_sha512_final    crypto_hash_sha512_final;
@@ -81,4 +81,3 @@ void salt_crypto_api_init(salt_crypto_api_t *api, randombytes_t rng);
 #endif
 
 #endif /* _SALT_CRYPTO_API_H_ */
-

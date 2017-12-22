@@ -772,7 +772,6 @@ int crypto_sign_verify_detached(const unsigned char *sig,
     u8 t[32],h[64];
     gf p[4],q[4];
 
-    if (mlen < 64) return -1;
     if (unpackneg(q,pk)) return -1;
 
     crypto_hash_sha512_init(&hash_state);
@@ -783,6 +782,7 @@ int crypto_sign_verify_detached(const unsigned char *sig,
     crypto_hash_sha512_update(&hash_state, h, 64);
     crypto_hash_sha512_update(&hash_state, m, mlen);
     crypto_hash_sha512_final(&hash_state, h);
+
     reduce(h);
     scalarmult(p,q,h);
     scalarbase(q,sig + 32);

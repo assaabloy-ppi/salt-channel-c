@@ -17,6 +17,17 @@ build__x86_64-linux-stdout_full: clean  ## Build for HAL 'x86_64-linux-stdout_fu
 	cmake --build . && \
 	./salt_taste
 
+#-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON 
+build__arm_nrf52-none-eabi-gcc: clean  ## Build for HAL 'arm_nrf52-none-eabi-gcc'
+	mkdir build && cd build && \
+	cmake -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain/arm_nrf5x-none-eabi-gcc.cmake \
+		  -DNRF5_SDK_ROOT=/home/kotomysha/ASSA/dev/nrf-sdk \
+		  -DSOFTDEVICE_REL_PATH=components/softdevice/s132/hex/s132_nrf52_5.0.0_softdevice.hex \
+		  -DNRF_TARGET=NRF52  \
+		  -DHAL=arm_nrf52-none-serial_debug .. && \
+	cmake --build .
+
+
 build__msp430-none-iar_test: clean  ## Build for HAL 'msp430-none-iar_test'
 	mkdir build && cd build && \
 	cmake -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain/msp430-none-eabi-iar.cmake \

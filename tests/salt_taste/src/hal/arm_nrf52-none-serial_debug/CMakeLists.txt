@@ -2,12 +2,13 @@ cmake_minimum_required(VERSION 3.5)
 project(salt-taste-hal C)
 
 nRF5x_setup()
-nRF5x_addAppTimer()
+#nRF5x_addAppTimer()
+nRF5x_addAppFIFO()
 nRF5x_addAppUART()
-nRF5x_addBSP(OFF OFF OFF)
+#nRF5x_addAppButton()
+#nRF5x_addBSP(OFF OFF OFF)
 
-
-add_library(hal ${CMAKE_CURRENT_SOURCE_DIR}/salt_taste_hal.c)
+add_library(hal ${SDK_SOURCE_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/salt_taste_hal.c)
 target_include_directories(hal PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 									   ${CMAKE_CURRENT_SOURCE_DIR}/../..   # for 'salt_taste_hal.h'
 )
@@ -21,8 +22,14 @@ target_include_directories(hal_iface INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 #########################################################
 # hal_update_exe_target defines custom exe target actions
 macro(hal_update_exe_target target )
+	enable_language(ASM)
+	message ("===============")
+message ("${SDK_SOURCE_FILES}")
+	message ("===============")
+	target_sources(${target} PRIVATE ${SDK_SOURCE_FILES})  # add NRF SDK deps
+	target_link_libraries(${target} hal_iface) #???
     set_target_properties(${target} PROPERTIES SUFFIX ".out")
-    set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,-Map=${target}.map")
+    #set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,-Map=${target}.map")
 
     # additional POST BUILD setps to create the .bin and .hex files
     add_custom_command(TARGET ${target}

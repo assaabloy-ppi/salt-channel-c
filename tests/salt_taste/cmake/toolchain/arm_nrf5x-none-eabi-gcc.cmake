@@ -125,13 +125,19 @@ macro(nRF5x_config)
         # nRF52 (nRF52-DK => PCA10040)
 
         set(NRF5_LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/src/hal/arm_nrf52-none-serial_debug/gcc_nrf52.ld") # [TODO]
-        set(CPU_FLAGS "-mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16")
-        add_definitions(-DNRF52 -DNRF52832 -DNRF52_PAN_64 -DNRF52_PAN_12 -DNRF52_PAN_58 -DNRF52_PAN_54 -DNRF52_PAN_31 -DNRF52_PAN_51 -DNRF52_PAN_36 -DNRF52_PAN_15 -DNRF52_PAN_20 -DNRF52_PAN_55 -DBOARD_PCA10040)
-        add_definitions(-DSOFTDEVICE_PRESENT -DS132 -DBLE_STACK_SUPPORT_REQD -DNRF_SD_BLE_API_VERSION=3)
+        #set(CPU_FLAGS "-mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16")
+        #add_definitions(-DNRF52 -DNRF52832 -DNRF52_PAN_64 -DNRF52_PAN_12 -DNRF52_PAN_58 -DNRF52_PAN_54 -DNRF52_PAN_31 -DNRF52_PAN_51 -DNRF52_PAN_36 -DNRF52_PAN_15 -DNRF52_PAN_20 -DNRF52_PAN_55 -DBOARD_PCA10040)
+        
+        add_definitions("-DBOARD_PCA10040 -DBSP_DEFINES_ONLY -DCONFIG_GPIO_AS_PINRESET -DFLOAT_ABI_HARD -DNRF52 -DNRF52832_XXAA -DNRF52_PAN_74")
+        set(CPU_FLAGS "-mcpu=cortex-m4 -mthumb -mabi=aapcs -mfloat-abi=hard -mfpu=fpv4-sp-d16")
+
         include_directories(
+                "${NRF5_SDK_ROOT}/components/device"          
+                "${NRF5_SDK_ROOT}/components/toolchain" 
+                "${NRF5_SDK_ROOT}/components/toolchain/gcc"                          
+                "${NRF5_SDK_ROOT}/components/toolchain/cmsis/include"
                 "${NRF5_SDK_ROOT}/components/softdevice/s132/headers"
-                "${NRF5_SDK_ROOT}/components/softdevice/s132/headers/nrf52"
-                "${NRF5_SDK_ROOT}/components/toolchain/gcc"
+                "${NRF5_SDK_ROOT}/components/softdevice/s132/headers/nrf52"                
         )
 
         list(APPEND SDK_SOURCE_FILES
@@ -141,19 +147,27 @@ macro(nRF5x_config)
         set(SOFTDEVICE_PATH "${NRF5_SDK_ROOT}/components/softdevice/s132/hex/s132_nrf52_3.0.0_softdevice.hex")
     endif ()
 
-    set(COMMON_FLAGS "-MP -MD -mthumb -mabi=aapcs -Wall -Werror -O3 -g3 -ffunction-sections -fdata-sections -fno-strict-aliasing -fno-builtin --short-enums ${CPU_FLAGS}")
+    set(COMMON_FLAGS "-O3 -g3 -Wall -Werror -ffunction-sections -fdata-sections -fno-strict-aliasing -fno-builtin -fshort-enums ${CPU_FLAGS}")
 
     # compiler/assambler/linker flags
     set(CMAKE_C_FLAGS "${COMMON_FLAGS}" CACHE STRING "" FORCE)
     set(CMAKE_CXX_FLAGS "${COMMON_FLAGS}" CACHE STRING "" FORCE)
-    set(CMAKE_ASM_FLAGS "-MP -MD -std=c99 -x assembler-with-cpp" CACHE STRING "" FORCE)
-    set(CMAKE_EXE_LINKER_FLAGS "-mthumb -mabi=aapcs -std=c99 -L${NRF5_SDK_ROOT}/components/toolchain/gcc "
-                              "-T${NRF5_LINKER_SCRIPT} ${CPU_FLAGS} -Wl,--gc-sections --specs=nano.specs -lc -lnosys -lm"
+    set(CMAKE_ASM_FLAGS "-g3 -mcpu=cortex-m4 -mthumb -mabi=aapcs -mfloat-abi=hard -mfpu=fpv4-sp-d16" CACHE STRING "" FORCE)
+    #set(CMAKE_EXE_LINKER_FLAGS "-mthumb -mabi=aapcs -std=c99 -L${NRF5_SDK_ROOT}/components/toolchain/gcc "
+    #                          "-T${NRF5_LINKER_SCRIPT} ${CPU_FLAGS} -Wl,--gc-sections --specs=nano.specs -lc -lnosys -lm"
+    #                          CACHE STRING "" FORCE)
+    set(CMAKE_EXE_LINKER_FLAGS "-O3 -g3 -mthumb -mabi=aapcs -L ${NRF5_SDK_ROOT}/components/toolchain/gcc"
+                               "-T${NRF5_LINKER_SCRIPT} ${CPU_FLAGS}"
+                               "-Wl,--gc-sections --specs=nano.specs -lc -lnosys -lm"
                               CACHE STRING "" FORCE)
+
+
     string(REGEX REPLACE ";" " " CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
     # note: we must override the default cmake linker flags so that CMAKE_C_FLAGS are not added implicitly
-    set(CMAKE_C_LINK_EXECUTABLE "${CMAKE_C_COMPILER} <LINK_FLAGS> <OBJECTS> -o <TARGET>")
-    set(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_C_COMPILER} <LINK_FLAGS> <OBJECTS> -lstdc++ -o <TARGET>")  
+    set(CMAKE_C_LINK_EXECUTABLE "${CMAKE_C_COMPILER} <LINK_FLAGS> <OBJECTS> <LINK_LIBRARIES> -o <TARGET>")
+    set(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_C_COMPILER} <LINK_FLAGS> <OBJECTS> <LINK_LIBRARIES> -lstdc++ -o <TARGET>")  
+    #SET(CMAKE_ASM_COMPILE_OBJECT "<CMAKE_ASM_COMPILER> -o <OBJECT> <SOURCE>")
+    set(CMAKE_ASM_COMPILE_OBJECT "<CMAKE_ASM_COMPILER> <FLAGS> <DEFINES> -c -o <OBJECT> <SOURCE>")
 
 endmacro(nRF5x_config)
 
@@ -172,13 +186,13 @@ macro(nRF5x_setup)
     set(CMAKE_CXX_COMPILER "arm-none-eabi-c++")
     set(CMAKE_ASM_COMPILER "arm-none-eabi-gcc")
 
-    include_directories(
-            "${NRF5_SDK_ROOT}/components/softdevice/common/softdevice_handler"
-    )
+    #include_directories(
+    #        "${NRF5_SDK_ROOT}/components/softdevice/common/softdevice_handler"
+    #)
 
-    list(APPEND SDK_SOURCE_FILES
-            "${NRF5_SDK_ROOT}/components/softdevice/common/softdevice_handler/softdevice_handler.c"
-            )
+    #list(APPEND SDK_SOURCE_FILES
+    #        "${NRF5_SDK_ROOT}/components/softdevice/common/softdevice_handler/softdevice_handler.c"
+    #        )
 
     nRF5x_config()
 
@@ -187,8 +201,11 @@ macro(nRF5x_setup)
     # basic board definitions and drivers
     include_directories(
             "${NRF5_SDK_ROOT}/components/boards"
+            "${NRF5_SDK_ROOT}/components/libraries/atomic"
             "${NRF5_SDK_ROOT}/components/device"
             "${NRF5_SDK_ROOT}/components/libraries/util"
+            "${NRF5_SDK_ROOT}/components/libraries/balloc"
+            "${NRF5_SDK_ROOT}/components/libraries/strerror"
             "${NRF5_SDK_ROOT}/components/drivers_nrf/hal"
             "${NRF5_SDK_ROOT}/components/drivers_nrf/common"
             "${NRF5_SDK_ROOT}/components/drivers_nrf/delay"
@@ -207,14 +224,20 @@ macro(nRF5x_setup)
 
     # log
     include_directories(
-            "${NRF5_SDK_ROOT}/components/libraries/log"
-            "${NRF5_SDK_ROOT}/components/libraries/log/src"
+            "${NRF5_SDK_ROOT}/components/libraries/experimental_log"
+            "${NRF5_SDK_ROOT}/components/libraries/experimental_log/src"
+            "${NRF5_SDK_ROOT}/components/libraries/experimental_memobj"
+            "${NRF5_SDK_ROOT}/components/libraries/experimental_section_vars"
+            
             "${NRF5_SDK_ROOT}/components/libraries/timer"
     )
 
-    # Segger RTT
-    include_directories(
-            "${NRF5_SDK_ROOT}/external/segger_rtt/"
+
+    # log
+    list(APPEND SDK_SOURCE_FILES
+            "${NRF5_SDK_ROOT}/components/libraries/experimental_log/src/nrf_log_frontend.c"
+            "${NRF5_SDK_ROOT}/"
+            "${NRF5_SDK_ROOT}/"
     )
 
     # basic board support and drivers
@@ -231,35 +254,20 @@ macro(nRF5x_setup)
     list(APPEND SDK_SOURCE_FILES
             "${NRF5_SDK_ROOT}/components/libraries/hardfault/hardfault_implementation.c"
             "${NRF5_SDK_ROOT}/components/libraries/util/nrf_assert.c"
-            "${NRF5_SDK_ROOT}/components/libraries/util/sdk_errors.c"
+            "${NRF5_SDK_ROOT}/components/libraries/balloc/nrf_balloc.c"
+            "${NRF5_SDK_ROOT}/components/libraries/experimental_memobj/nrf_memobj.c"
+            #"${NRF5_SDK_ROOT}/components/libraries/util/sdk_errors.c"
             "${NRF5_SDK_ROOT}/components/libraries/util/app_error.c"
             "${NRF5_SDK_ROOT}/components/libraries/util/app_error_weak.c"
             "${NRF5_SDK_ROOT}/components/libraries/util/app_util_platform.c"
-            "${NRF5_SDK_ROOT}/components/libraries/log/src/nrf_log_backend_serial.c"
-            "${NRF5_SDK_ROOT}/components/libraries/log/src/nrf_log_frontend.c"
+            "${NRF5_SDK_ROOT}/components/libraries/experimental_log/src/nrf_log_backend_serial.c"
+            #"${NRF5_SDK_ROOT}/components/libraries/experimental_log/src/nrf_log_frontend.c"
             "${NRF5_SDK_ROOT}/components/libraries/util/app_util_platform.c"
             "${NRF5_SDK_ROOT}/components/libraries/util/sdk_mapped_flags.c"
+            "${NRF5_SDK_ROOT}/components/libraries/strerror/nrf_strerror.c"
             )
 
-    # Segger RTT
-    list(APPEND SDK_SOURCE_FILES
-            "${NRF5_SDK_ROOT}/external/segger_rtt/RTT_Syscalls_GCC.c"
-            "${NRF5_SDK_ROOT}/external/segger_rtt/SEGGER_RTT.c"
-            "${NRF5_SDK_ROOT}/external/segger_rtt/SEGGER_RTT_printf.c"
-            )
 
-    # Common Bluetooth Low Energy files
-    include_directories(
-            "${NRF5_SDK_ROOT}/components/ble"
-            "${NRF5_SDK_ROOT}/components/ble/common"
-    )
-
-    list(APPEND SDK_SOURCE_FILES
-            "${NRF5_SDK_ROOT}/components/ble/common/ble_advdata.c"
-            "${NRF5_SDK_ROOT}/components/ble/common/ble_conn_params.c"
-            "${NRF5_SDK_ROOT}/components/ble/common/ble_conn_state.c"
-            "${NRF5_SDK_ROOT}/components/ble/common/ble_srv_common.c"
-            )
 
     # adds target for erasing and flashing the board with a softdevice
     #add_custom_target(FLASH_SOFTDEVICE ALL
@@ -278,6 +286,9 @@ endmacro(nRF5x_setup)
 # adds a target for comiling and flashing an executable
 macro(nRF5x_addExecutable EXECUTABLE_NAME SOURCE_FILES)
     # executable
+    message("===================")
+    message (${SDK_SOURCE_FILES})
+    message("===================")
     add_executable(${EXECUTABLE_NAME} ${SDK_SOURCE_FILES} ${SOURCE_FILES})
     set_target_properties(${EXECUTABLE_NAME} PROPERTIES SUFFIX ".out")
     set_target_properties(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS "-Wl,-Map=${EXECUTABLE_NAME}.map")
@@ -299,6 +310,39 @@ macro(nRF5x_addExecutable EXECUTABLE_NAME SOURCE_FILES)
             COMMENT "flashing ${EXECUTABLE_NAME}.hex"
             )
 endmacro()
+
+
+# adds SEGGER RTT
+macro(nRF5x_SEGGER_RTT)
+    include_directories(
+            "${NRF5_SDK_ROOT}/external/segger_rtt/"
+    )
+
+    list(APPEND SDK_SOURCE_FILES
+            "${NRF5_SDK_ROOT}/external/segger_rtt/SEGGER_RTT_Syscalls_GCC.c"
+            "${NRF5_SDK_ROOT}/external/segger_rtt/SEGGER_RTT.c"
+            "${NRF5_SDK_ROOT}/external/segger_rtt/SEGGER_RTT_printf.c"
+            )
+
+endmacro(nRF5x_SEGGER_RTT)
+
+
+    # Common Bluetooth Low Energy files
+# adds BLE Common files
+macro(nRF5x_BLE_Common)    
+    include_directories(
+            "${NRF5_SDK_ROOT}/components/ble"
+            "${NRF5_SDK_ROOT}/components/ble/common"
+    )
+
+    list(APPEND SDK_SOURCE_FILES
+            "${NRF5_SDK_ROOT}/components/ble/common/ble_advdata.c"
+            "${NRF5_SDK_ROOT}/components/ble/common/ble_conn_params.c"
+            "${NRF5_SDK_ROOT}/components/ble/common/ble_conn_state.c"
+            "${NRF5_SDK_ROOT}/components/ble/common/ble_srv_common.c"
+            )
+endmacro(nRF5x_BLE_Common)
+
 
 # adds app-level scheduler library
 macro(nRF5x_addAppScheduler)
@@ -340,6 +384,7 @@ macro(nRF5x_addAppUART)
 
     list(APPEND SDK_SOURCE_FILES
             "${NRF5_SDK_ROOT}/components/libraries/uart/app_uart_fifo.c"
+            "${NRF5_SDK_ROOT}/components/libraries/uart/retarget.c"
             )
 
 endmacro(nRF5x_addAppUART)

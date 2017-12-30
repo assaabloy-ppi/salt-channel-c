@@ -68,7 +68,7 @@ int init()
           CTS_PIN_NUMBER,
           APP_UART_FLOW_CONTROL_ENABLED,
           false,
-          UART_BAUDRATE_BAUDRATE_Baud38400
+          UART_BAUDRATE_BAUDRATE_Baud115200
       };
 
     APP_UART_FIFO_INIT(&comm_params,
@@ -83,7 +83,7 @@ int init()
     uint32_t i =0;
      while(1) {
          nrf_gpio_pin_toggle(PIN_LED); 
-         printf("%08" PRId32 " Hello world ! (%s)\n",i++,__DATE__);
+         printf("%08" PRId32 " Hello world ! (%s)\r\n",i++,__DATE__);
          nrf_delay_ms(1000);
          
     }

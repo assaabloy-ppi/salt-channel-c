@@ -23,9 +23,6 @@ target_include_directories(hal_iface INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 # hal_update_exe_target defines custom exe target actions
 macro(hal_update_exe_target target )
 	enable_language(ASM)
-	message ("===============")
-message ("${SDK_SOURCE_FILES}")
-	message ("===============")
 	target_sources(${target} PRIVATE ${SDK_SOURCE_FILES})  # add NRF SDK deps
 	target_link_libraries(${target} hal_iface) #???
     set_target_properties(${target} PROPERTIES SUFFIX ".out")
@@ -38,4 +35,6 @@ message ("${SDK_SOURCE_FILES}")
             COMMAND arm-none-eabi-objcopy -O binary ${target}.out "${target}.bin"
             COMMAND arm-none-eabi-objcopy -O ihex ${target}.out "${target}.hex"
             COMMENT "post build steps for ${target}")
+
+    add_nrf_targets(${target})
 endmacro()

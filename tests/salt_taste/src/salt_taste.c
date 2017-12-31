@@ -54,7 +54,7 @@ static bool test_platform(salt_taste_hal_api_t *hal)
 	}
 	else {
 		hal->notify(SALT_TASTE_EVENT_HAL_TEST_STATUS, SALT_TASTE_STATUS_FAILURE);
-		hal->write_str(1, "Platform (HAL) test failed!\n");
+		hal->write_str(1, "Platform (HAL) test failed!\r\n");
 		return false;
 	}
 }

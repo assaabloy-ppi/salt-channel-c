@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 3.5)
 project(salt-taste-hal C)
 
 nRF5x_setup()
-#nRF5x_addAppTimer()
+nRF5x_addAppTimer()
 nRF5x_addAppFIFO()
 nRF5x_addAppUART()
+nRF5x_addRNG()
 #nRF5x_addAppButton()
 #nRF5x_addBSP(OFF OFF OFF)
 

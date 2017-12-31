@@ -7,15 +7,19 @@
 #include <stdarg.h>
 #include <string.h>
 
+//#include "nrf.h"
 #include "boards.h"
-//#include "bsp.h"
 #include "app_uart.h"
 #include "app_error.h"
 #include "nrf_delay.h"
-#include "nrf.h"
+#include "nrf_drv_rng.h"
 
+#include "app_timer.h"
+#include "nrf_drv_clock.h"
 
 #include "salt_taste_hal.h"
+
+
 
 #define MAX_TEST_DATA_BYTES     (15U)                /**< max number of test bytes to be used for tx and rx. */
 #define UART_TX_BUF_SIZE 256                         /**< UART TX buffer size. */
@@ -54,6 +58,11 @@ uint32_t get_info()
 	return ST_HAL_HAS_CONSOLE | ST_HAL_HAS_PRINTF | ST_HAL_HAS_RNG;
 }
 
+static void timer_handler(void * p_context)
+{
+
+}
+
 int init()
 {
     nrf_gpio_cfg_output(PIN_LED);
@@ -80,23 +89,34 @@ int init()
 
     APP_ERROR_CHECK(err_code);
 
-    uint32_t i =0;
-     while(1) {
-         nrf_gpio_pin_toggle(PIN_LED); 
-         printf("%08" PRId32 " Hello world ! (%s)\r\n",i++,__DATE__);
-         nrf_delay_ms(1000);
-         
-    }
+    /* initialize RNG */
+    err_code = nrf_drv_rng_init(NULL);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = nrf_drv_clock_init();
+    APP_ERROR_CHECK(err_code);
+    nrf_drv_clock_lfclk_request(NULL);
+
+    err_code = app_timer_init();
+    APP_ERROR_CHECK(err_code);
+
+    APP_TIMER_DEF(timer_0);
+    err_code = app_timer_create(&timer_0, APP_TIMER_MODE_REPEATED, timer_handler);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = app_timer_start(timer_0, APP_TIMER_TICKS(1000), NULL);
+    APP_ERROR_CHECK(err_code);
+
 
 	return 0;
 }
 
 
+
+
 int my_write(int fd, const char *buf, int count)
 {
-	/* do it via printf() for now, since DLIB configs (Normal, Full) seems missing in my (ppmag's) inst. */
 	return printf("%.*s", count, buf);	
-	//return write(fd, buf, count);
 }
 
 int my_write_str(int fd, const char *msg)
@@ -106,7 +126,7 @@ int my_write_str(int fd, const char *msg)
 
 int my_shutdown()
 {
-	/* flush buffers, etc*/
+	nrf_gpio_pin_clear(PIN_LED); // turn LED on
 	return 0;
 }
 
@@ -132,16 +152,23 @@ void my_assert(int expr, const char *msg)
 		}
 }
 
-void rng(uint8_t *buf, uint64_t count)
+void rng(uint8_t *buf, uint64_t count)  // [TODO]] return available if != count
 {
-  //for (int i=0; i<count; i++)
-  //	buf[i] = rand() % 0xff;
+	uint32_t err_code;
+    uint8_t  available;
+
+    nrf_drv_rng_bytes_available(&available);
+    //uint8_t length = MIN(count, available);
+
+    err_code = nrf_drv_rng_rand(buf, count);
+    APP_ERROR_CHECK(err_code);
+
+    //return length;
 }
 
 void my_sleep(uint32_t ms)
 {
-//	for(int i = 0; i < ms; i++)
-//	  __delay_cycles(CLOCKS_PER_SEC / 1000);
+	nrf_delay_ms(ms);
 }
 
 /* return number of elapsed counters supported by HAL */    
@@ -152,29 +179,35 @@ int get_elapsed_counters_num()
 
 uint64_t trigger_elapsed_counter(int counter_idx, bool start_it)
 {
-	/*clock_t ts[ST_HAL_ELAPSED_COUNTERS];
-	clock_t end, diff;
+	static uint32_t ts[ST_HAL_ELAPSED_COUNTERS];
  
 	if (start_it)
 	{
-
-		ts[counter_idx] = clock();  
+		ts[counter_idx] = app_timer_cnt_get(); 
 		return 0ULL;
 	}
 	else {
-		end = clock();
-		diff = end - ts[counter_idx];
-	}
+		uint32_t end;
+		int32_t ticks_diff = 0;
+		int32_t ms;
 
-	return diff * 1000 / CLOCKS_PER_SEC;*/
-	return 0ULL;
+		//ts[counter_idx] = app_timer_cnt_get();
+		//nrf_delay_ms(2500);
+		end = app_timer_cnt_get();
+		ticks_diff = app_timer_cnt_diff_compute(end, ts[counter_idx]);
+		ms = ticks_diff * ( ( APP_TIMER_CONFIG_RTC_FREQUENCY + 1 ) * 1000 ) / APP_TIMER_CLOCK_FREQ;
+		ms = ms * 21/22;  // [TODO] replace this static correction to precise PPI time measurement
+		printf("ms: %"PRIu32" \r\n", ms);
+
+		return  ms;
+	}	
 }
 
 
 void notify(enum salt_taste_event_e event, enum salt_taste_status_e status)
 {
 	/* just debug output */
-	my_dprintf(0, "EVENT: id=%-10s status=%-10s\n", salt_taste_event_tostr(event), 
+	my_dprintf(0, "EVENT: id=%-10s status=%-10s\r\n", salt_taste_event_tostr(event), 
 		 													salt_taste_status_tostr(status));
 }
 

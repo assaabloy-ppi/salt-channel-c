@@ -128,7 +128,7 @@ macro(nRF5x_config)
         #set(CPU_FLAGS "-mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16")
         #add_definitions(-DNRF52 -DNRF52832 -DNRF52_PAN_64 -DNRF52_PAN_12 -DNRF52_PAN_58 -DNRF52_PAN_54 -DNRF52_PAN_31 -DNRF52_PAN_51 -DNRF52_PAN_36 -DNRF52_PAN_15 -DNRF52_PAN_20 -DNRF52_PAN_55 -DBOARD_PCA10040)
         
-        add_definitions("-DBOARD_PCA10040 -DBSP_DEFINES_ONLY -DCONFIG_GPIO_AS_PINRESET -DFLOAT_ABI_HARD -DNRF52 -DNRF52832_XXAA -DNRF52_PAN_74")
+        add_definitions("-DUSE_APP_CONFIG -DBOARD_PCA10040 -DBSP_DEFINES_ONLY -DCONFIG_GPIO_AS_PINRESET -DFLOAT_ABI_HARD -DNRF52 -DNRF52832_XXAA -DNRF52_PAN_74")
         set(CPU_FLAGS "-mcpu=cortex-m4 -mthumb -mabi=aapcs -mfloat-abi=hard -mfpu=fpv4-sp-d16")
 
         include_directories(
@@ -371,6 +371,10 @@ endmacro(nRF5x_addAppFIFO)
 
 # adds app-level Timer libraries
 macro(nRF5x_addAppTimer)
+    include_directories(
+            "${NRF5_SDK_ROOT}/components/libraries/timer"
+    )
+
     list(APPEND SDK_SOURCE_FILES
             "${NRF5_SDK_ROOT}/components/libraries/timer/app_timer.c"
             )
@@ -388,6 +392,20 @@ macro(nRF5x_addAppUART)
             )
 
 endmacro(nRF5x_addAppUART)
+
+# adds RNG
+macro(nRF5x_addRNG)
+    include_directories(
+            "${NRF5_SDK_ROOT}/components/drivers_nrf/rng"
+            "${NRF5_SDK_ROOT}/components/libraries/queue"
+    )
+
+    list(APPEND SDK_SOURCE_FILES
+            "${NRF5_SDK_ROOT}/components/drivers_nrf/rng/nrf_drv_rng.c"
+            "${NRF5_SDK_ROOT}/components/libraries/queue/nrf_queue.c"
+            )
+endmacro(nRF5x_addRNG)
+
 
 # adds app-level Button library
 macro(nRF5x_addAppButton)

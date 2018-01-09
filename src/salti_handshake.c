@@ -432,12 +432,12 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
                                       &p_channel->write_channel.p_data,
                                       &p_channel->write_channel.size, false);
                 SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
-                SALT_HEXDUMP_DEBUG(p_channel->write_channel.p_data, p_channel->write_channel.size);
+
                 p_channel->state = SALT_M4_IO;
                 proceed = 1;
                 break;
             case SALT_M4_IO:
-                SALT_HEXDUMP_DEBUG(p_channel->write_channel.p_data, p_channel->write_channel.size);
+
                 ret_code = salti_io_write(p_channel,
                                           p_channel->write_channel.p_data,
                                           p_channel->write_channel.size);

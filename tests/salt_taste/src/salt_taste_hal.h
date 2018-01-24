@@ -42,8 +42,11 @@ struct salt_taste_hal_api_s {
     void (*assert)(int expr, const char *msg);
 
     void (*rng)(uint8_t *buf, uint64_t count);
-    
+
+    void (*enter_rt)();  /* enter realtime mode */
+    void (*leave_rt)();  /* leave realtime mode */    
     void (*sleep)(uint32_t ms);
+
     int  (*get_elapsed_counters_num)();  /* return number of elapsed counters supported by HAL */    
     uint64_t (*trigger_elapsed_counter)(int counter_idx, bool start_it);
 

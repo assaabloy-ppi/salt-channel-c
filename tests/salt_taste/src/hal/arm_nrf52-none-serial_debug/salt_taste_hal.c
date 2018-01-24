@@ -28,11 +28,16 @@
 
 #define ST_HAL_ELAPSED_COUNTERS    3
 
+static volatile bool uart_tx_ready = true;
+
+
 int _write(int file, char *ptr, int len)
 {
 
     int i=0;
     uint8_t cr;
+
+    uart_tx_ready = false;
     for(i=0 ; i<len ; i++) {
         cr = *ptr++;
         while(app_uart_put(cr) != NRF_SUCCESS);
@@ -49,6 +54,10 @@ void uart_error_handle(app_uart_evt_t * p_event)
     else if (p_event->evt_type == APP_UART_FIFO_ERROR)
     {
         APP_ERROR_HANDLER(p_event->data.error_code);
+    }
+    else if (p_event->evt_type == APP_UART_TX_EMPTY)
+    {
+        uart_tx_ready = true;
     }
 }
 
@@ -75,7 +84,8 @@ int init()
           TX_PIN_NUMBER,
           RTS_PIN_NUMBER,
           CTS_PIN_NUMBER,
-          APP_UART_FLOW_CONTROL_ENABLED,
+          //APP_UART_FLOW_CONTROL_ENABLED,
+          APP_UART_FLOW_CONTROL_DISABLED,
           false,
           UART_BAUDRATE_BAUDRATE_Baud115200
       };
@@ -166,9 +176,22 @@ void rng(uint8_t *buf, uint64_t count)  // [TODO]] return available if != count
     //return length;
 }
 
+void enter_rt()
+{
+	//app_uart_flush();
+	//while (!uart_tx_ready);
+}
+
+void leave_rt()
+{
+
+}
+
 void my_sleep(uint32_t ms)
 {
+	//enter_rt();
 	nrf_delay_ms(ms);
+	//leave_rt();
 }
 
 /* return number of elapsed counters supported by HAL */    
@@ -183,6 +206,7 @@ uint64_t trigger_elapsed_counter(int counter_idx, bool start_it)
  
 	if (start_it)
 	{
+		//enter_rt();
 		ts[counter_idx] = app_timer_cnt_get(); 
 		return 0ULL;
 	}
@@ -196,8 +220,10 @@ uint64_t trigger_elapsed_counter(int counter_idx, bool start_it)
 		end = app_timer_cnt_get();
 		ticks_diff = app_timer_cnt_diff_compute(end, ts[counter_idx]);
 		ms = ticks_diff * ( ( APP_TIMER_CONFIG_RTC_FREQUENCY + 1 ) * 1000 ) / APP_TIMER_CLOCK_FREQ;
-		ms = ms * 21/22;  // [TODO] replace this static correction to precise PPI time measurement
-		printf("ms: %"PRIu32" \r\n", ms);
+		ms = ms * 20/21;  // [TODO] replace this static correction to precise PPI time measurement
+		//leave_rt();
+
+		printf("ms: %"PRIu32" \r\n", ms); // debug output
 
 		return  ms;
 	}	
@@ -207,7 +233,7 @@ uint64_t trigger_elapsed_counter(int counter_idx, bool start_it)
 void notify(enum salt_taste_event_e event, enum salt_taste_status_e status)
 {
 	/* just debug output */
-	my_dprintf(0, "EVENT: id=%-10s status=%-10s\r\n", salt_taste_event_tostr(event), 
+	my_dprintf(0, "EVENT: id=%-20s status=%-20s\r\n", salt_taste_event_tostr(event), 
 		 													salt_taste_status_tostr(status));
 }
 
@@ -236,6 +262,8 @@ int salt_test_hal_init(salt_taste_hal_api_t *hal)
 		.dprintf = my_dprintf,
 		.assert = my_assert,
 		.rng = rng,
+		.enter_rt = enter_rt,
+		.leave_rt = leave_rt,
 		.sleep = my_sleep,
 		.get_elapsed_counters_num = get_elapsed_counters_num,
 		.trigger_elapsed_counter = trigger_elapsed_counter, 

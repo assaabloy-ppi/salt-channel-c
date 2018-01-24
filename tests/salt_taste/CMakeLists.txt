@@ -18,7 +18,7 @@ add_subdirectory(${HAL_DIR})
 add_subdirectory(../../src/crypto crypto)  # second arg is name of binary subdirectory
 
 add_executable(salt_taste src/salt_taste.c src/salt_taste_event.c)
-hal_update_exe_target(salt_taste)  # HAL macro - add costom postprocessing, etc
+hal_update_exe_target(salt_taste)  # HAL macro - add custom postprocessing, etc
 
 target_link_libraries(salt_taste hal_iface crypto)
 target_compile_definitions(salt_taste PRIVATE HAL_TEST_TIMER=${HAL_TEST_TIMER}

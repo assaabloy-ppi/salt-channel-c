@@ -24,6 +24,7 @@ rebuild__arm_nrf52-none-eabi-gcc: clean  ## Build for HAL 'arm_nrf52-none-eabi-g
 		  -DNRF5_SDK_ROOT=/home/kotomysha/ASSA/dev/nrf-sdk \
 		  -DSOFTDEVICE_REL_PATH=components/softdevice/s132/hex/s132_nrf52_5.0.0_softdevice.hex \
 		  -DNRF_TARGET=NRF52  \
+		  -DCRYPTO_BACKEND=tweetnacl_modified \
 		  -DHAL=arm_nrf52-none-serial_debug .. && \
 	cmake --build . && \
 	make f_salt_taste

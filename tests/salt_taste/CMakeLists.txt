@@ -17,13 +17,17 @@ add_subdirectory(${HAL_DIR})
 # dependancy: crypro abstraction layer
 add_subdirectory(../../src/crypto crypto)  # second arg is name of binary subdirectory
 
+# [TODO] fix next to add_subdirectory(.... salt)
+add_library(salt ../../src/salt.c ../../src/salti_util.c ../../src/salti_handshake.c)
+target_link_libraries(salt crypto)
+
 add_executable(salt_taste src/salt_taste.c src/salt_taste_event.c)
 hal_update_exe_target(salt_taste)  # HAL macro - add custom postprocessing, etc
 
-target_link_libraries(salt_taste hal_iface crypto)
+target_link_libraries(salt_taste hal_iface crypto salt)
 target_compile_definitions(salt_taste PRIVATE HAL_TEST_TIMER=${HAL_TEST_TIMER}
 											  HAL_TEST_RNG=${HAL_TEST_RNG})
-target_include_directories(salt_taste PRIVATE src)
+target_include_directories(salt_taste PRIVATE src ../../src)
 
 set_target_properties(salt_taste PROPERTIES
 	C_STANDARD_REQUIRED ON

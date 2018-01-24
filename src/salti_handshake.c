@@ -71,7 +71,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
     uint32_t size = 0;
     salt_ret_t ret_code = SALT_ERROR;
     uint8_t proceed = 1;
-    uint8_t *payload;
+    uint8_t *payload = NULL;  // [ppmag]
 
     while (proceed) {
         proceed = 0;

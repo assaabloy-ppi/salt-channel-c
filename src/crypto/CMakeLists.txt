@@ -11,16 +11,21 @@ set(CRYPTO_BACKEND_ID ${CRYPTO_BACKEND})
 
 # BACKEND LIBRARY - libsodium
 if(CRYPTO_BACKEND MATCHES "libsodium")
-    message("NOTE: CRYPTO_BACKEND set to libsodium type (${CRYPTO_BACKEND_ID})")
+    message(STATUS "CRYPTO_BACKEND set to libsodium type (${CRYPTO_BACKEND_ID})")
     file(GLOB BACKEND_SRC wrap/${CRYPTO_BACKEND}/*.c)
     add_library(crypto_backend ${BACKEND_SRC})
     target_include_directories(crypto_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
                                                      ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CRYPTO_BACKEND}/include
                                                      ${CMAKE_CURRENT_SOURCE_DIR}/wrap/${CRYPTO_BACKEND})
-    set(BACKEND_LIBS libsodium.a)
+
+    # find correct prebuilt libsodium.a (according to target arch)
+    set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib/libsodium)
+    find_library(LIBSODIUM NAMES sodium)
+    set(BACKEND_LIBS ${LIBSODIUM})
+
 else()
     # BACKEND LIBRARY - generic / tweetnacl
-    message("NOTE: CRYPTO_BACKEND set to generic type (${CRYPTO_BACKEND_ID})")
+    message(STATUS "CRYPTO_BACKEND set to generic type (${CRYPTO_BACKEND_ID})")
 	file(GLOB BACKEND_SRC lib/${CRYPTO_BACKEND}/*.c
 		                  wrap/${CRYPTO_BACKEND}/*.c)
 	add_library(crypto_backend ${BACKEND_SRC})

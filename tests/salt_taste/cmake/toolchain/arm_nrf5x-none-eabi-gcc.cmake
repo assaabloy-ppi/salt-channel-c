@@ -8,6 +8,8 @@ elseif (NRF_TARGET MATCHES "NRF52")
   set(CMAKE_SYSTEM_PROCESSOR cortex-m4)
 endif ()
 
+set(CMAKE_LIBRARY_ARCHITECTURE arm)
+
 cmake_force_c_compiler(arm-none-eabi-gcc GNU)
 
 execute_process(
@@ -34,9 +36,10 @@ message(STATUS "Toolchain prefix: ${CMAKE_INSTALL_PREFIX}")
 set(CMAKE_FIND_ROOT_PATH  ${CMAKE_INSTALL_PREFIX})
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)   # to allow link against locally placed arch-dep libsodium static libs
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
+set(CMAKE_C_COMPILER_TARGET arm-none-eabi)
 set(ARM_NONE_EABI_TOOLCHAIN_PATH  ${CMAKE_INSTALL_PREFIX})
 
 # Nordic specific stuff

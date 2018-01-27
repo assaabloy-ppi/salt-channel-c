@@ -410,6 +410,40 @@ macro(nRF5x_addRNG)
 endmacro(nRF5x_addRNG)
 
 
+# adds timer driver
+macro(nRF5x_addTimer)
+    include_directories(
+            "${NRF5_SDK_ROOT}/components/drivers_nrf/timer"
+    )
+
+    list(APPEND SDK_SOURCE_FILES
+            "${NRF5_SDK_ROOT}/components/drivers_nrf/timer/nrf_drv_timer.c"
+            )
+endmacro(nRF5x_addTimer)
+
+# adds RTC
+macro(nRF5x_addRTC)
+    include_directories(
+            "${NRF5_SDK_ROOT}/components/drivers_nrf/rtc"
+    )
+
+    list(APPEND SDK_SOURCE_FILES
+            "${NRF5_SDK_ROOT}/components/drivers_nrf/rtc/nrf_drv_rtc.c"
+            )
+endmacro(nRF5x_addRTC)
+
+# adds PPI
+macro(nRF5x_addPPI)
+    include_directories(
+            "${NRF5_SDK_ROOT}/components/drivers_nrf/ppi"
+    )
+
+    list(APPEND SDK_SOURCE_FILES
+            "${NRF5_SDK_ROOT}/components/drivers_nrf/ppi/nrf_drv_ppi.c"
+            )
+endmacro(nRF5x_addPPI)
+
+
 # adds app-level Button library
 macro(nRF5x_addAppButton)
     include_directories(

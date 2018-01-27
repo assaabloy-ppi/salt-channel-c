@@ -21,10 +21,11 @@
 #define HAL_TEST_RNG ON
 #endif
 
+static bool test_build(salt_crypto_api_t *crypto_api, salt_taste_hal_api_t *hal);
 static bool test_platform(salt_taste_hal_api_t *hal);
 static bool test_elapsed_timer(salt_taste_hal_api_t *hal);
 static bool test_rng(salt_taste_hal_api_t *hal);
-static bool test_sanity(salt_crypto_api_t *crypto_api, salt_taste_hal_api_t *hal);
+static uint64_t calc_handshake_perf(salt_crypto_api_t *crypto_api, salt_taste_hal_api_t *hal, uint16_t loops);
 
 salt_crypto_api_t crypto; /* shoult be global, since referenced outside with 'extern' */
 
@@ -269,24 +270,43 @@ void randombytes_none(unsigned char *p_bytes, unsigned long long length)
 int salt_taste_entry_point(salt_taste_hal_api_t *hal, int argc, char *argv[])
 {	
 	bool success = false;
-	
+	uint64_t ms;
+
 	salt_crypto_api_init(&crypto, randombytes_none);
 
 	hal->write_str(1, "\r\n\r\n");
+	success = test_build(&crypto, hal);
+
+	for (int i=0; i<42; i++)
+		hal->write_str(1, "=");
+	hal->write_str(1, "\r\n");
+
 	hal->notify(SALT_TASTE_EVENT_READY, SALT_TASTE_STATUS_SUCCESS);
 
 	/* testing platform HAL */
 	success = test_platform(hal);
 
 	if (success) {
-		success = test_sanity(&crypto, hal);		
+		hal->write_str(1, "------ Handshake measurement (loops: 1)...\r\n");
+		ms = calc_handshake_perf(&crypto, hal, 1);
+		hal->dprintf(1, "------ Spent in one loop: %d ms.\r\n", ms);
 	}
+
 
 	hal->notify(SALT_TASTE_EVENT_SHUTDOWN, SALT_TASTE_STATUS_INIT);
 	return 0;
 }
 
 
+static bool test_build(salt_crypto_api_t *crypto_api, salt_taste_hal_api_t *hal)
+{
+	/* print system/build info */
+	hal->write_str(1, "Crypto backend: ");
+	hal->write_str(1, salt_crypto_get_name(crypto_api));
+	hal->write_str(1, "\r\n");
+
+	return true;
+}
 
 static bool test_platform(salt_taste_hal_api_t *hal)
 {
@@ -377,23 +397,29 @@ static bool test_rng(salt_taste_hal_api_t *hal)
 	return success;
 }
 
-static bool test_sanity(salt_crypto_api_t *crypto_api, salt_taste_hal_api_t *hal)
+static uint64_t calc_handshake_perf(salt_crypto_api_t *crypto_api, salt_taste_hal_api_t *hal, uint16_t loops)
 {
 	bool success = true;
 
-	hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_INIT);
+
+	hal->notify(SALT_TASTE_EVENT_SC_HANDSHAKE, SALT_TASTE_STATUS_INIT);
 	
-	success = test_client_handshake();
+	/* ----------- begin of measurement section*/
+	hal->trigger_elapsed_counter(0, true);	
+
+	for (uint16_t i=0; i<loops; i++)
+		success = success && test_client_handshake();
+
+	uint64_t ms = hal->trigger_elapsed_counter(0, false);
+	/* ----------- end of measurement section*/
 
 	if (success) {
-		hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_SUCCESS);
-		return true;
+		hal->notify(SALT_TASTE_EVENT_SC_HANDSHAKE, SALT_TASTE_STATUS_SUCCESS);
+		return ms;
 	}
 	else {
-		hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_FAILURE);
-		hal->write_str(1, "handshake (crypto backend: ");
-		hal->write_str(1, salt_crypto_get_name(crypto_api));
-		hal->write_str(1, ") sanity test failed!\r\n");
-		return false;
+		hal->notify(SALT_TASTE_EVENT_SC_HANDSHAKE, SALT_TASTE_STATUS_FAILURE);
+		hal->write_str(1, "handshake test failed!\r\n");
+		return 0;
 	}
 }

@@ -105,8 +105,25 @@
  
 
 #ifndef TIMER0_ENABLED
-#define TIMER0_ENABLED 1
+#define TIMER0_ENABLED 0
 #endif
+
+#ifndef TIMER1_ENABLED
+#define TIMER1_ENABLED 0
+#endif
+
+#ifndef TIMER2_ENABLED
+#define TIMER2_ENABLED 1 
+#endif
+
+#ifndef TIMER3_ENABLED
+#define TIMER3_ENABLED 0
+#endif
+
+#ifndef TIMER4_ENABLED
+#define TIMER4_ENABLED 0
+#endif
+
 
 
 #define 	APP_TIMER_ENABLED 1
@@ -114,7 +131,61 @@
 #define     APP_TIMER_CONFIG_IRQ_PRIORITY 1
 #define APP_TIMER_CONFIG_OP_QUEUE_SIZE 4
 
+
+#ifndef RTC_ENABLED
+#define RTC_ENABLED 1
+#endif
+
+#if  RTC_ENABLED
+// <o> RTC_DEFAULT_CONFIG_FREQUENCY - Frequency  <16-32768> 
+
+
+#ifndef RTC_DEFAULT_CONFIG_FREQUENCY
+#define RTC_DEFAULT_CONFIG_FREQUENCY 32768
+#endif
+
+// <q> RTC_DEFAULT_CONFIG_RELIABLE  - Ensures safe compare event triggering
+ 
+
+#ifndef RTC_DEFAULT_CONFIG_RELIABLE
+#define RTC_DEFAULT_CONFIG_RELIABLE 0
+#endif
+
+#ifndef RTC_DEFAULT_CONFIG_IRQ_PRIORITY
+#define RTC_DEFAULT_CONFIG_IRQ_PRIORITY 7
+#endif
+
+// <q> RTC0_ENABLED  - Enable RTC0 instance
+ 
+
+#ifndef RTC0_ENABLED
+#define RTC0_ENABLED 0
+#endif
+
+// <q> RTC1_ENABLED  - Enable RTC1 instance
+ 
+
+#ifndef RTC1_ENABLED
 #define RTC1_ENABLED 1
+#endif
+
+// <q> RTC2_ENABLED  - Enable RTC2 instance
+ 
+
+#ifndef RTC2_ENABLED
+#define RTC2_ENABLED 1
+#endif
+
+#ifndef NRF_MAXIMUM_LATENCY_US
+#define NRF_MAXIMUM_LATENCY_US 500
+#endif
+
+#endif
+
+#ifndef PPI_ENABLED
+#define PPI_ENABLED 1
+#endif
+
 
 #define CLOCK_ENABLED 1
 #define CLOCK_CONFIG_IRQ_PRIORITY 1

@@ -20,7 +20,6 @@
 #include "salt_taste_hal.h"
 
 
-
 #define MAX_TEST_DATA_BYTES     (15U)                /**< max number of test bytes to be used for tx and rx. */
 #define UART_TX_BUF_SIZE 256                         /**< UART TX buffer size. */
 #define UART_RX_BUF_SIZE 1                           /**< UART RX buffer size. */
@@ -74,10 +73,21 @@ static void timer_handler(void * p_context)
 
 int init()
 {
-    nrf_gpio_cfg_output(PIN_LED);
-    nrf_gpio_pin_set(PIN_LED); // LED is off
     
     uint32_t err_code;
+
+    /* initialize RNG */
+    err_code = nrf_drv_rng_init(NULL);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = nrf_drv_clock_init();
+    APP_ERROR_CHECK(err_code);
+    nrf_drv_clock_lfclk_request(NULL);
+
+
+    nrf_gpio_cfg_output(PIN_LED);
+    nrf_gpio_pin_set(PIN_LED); // LED is off
+
     const app_uart_comm_params_t comm_params =
       {
           RX_PIN_NUMBER,
@@ -99,13 +109,6 @@ int init()
 
     APP_ERROR_CHECK(err_code);
 
-    /* initialize RNG */
-    err_code = nrf_drv_rng_init(NULL);
-    APP_ERROR_CHECK(err_code);
-
-    err_code = nrf_drv_clock_init();
-    APP_ERROR_CHECK(err_code);
-    nrf_drv_clock_lfclk_request(NULL);
 
     err_code = app_timer_init();
     APP_ERROR_CHECK(err_code);
@@ -116,7 +119,6 @@ int init()
 
     err_code = app_timer_start(timer_0, APP_TIMER_TICKS(1000), NULL);
     APP_ERROR_CHECK(err_code);
-
 
 	return 0;
 }
@@ -202,7 +204,7 @@ int get_elapsed_counters_num()
 
 uint64_t trigger_elapsed_counter(int counter_idx, bool start_it)
 {
-	static uint32_t ts[ST_HAL_ELAPSED_COUNTERS];
+	static uint64_t ts[ST_HAL_ELAPSED_COUNTERS];
  
 	if (start_it)
 	{
@@ -215,17 +217,19 @@ uint64_t trigger_elapsed_counter(int counter_idx, bool start_it)
 		int32_t ticks_diff = 0;
 		int32_t ms;
 
+
 		//ts[counter_idx] = app_timer_cnt_get();
 		//nrf_delay_ms(2500);
 		end = app_timer_cnt_get();
 		ticks_diff = app_timer_cnt_diff_compute(end, ts[counter_idx]);
 		ms = ticks_diff * ( ( APP_TIMER_CONFIG_RTC_FREQUENCY + 1 ) * 1000 ) / APP_TIMER_CLOCK_FREQ;
-		ms = ms * 20/21;  // [TODO] replace this static correction to precise PPI time measurement
+		//printf("ms: %"PRIu32" \r\n", (uint32_t)ms); // debug output
+		return ms;
 		//leave_rt();
 
-		printf("ms: %"PRIu32" \r\n", ms); // debug output
+		
 
-		return  ms;
+		//return  ms;
 	}	
 }
 

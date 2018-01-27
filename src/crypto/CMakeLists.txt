@@ -18,7 +18,7 @@ if(CRYPTO_BACKEND MATCHES "libsodium")
                                                      ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CRYPTO_BACKEND}/include
                                                      ${CMAKE_CURRENT_SOURCE_DIR}/wrap/${CRYPTO_BACKEND})
 
-    # find correct prebuilt libsodium.a (according to target arch)
+    # find correct prebuilt libsodium.a (according to arch defined in toolchain file)
     set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib/libsodium)
     find_library(LIBSODIUM NAMES sodium)
     set(BACKEND_LIBS ${LIBSODIUM})

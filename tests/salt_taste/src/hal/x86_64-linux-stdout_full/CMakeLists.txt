@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(salt-taste-hal C)
 
-add_library(hal ${CMAKE_CURRENT_SOURCE_DIR}/salt_taste_hal.c)
+add_library(hal salt_taste_hal.c)
 target_include_directories(hal PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 									   ${CMAKE_CURRENT_SOURCE_DIR}/../..   # for 'salt_taste_hal.h'
 )

@@ -16,8 +16,7 @@ const char* const _st_event_str[] = {
 	"crypto_sanity",	/* SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS */
 	"perf_start",		/* SALT_TASTE_EVENT_CRYPTO_PERFMETER_STARTED */
 	"perf_stop",		/* SALT_TASTE_EVENT_CRYPTO_PERFMETER_STOPPED */
-	"sc_handshake_begin",	/* SALT_TASTE_EVENT_SC_HANDSHAKE_BEGIN */
-	"sc_handshake_end",		/* SALT_TASTE_EVENT_SC_HANDSHAKE_END */	
+	"handshake",		/* SALT_TASTE_EVENT_SC_HANDSHAKE */
 	"shutdown",				/* SALT_TASTE_EVENT_SHUTDOWN */		
 };
 

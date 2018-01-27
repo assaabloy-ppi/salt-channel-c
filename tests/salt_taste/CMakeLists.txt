@@ -6,8 +6,8 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 MESSAGE( STATUS "Using HAL: " ${HAL} )
 
 # options
-option(HAL_TEST_TIMER "When testing HAL layer, also test elapsed timer" ON)
-option(HAL_TEST_RNG "When testing HAL layer, also test random generator" ON)
+option(HAL_TEST_TIMER "When testing HAL layer, also test elapsed timer" OFF)
+option(HAL_TEST_RNG "When testing HAL layer, also test random generator" OFF)
 option(HAL_TEST_IMPL "When testing HAL layer, also test HAL-implemented custom tests" ON)
 
 # dependancy: HAL library

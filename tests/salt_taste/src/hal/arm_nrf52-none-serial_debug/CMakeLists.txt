@@ -28,7 +28,7 @@ target_include_directories(hal_iface INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 macro(hal_update_exe_target target )
 	enable_language(ASM)
 	target_sources(${target} PRIVATE ${SDK_SOURCE_FILES})  # add NRF SDK deps
-	target_link_libraries(${target} hal_iface) #???
+	target_link_libraries(${target} hal_iface) # for HAL-dependant include directories, etc
     set_target_properties(${target} PROPERTIES SUFFIX ".out")
     #set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,-Map=${target}.map")
 

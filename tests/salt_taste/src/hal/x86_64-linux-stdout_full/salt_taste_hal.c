@@ -117,7 +117,7 @@ uint64_t trigger_elapsed_counter(int counter_idx, bool start_it)
 void notify(enum salt_taste_event_e event, enum salt_taste_status_e status)
 {
 	/* just debug output */
-	my_dprintf(STDOUT_FILENO, "EVENT: id=%-10s status=%-10s\n", salt_taste_event_tostr(event), 
+	my_dprintf(STDOUT_FILENO, "EVENT: id=%-18s status=%-18s\n", salt_taste_event_tostr(event), 
 		 													salt_taste_status_tostr(status));
 }
 

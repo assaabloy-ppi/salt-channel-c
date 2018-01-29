@@ -26,6 +26,8 @@ static bool test_platform(salt_taste_hal_api_t *hal);
 static bool test_elapsed_timer(salt_taste_hal_api_t *hal);
 static bool test_rng(salt_taste_hal_api_t *hal);
 static uint64_t calc_handshake_perf(salt_crypto_api_t *crypto_api, salt_taste_hal_api_t *hal, uint16_t loops);
+static bool test_crypto_sanity(salt_crypto_api_t *crypto_api, salt_taste_hal_api_t *hal);
+static void util_dump(salt_taste_hal_api_t *hal, uint8_t *ptr, uint32_t size);
 
 salt_crypto_api_t crypto; /* shoult be global, since referenced outside with 'extern' */
 
@@ -40,6 +42,7 @@ static uint8_t client_sk_sec[64] = {
     0x72, 0x37, 0x82, 0x60, 0x8e, 0x93, 0xc6, 0x26,
     0x4f, 0x18, 0x4b, 0xa1, 0x52, 0xc2, 0x35, 0x7b
 };
+
 static uint8_t client_ek_sec[32] = {
     0x77, 0x07, 0x6d, 0x0a, 0x73, 0x18, 0xa5, 0x7d,
     0x3c, 0x16, 0xc1, 0x72, 0x51, 0xb2, 0x66, 0x45,
@@ -286,6 +289,10 @@ int salt_taste_entry_point(salt_taste_hal_api_t *hal, int argc, char *argv[])
 	/* testing platform HAL */
 	success = test_platform(hal);
 
+	if (success)
+		success = test_crypto_sanity(&crypto, hal);
+
+
 	if (success) {
 		hal->write_str(1, "------ Handshake measurement (loops: 1)...\r\n");
 		ms = calc_handshake_perf(&crypto, hal, 1);
@@ -422,4 +429,54 @@ static uint64_t calc_handshake_perf(salt_crypto_api_t *crypto_api, salt_taste_ha
 		hal->write_str(1, "handshake test failed!\r\n");
 		return 0;
 	}
+}
+
+static bool test_crypto_sanity(salt_crypto_api_t *crypto_api, salt_taste_hal_api_t *hal)
+{
+	bool success = true;
+	uint8_t pdst[crypto_sign_BYTES + 3];
+	uint8_t pdst2[crypto_sign_BYTES + 3];
+
+	hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_INIT);
+
+    /* crypto_sign_keypair() */
+    hal->write_str(1, "... crypto_sign_keypair()\r\n");
+	crypto_api->crypto_sign_keypair(pdst, client_sk_sec);
+	if (memcmp(pdst, client_sk_sec + crypto_sign_PUBLICKEYBYTES, crypto_sign_PUBLICKEYBYTES))
+	{
+		hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_FAILURE);
+		util_dump(hal, pdst, crypto_sign_PUBLICKEYBYTES);
+		return false;	
+	}
+
+    /* crypto_sign() + crypto_sign_open() */
+	unsigned long long mlen, smlen;
+	int sign_open_res = -1;
+	const uint8_t msg[] = { 0x03, 0x03, 0x03 };
+	
+	hal->write_str(1, "... crypto_sign()\r\n");
+    int sign_res = crypto_api->crypto_sign(pdst, &smlen, msg, sizeof(msg), client_sk_sec);
+    if (!sign_res){
+    	util_dump(hal, pdst, smlen);
+    	hal->write_str(1, "... crypto_sign_open()\r\n");
+		sign_open_res = crypto_api->crypto_sign_open(pdst2, &mlen, pdst, smlen, &(client_sk_sec[32]));
+    }
+    if (sign_open_res || memcmp(msg, pdst2, sizeof(msg)))
+    {
+		hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_FAILURE);
+		return false;
+    }
+
+
+	hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_SUCCESS);
+	return true;
+}
+
+
+static void util_dump(salt_taste_hal_api_t *hal, uint8_t *ptr, uint32_t size)
+{
+	hal->dprintf(1, "      srcline:%d, ptr: %p, size: %d -> ", __LINE__, ptr, size);
+	for (int i = 0; i<size; i++)
+      hal->dprintf(1, "%02x", ptr[i]);
+    hal->dprintf(1, "\r\n");
 }

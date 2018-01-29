@@ -5,12 +5,24 @@
 /* libsodium already defined own randombytes() */
 /*extern void randombytes(unsigned char *p_bytes, unsigned long long length); */
 
+/* wrapper to make crypto_sign_keypair() deterministic */
+/*int my_crypto_sign_keypair(unsigned char *pk, unsigned char *sk)
+{
+    return crypto_sign_seed_keypair(pk, sk, sk);
+}
+*/
+
+
+
 
 void salt_crypto_api_init(salt_crypto_api_t *api, randombytes_t rng)
 {
+    //int res = sodium_init(); // [TODO]
+    //res++;
 
 	salt_crypto_api_t _api = {
 		.crypto_sign_keypair = crypto_sign_keypair, 
+        //.crypto_sign_keypair = my_crypto_sign_keypair, 
     	.crypto_sign = crypto_sign,
     	.crypto_sign_open = crypto_sign_open,
     	.crypto_box_keypair = crypto_box_keypair,

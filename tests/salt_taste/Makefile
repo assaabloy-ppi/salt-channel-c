@@ -10,21 +10,24 @@ help: Makefile
 clean: ## Project cleanup
 	rm -rf build
 
+#-DCRYPTO_BACKEND=tweetnacl_modified
 build__x86_64-linux-stdout_full: clean  ## Build for HAL 'x86_64-linux-stdout_full'
 	mkdir build && cd build && \
 	cmake -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain/x86_64-linux-elf-gcc.cmake \
+		  -DCRYPTO_BACKEND=tweetnacl_modified \
 		  -DHAL=x86_64-linux-stdout_full .. && \
 	cmake --build . && \
 	./salt_taste
 
 #-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON 
+#-DCRYPTO_BACKEND=tweetnacl_modified
 rebuild__arm_nrf52-none-eabi-gcc: clean  ## Build for HAL 'arm_nrf52-none-eabi-gcc'
 	mkdir build && cd build && \
 	cmake -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain/arm_nrf5x-none-eabi-gcc.cmake \
 		  -DNRF5_SDK_ROOT=/home/kotomysha/ASSA/dev/nrf-sdk \
 		  -DSOFTDEVICE_REL_PATH=components/softdevice/s132/hex/s132_nrf52_5.0.0_softdevice.hex \
 		  -DNRF_TARGET=NRF52  \
-		  -DCRYPTO_BACKEND=libsodium \
+		  -DCRYPTO_BACKEND=tweetnacl_modified \
 		  -DHAL=arm_nrf52-none-serial_debug .. && \
 	cmake --build . && \
 	make f_salt_taste

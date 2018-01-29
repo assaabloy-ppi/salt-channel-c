@@ -2,12 +2,6 @@ project(salt-channel-c)
 
 include(ExternalProject)
 
-if(APPLE)
-  set(suffix ".dylib")
-else()
-  set(suffix ".so")
-endif()
-
 ExternalProject_Add (
   cmocka
   GIT_REPOSITORY "git://git.cryptomilk.org/projects/cmocka.git"
@@ -22,12 +16,19 @@ ExternalProject_Add (
   --build .
   --target install
 )
-        
-add_library(cmocka_lib SHARED IMPORTED) 
-#add_sanitizers(cmocka_lib)      
+
+add_library(cmocka_lib SHARED IMPORTED)
+
 include_directories(${CMAKE_BINARY_DIR}/external/cmocka/include)
-set_target_properties( cmocka_lib PROPERTIES IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/external/cmocka/lib/libcmocka${suffix}" )
-add_dependencies( cmocka_lib cmocka )
+
+set_target_properties(
+  cmocka_lib
+  PROPERTIES
+  IMPORTED_LOCATION
+  "${CMAKE_BINARY_DIR}/external/cmocka/lib/${CMAKE_SHARED_LIBRARY_PREFIX}cmocka${CMAKE_SHARED_LIBRARY_SUFFIX}"
+)
+
+add_dependencies(cmocka_lib cmocka)
 
 
 macro(do_test arg)

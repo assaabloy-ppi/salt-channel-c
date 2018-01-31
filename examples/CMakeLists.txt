@@ -19,6 +19,13 @@ add_executable(client_echo client_echo.c salt_io.c randombytes_linux.c)
 add_sanitizers(client_echo)
 target_link_libraries(client_echo salt)
 
+set_source_files_properties(
+	binson_light.c
+	PROPERTIES
+	COMPILE_FLAGS
+	-Wno-implicit-fallthrough
+)
+
 add_executable(client client.c salt_io.c randombytes_linux.c binson_light.c)
 add_sanitizers(client)
 target_link_libraries(client salt)

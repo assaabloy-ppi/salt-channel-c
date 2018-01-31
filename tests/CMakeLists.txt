@@ -48,6 +48,7 @@ add_sanitizers(cfifo)
 add_library(test_data test_data.c)
 add_sanitizers(test_data)  
 add_library(salt_mock salt_mock.c)
+add_dependencies(salt_mock cmocka)
 add_sanitizers(salt_mock)  
 
 # Test runners

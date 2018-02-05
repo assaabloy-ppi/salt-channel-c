@@ -164,8 +164,7 @@ static void *connection_handler(void *context)
             break;
         }
 
-        salt_handshake(&client->channel, NULL);
-
+        ret = salt_handshake(&client->channel, NULL);
     }
 
     printf("Salt handshake succeeded.\r\n");
@@ -193,7 +192,9 @@ static void *connection_handler(void *context)
             ret = salt_write_next(&msg_out, msg_in.read.p_payload, msg_in.read.message_size);
         }
 
-        salt_write_execute(&client->channel, &msg_out, false);
+        do {
+            ret = salt_write_execute(&client->channel, &msg_out, false);
+        } while (ret == SALT_PENDING);
 
     } while (ret == SALT_SUCCESS);
 

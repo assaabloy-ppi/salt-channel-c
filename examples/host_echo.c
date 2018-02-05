@@ -193,7 +193,7 @@ static void *connection_handler(void *context)
         }
 
         do {
-        ret = salt_write_execute(&client->channel, &msg_out, false);
+            ret = salt_write_execute(&client->channel, &msg_out, false);
         } while (ret == SALT_PENDING);
 
     } while (ret == SALT_SUCCESS);

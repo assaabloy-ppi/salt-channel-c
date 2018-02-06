@@ -1,0 +1,15 @@
+language: C
+install: make cmake
+compiler:
+  - gcc
+script:
+  - mkdir -p build
+  - cd build
+  - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug .
+  - make
+  - make test
+  - gcov gcov src/CMakeFiles/salt.dir/salt.c.gcno src/CMakeFiles/salt.dir/salti_handshake.c.gcno src/CMakeFiles
+/salt.dir/salti_util.c.gcno
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

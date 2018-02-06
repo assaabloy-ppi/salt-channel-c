@@ -27,8 +27,7 @@ set_source_files_properties(src/external/tweetnacl_modified/tweetnacl_modified.c
 add_library(tweetnacl_modified src/external/tweetnacl_modified/tweetnacl_modified.c)
 add_sanitizers(tweetnacl_modified)
 
-#set(CMAKE_C_FLAGS_DEBUG " -O0 -g -ggdb -DSALT_DEBUG=1 -Wall -Werror -Wpedantic -fprofile-arcs -ftest-coverage -std=c99 ${CMAKE_CXX_FLAGS_DEBUG}")
-#add_definitions(-Wall -Wextra -Werror -fno-stack-protector -Wpedantic -std=c99 -g -ggdb -DSALT_DEBUG=1)
+set(CMAKE_C_FLAGS_DEBUG "-fprofile-arcs -ftest-coverage -std=c99 ${CMAKE_CXX_FLAGS_DEBUG}")
 add_definitions(-O0 -g -ggdb -DSALT_DEBUG=1 -Wall -Werror -Wpedantic  -std=c99)
 
 add_subdirectory(src)

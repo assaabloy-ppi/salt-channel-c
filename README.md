@@ -1,8 +1,9 @@
 # Salt-channel-c
+[![Build Status](https://travis-ci.org/assaabloy-ppi/salt-channel-c.svg?branch=master)](https://travis-ci.org/assaabloy-ppi/salt-channel-c)
+[![Code Coverage](https://codecov.io/gh/assaabloy-ppi/salt-channel-c/branch/master/graph/badge.svg)](https://codecov.io/gh/assaabloy-ppi/salt-channel-c)
 
 About
 -----
-
 
 
 

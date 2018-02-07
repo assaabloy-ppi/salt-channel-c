@@ -32,11 +32,18 @@ static salt_ret_t salt_channel_write(salt_io_channel_t *p_wchannel);
 
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
-   FILE* fr = fopen("/dev/urandom", "r");
-   if (!fr) perror("urandom"), exit(EXIT_FAILURE);
-   size_t tmp = fread(p_bytes, sizeof(unsigned char), length, fr);
-   assert_true(tmp == length);
-   fclose(fr);
+    FILE* fr = fopen("/dev/urandom", "r");
+
+    if (fr != NULL) {
+        size_t tmp = 0;
+        if (p_bytes != NULL) {
+            tmp = fread(p_bytes, sizeof(unsigned char), length, fr);
+        }
+        fclose(fr);
+        assert_true(tmp == length);
+        return;
+    }
+    
 }
 
 salt_mock_t *salt_mock_create(void)
@@ -70,9 +77,9 @@ salt_time_t *salt_time_mock_create(void)
     assert_non_null(mock);
     cfifo_t *time_queue = malloc(sizeof(cfifo_t));
     assert_non_null(time_queue);
-    uint8_t *time_queue_data = malloc(sizeof(uint32_t) * 10);
+    void *time_queue_data = malloc(sizeof(uint32_t) * 10);
     assert_non_null(time_queue_data);
-    cfifo_init(time_queue, time_queue_data, 10, sizeof(uint32_t));
+    cfifo_init(time_queue, (uint8_t *) time_queue_data, 10, sizeof(uint32_t));
     mock->get_time = salt_mock_get_time;
     mock->p_context = time_queue;
     return mock;
@@ -104,13 +111,13 @@ salt_io_mock_t *salt_io_mock_create(void)
     mock->next_read = malloc(sizeof(cfifo_t));
     assert_non_null(mock->next_read );
 
-    uint8_t *expected_write = malloc(sizeof(test_data_t) * 10);
+    void *expected_write = malloc(sizeof(test_data_t) * 10);
     assert_non_null(expected_write);
-    uint8_t *next_read = malloc(sizeof(test_data_t) * 10);
+    void *next_read = malloc(sizeof(test_data_t) * 10);
     assert_non_null(next_read);
-    
-    cfifo_init(mock->expected_write, expected_write, 10, sizeof(test_data_t));
-    cfifo_init(mock->next_read, next_read, 10, sizeof(test_data_t));
+
+    cfifo_init(mock->expected_write, (uint8_t *) expected_write, 10, sizeof(test_data_t));
+    cfifo_init(mock->next_read, (uint8_t *) next_read, 10, sizeof(test_data_t));
 
     return mock;
 }
@@ -277,12 +284,11 @@ static salt_ret_t salt_channel_read(salt_io_channel_t *p_rchannel)
     uint32_t size = p_rchannel->size_expected - p_rchannel->size;
 
     cfifo_read(read_queue, &p_rchannel->p_data[p_rchannel->size],
-        &size);
+               &size);
 
     p_rchannel->size += size;
 
     if (p_rchannel->size == p_rchannel->size_expected) {
-        SALT_HEXDUMP_DEBUG(p_rchannel->p_data, p_rchannel->size_expected);
         return SALT_SUCCESS;
     }
 
@@ -298,7 +304,6 @@ static salt_ret_t salt_channel_write(salt_io_channel_t *p_wchannel)
     p_wchannel->size += size;
     if (p_wchannel->size == p_wchannel->size_expected) {
         p_wchannel->size_expected = p_wchannel->size;
-        SALT_HEXDUMP_DEBUG(p_wchannel->p_data, p_wchannel->size_expected);
         return SALT_SUCCESS;
     }
 

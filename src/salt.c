@@ -536,7 +536,6 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
                               salt_msg_t *p_msg,
                               bool last_msg)
 {
-    uint8_t type;
     salt_ret_t ret = SALT_ERROR;
     SALT_VERIFY_VALID_CHANNEL(p_channel);
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
@@ -544,7 +543,7 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
     SALT_VERIFY_NOT_NULL(p_msg);
 
     if (p_msg->write.state == 0) {
-        type = salt_write_create(p_msg);
+        uint8_t type = salt_write_create(p_msg);
 
         ret = salti_wrap(p_channel,
                          p_msg->write.p_buffer,

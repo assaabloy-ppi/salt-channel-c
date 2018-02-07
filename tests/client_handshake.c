@@ -33,15 +33,15 @@ static void client_handshake(void **state)
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
     memset(hndsk_buffer, 0xcc, SALT_HNDSHK_BUFFER_SIZE);
 
-    ret = salt_create(&channel, SALT_CLIENT, salt_write_mock, salt_read_mock, NULL);
-    ret = salt_set_signature(&channel, salt_example_session_1_data.client_sk_sec);
-    ret = salt_init_session_using_key(&channel,
-                                      hndsk_buffer,
-                                      SALT_HNDSHK_BUFFER_SIZE,
-                                      salt_example_session_1_data.client_ek_pub,
-                                      salt_example_session_1_data.client_ek_sec);
+    salt_create(&channel, SALT_CLIENT, salt_write_mock, salt_read_mock, NULL);
+    salt_set_signature(&channel, salt_example_session_1_data.client_sk_sec);
+    salt_init_session_using_key(&channel,
+                                hndsk_buffer,
+                                SALT_HNDSHK_BUFFER_SIZE,
+                                salt_example_session_1_data.client_ek_pub,
+                                salt_example_session_1_data.client_ek_sec);
 
-    ret = salt_set_context(&channel, mock->io->expected_write, mock->io->next_read);
+    salt_set_context(&channel, mock->io->expected_write, mock->io->next_read);
 
     salt_io_mock_set_next_read(mock->io, salt_example_session_1_data.m2, sizeof(salt_example_session_1_data.m2), false);
     salt_io_mock_set_next_read(mock->io, salt_example_session_1_data.m3, sizeof(salt_example_session_1_data.m3), false);
@@ -66,13 +66,14 @@ static void client_handshake_single_echo(void **state)
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
     memset(hndsk_buffer, 0xcc, SALT_HNDSHK_BUFFER_SIZE);
 
-    ret = salt_create(&channel, SALT_CLIENT, salt_write_mock, salt_read_mock, NULL);
-    ret = salt_set_signature(&channel, salt_example_session_1_data.client_sk_sec);
-    ret = salt_init_session_using_key(&channel,
-                                      hndsk_buffer,
-                                      SALT_HNDSHK_BUFFER_SIZE,
-                                      salt_example_session_1_data.client_ek_pub,
-                                      salt_example_session_1_data.client_ek_sec);    ret = salt_set_context(&channel, mock->io->expected_write, mock->io->next_read);
+    salt_create(&channel, SALT_CLIENT, salt_write_mock, salt_read_mock, NULL);
+    salt_set_signature(&channel, salt_example_session_1_data.client_sk_sec);
+    salt_init_session_using_key(&channel,
+                                hndsk_buffer,
+                                SALT_HNDSHK_BUFFER_SIZE,
+                                salt_example_session_1_data.client_ek_pub,
+                                salt_example_session_1_data.client_ek_sec);
+    salt_set_context(&channel, mock->io->expected_write, mock->io->next_read);
 
     salt_io_mock_set_next_read(mock->io, salt_example_session_1_data.m2, sizeof(salt_example_session_1_data.m2), false);
     salt_io_mock_set_next_read(mock->io, salt_example_session_1_data.m3, sizeof(salt_example_session_1_data.m3), false);
@@ -96,6 +97,7 @@ static void client_handshake_single_echo(void **state)
     ret = salt_write_begin(hndsk_buffer, sizeof(hndsk_buffer), &msg_out);
     assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&msg_out, echo_bytes, sizeof(echo_bytes));
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_execute(&channel, &msg_out, false);
     assert_true(ret == SALT_SUCCESS);
 
@@ -118,13 +120,14 @@ static void client_handshake_multi_echo(void **state)
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
     memset(hndsk_buffer, 0xcc, SALT_HNDSHK_BUFFER_SIZE);
 
-    ret = salt_create(&channel, SALT_CLIENT, salt_write_mock, salt_read_mock, mock->client_time);
-    ret = salt_set_signature(&channel, salt_example_session_3_data.client_sk_sec);
-    ret = salt_init_session_using_key(&channel,
-                                      hndsk_buffer,
-                                      SALT_HNDSHK_BUFFER_SIZE,
-                                      salt_example_session_1_data.client_ek_pub,
-                                      salt_example_session_1_data.client_ek_sec);    ret = salt_set_context(&channel, mock->io->expected_write, mock->io->next_read);
+    salt_create(&channel, SALT_CLIENT, salt_write_mock, salt_read_mock, mock->client_time);
+    salt_set_signature(&channel, salt_example_session_3_data.client_sk_sec);
+    salt_init_session_using_key(&channel,
+                                hndsk_buffer,
+                                SALT_HNDSHK_BUFFER_SIZE,
+                                salt_example_session_1_data.client_ek_pub,
+                                salt_example_session_1_data.client_ek_sec);
+    salt_set_context(&channel, mock->io->expected_write, mock->io->next_read);
 
     salt_io_mock_set_next_read(mock->io, salt_example_session_3_data.m2, sizeof(salt_example_session_3_data.m2), false);
     salt_io_mock_set_next_read(mock->io, salt_example_session_3_data.m3, sizeof(salt_example_session_3_data.m3), false);
@@ -160,6 +163,7 @@ static void client_handshake_multi_echo(void **state)
     ret = salt_write_begin(hndsk_buffer, sizeof(hndsk_buffer), &msg_out);
     assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&msg_out, echo_bytes, sizeof(echo_bytes));
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_execute(&channel, &msg_out, false);
     assert_true(ret == SALT_SUCCESS);
 
@@ -175,8 +179,9 @@ static void client_handshake_multi_echo(void **state)
     ret = salt_write_begin(hndsk_buffer, sizeof(hndsk_buffer), &msg_out);
     assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&msg_out, multi1, sizeof(multi1));
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&msg_out, multi2, sizeof(multi2));
-
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_execute(&channel, &msg_out, false);
     assert_true(ret == SALT_SUCCESS);
 

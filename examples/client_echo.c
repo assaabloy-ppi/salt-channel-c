@@ -82,8 +82,6 @@ static void *connection_handler(void *context)
 
     salt_set_delay_threshold(&channel, 1000);
 
-    ret = SALT_PENDING;
-
     do {
         ret = salt_handshake(&channel, NULL);
         if (ret == SALT_ERROR) {
@@ -103,7 +101,7 @@ static void *connection_handler(void *context)
 
     do {
         memset(hndsk_buffer, 0, sizeof(hndsk_buffer));
-        ret = SALT_PENDING;
+
         do {
             ret = salt_read_begin(&channel, hndsk_buffer, sizeof(hndsk_buffer), &msg_in);
         } while (ret == SALT_PENDING);
@@ -125,27 +123,25 @@ static void *connection_handler(void *context)
 static void *write_handler(void *context)
 {
     salt_channel_t *channel = (salt_channel_t *) context;
-    int tx_size;
     char input[256];
     uint8_t tx_buffer[1024];
-    salt_ret_t ret_code;
+    salt_ret_t ret_code = SALT_ERROR;
     salt_msg_t out_msg;
 
     do {
         printf("Enter message: ");
-        tx_size = read(0, &input[1], sizeof(input) - 1);
+        int tx_size = read(0, &input[1], sizeof(input) - 1);
         input[0] = 0x01;
         if (tx_size > 0) {
             salt_write_begin(tx_buffer, sizeof(tx_buffer), &out_msg);
             salt_write_next(&out_msg, (uint8_t *)input, tx_size + 1);
             printf("\r\n\033[A\33[2K\rclient: %*.*s\r\n", 0, tx_size - 1, &input[1]);
-            ret_code = SALT_PENDING;
+
             do {
                 ret_code = salt_write_execute(channel, &out_msg, false);
             } while(ret_code == SALT_PENDING);
         }
-    }
-    while (ret_code == SALT_SUCCESS);
+    } while (ret_code == SALT_SUCCESS);
 
 
     pthread_exit(NULL);

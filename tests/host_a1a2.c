@@ -23,21 +23,21 @@ static int teardown(void **state) {
 }
 
 static void host_a1a2(void **state) {
-    
+
     salt_channel_t channel;
     salt_ret_t ret;
     salt_mock_t *mock = (salt_mock_t *) *state;
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
     memset(hndsk_buffer, 0xcc, SALT_HNDSHK_BUFFER_SIZE);
 
-    ret = salt_create(&channel, SALT_SERVER, salt_write_mock, salt_read_mock, NULL);
-    ret = salt_set_signature(&channel, salt_example_session_2_data.host_sk_sec);
-    ret = salt_set_context(&channel, mock->io->expected_write, mock->io->next_read);
-    ret = salt_init_session_using_key(&channel,
-                                      hndsk_buffer,
-                                      SALT_HNDSHK_BUFFER_SIZE,
-                                      salt_example_session_2_data.host_ek_pub,
-                                      salt_example_session_2_data.host_ek_sec);
+    salt_create(&channel, SALT_SERVER, salt_write_mock, salt_read_mock, NULL);
+    salt_set_signature(&channel, salt_example_session_2_data.host_sk_sec);
+    salt_set_context(&channel, mock->io->expected_write, mock->io->next_read);
+    salt_init_session_using_key(&channel,
+                                hndsk_buffer,
+                                SALT_HNDSHK_BUFFER_SIZE,
+                                salt_example_session_2_data.host_ek_pub,
+                                salt_example_session_2_data.host_ek_sec);
 
     uint8_t protocol_buf[128];
     salt_protocols_t my_protocols;

@@ -32,14 +32,10 @@ struct clientInfo {
     salt_channel_t channel;
 };
 
-int main(int argc , char *argv[])
+int main(void)
 {
 
-    (void) argc;
-    (void) argv;
-
     int socket_desc;
-    int client_sock;
 
 
     struct clientInfo *client_info;
@@ -86,6 +82,11 @@ int main(int argc , char *argv[])
         client_info->sock_fd = accept(socket_desc, (struct sockaddr*)&client_info->client, (socklen_t*)&c);
         puts("Connection accepted");
 
+        if (client_info->sock_fd < 0) {
+            printf("Accept error.\r\n");
+            continue;
+        }
+
         snprintf(client_info->ip_addr, 16, "%d.%d.%d.%d",
                  client_info->client.sin_addr.s_addr & 0xFF,
                  ((client_info->client.sin_addr.s_addr & 0xFF00) >> 8),
@@ -102,12 +103,6 @@ int main(int argc , char *argv[])
 
         printf("Waiting for client to disconnect.\r\n");
 
-    }
-
-    if (client_sock < 0)
-    {
-        perror("accept failed");
-        return 1;
     }
 
     pthread_exit(NULL);
@@ -186,10 +181,15 @@ static void *connection_handler(void *context)
         }
 
         ret = salt_write_begin(tx_buffer, sizeof(tx_buffer), &msg_out);
+        assert(ret == SALT_SUCCESS);
         ret = salt_write_next(&msg_out, msg_in.read.p_payload, msg_in.read.message_size);
+        assert(ret == SALT_SUCCESS);
+
         for (uint16_t i = 0; i < msg_in.read.messages_left; i++) {
             ret = salt_read_next(&msg_in);
+            assert(ret == SALT_SUCCESS);
             ret = salt_write_next(&msg_out, msg_in.read.p_payload, msg_in.read.message_size);
+            assert(ret == SALT_SUCCESS);
         }
 
         do {

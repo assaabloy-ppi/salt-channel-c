@@ -48,34 +48,41 @@ static void salt_write_message_buff_size(void **state)
     }
 
     ret = salt_write_begin(buffer, SALT_WRITE_OVERHEAD_SIZE, &message);
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&message, (uint8_t *)"tjenare", 0);
     assert_true(SALT_SUCCESS == ret);
     ret = salt_write_next(&message, (uint8_t *)"tjenare", 0);
     assert_true(SALT_ERROR == ret);
 
     ret = salt_write_begin(buffer, SALT_WRITE_OVERHEAD_SIZE, &message);
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&message, (uint8_t *)"tjenare", 1);
     assert_true(SALT_ERROR == ret);
 
     ret = salt_write_begin(buffer, SALT_WRITE_OVERHEAD_SIZE + 1, &message);
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&message, (uint8_t *)"tjenare", 1);
     assert_true(SALT_SUCCESS == ret);
 
     ret = salt_write_begin(buffer, 128, &message);
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&message, dummy, 128 - SALT_WRITE_OVERHEAD_SIZE);
     assert_true(SALT_SUCCESS == ret);
 
     ret = salt_write_begin(buffer, 128, &message);
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&message, dummy, 128 - SALT_WRITE_OVERHEAD_SIZE + 1);
     assert_true(SALT_ERROR == ret);
 
     ret = salt_write_begin(buffer, SALT_WRITE_OVERHEAD_SIZE + 3, &message);
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&message, (uint8_t *)"tjenare", 1);
     assert_true(SALT_SUCCESS == ret);
     ret = salt_write_next(&message, (uint8_t *)"tjenare", 0);
     assert_true(SALT_SUCCESS == ret);
 
     ret = salt_write_begin(buffer, SALT_WRITE_OVERHEAD_SIZE + 5, &message);
+    assert_true(ret == SALT_SUCCESS);
     ret = salt_write_next(&message, (uint8_t *)"tjenare", 1);
     assert_true(SALT_SUCCESS == ret);
     ret = salt_write_next(&message, (uint8_t *)"tjenare", 2);

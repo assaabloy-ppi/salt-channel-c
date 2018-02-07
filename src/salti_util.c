@@ -446,10 +446,9 @@ salt_err_t salt_read_init(uint8_t type,
         uint32_t total_size = p_msg->read.buffer_size;
         uint16_t messages_left = p_msg->read.messages_left;
         uint32_t buffer_used = 0;
-        uint16_t message_size;
 
         while (messages_left > 0) {
-            message_size = salti_bytes_to_u16(p_msg->read.p_payload);
+            uint16_t message_size = salti_bytes_to_u16(p_msg->read.p_payload);
             p_msg->read.p_payload += 2 + message_size;
             buffer_used += 2 + message_size;
             if (buffer_used < total_size) {

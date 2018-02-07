@@ -108,6 +108,11 @@ int crypto_verify_32(const u8 *x,const u8 *y)
   return vn(x,y,32);
 }
 
+int crypto_verify_64(const u8 *x,const u8 *y)
+{
+  return vn(x,y,64);
+}
+
 sv core(u8 *out,const u8 *in,const u8 *k,const u8 *c,int h)
 {
   u32 w[16],x[16],y[16],t[4];

@@ -270,6 +270,13 @@ extern int crypto_verify_32_tweet(const unsigned char *,const unsigned char *);
 #define crypto_verify_32_VERSION crypto_verify_32_tweet_VERSION
 #define crypto_verify_32_IMPLEMENTATION "crypto_verify/32/tweet"
 
+#define crypto_verify_64_tweet_VERSION "-"
+#define crypto_verify_64 crypto_verify_64_tweet
+#define crypto_verify_64_BYTES crypto_verify_64_tweet_BYTES
+#define crypto_verify_64_VERSION crypto_verify_64_tweet_VERSION
+#define crypto_verify_64_IMPLEMENTATION "crypto_verify/64/tweet"
+extern int crypto_verify_64_tweet(const unsigned char *,const unsigned char *);
+
 #include <stdint.h>
 
 typedef struct crypto_hash_sha512_state {

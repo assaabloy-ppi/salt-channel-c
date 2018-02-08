@@ -2,7 +2,7 @@ project(salt-channel-c)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+else ()
   SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 endif()
 

@@ -298,8 +298,9 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
     if (p_channel->time_supported && p_channel->delay_threshold > 0) {
         uint32_t t_package = salti_bytes_to_u32(&p_data[34]);
+        SALT_VERIFY((t_package & 0x8000000) == 0, SALT_ERR_BAD_PROTOCOL);
         uint32_t t_arrival = 0;
-        salti_get_time(p_channel, &t_arrival);
+        SALT_VERIFY(SALT_SUCCESS == salti_get_time(p_channel, &t_arrival), SALT_ERR_INVALID_STATE);
         if (t_arrival - p_channel->peer_epoch > t_package + p_channel->delay_threshold) {
             /* Delay detected */
             SALT_ERROR(SALT_ERR_DELAY_DETECTED);
@@ -366,7 +367,7 @@ salt_ret_t salti_get_time(salt_channel_t *p_channel, uint32_t *p_time)
     }
 
     if (ret == SALT_ERROR) {
-        memset(p_time, 0x00, 4);
+        (*p_time) = 0;
     }
 
     return ret;
@@ -502,6 +503,28 @@ uint8_t salt_write_create(salt_msg_t *p_msg)
         return SALT_MULTI_APP_PKG_MSG_HEADER_VALUE;
     }
 
+}
+
+#include <stdio.h>
+bool time_check(uint32_t first, uint32_t now, uint32_t peer_time, uint32_t thresh)
+{
+
+    first   &= 0x7FFFFFFF;
+    now     &= 0x7FFFFFFF;
+
+    printf("first: %u\r\n", first);
+    printf("now: %u\r\n", now);
+    printf("peer_time: %u\r\n", peer_time);
+    printf("thresh: %u\r\n", thresh);
+
+    printf("now - first: %u\r\n", now - first);
+    printf("peer_time + thresh: %u\r\n", peer_time + thresh);
+
+    if (now - first > peer_time + thresh) {
+        return false;
+    }
+
+    return true;
 }
 
 char *salt_mode2str(salt_mode_t mode)

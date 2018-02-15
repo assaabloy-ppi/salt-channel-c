@@ -25,16 +25,9 @@ SCAN_OPT="-enable-checker alpha.core.BoolAssignment \
 -enable-checker security.insecureAPI.strcpy \
 --analyzer-target=arm-none-eabi"
 
-echo $SCAN_OPT
-
 rm -rf Debug
 mkdir Debug
 cd Debug
-scan-build -v -o $REPORT_DIR $SCAN_OPT cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
-scan-build -v -o $REPORT_DIR $SCAN_OPT make
-
-HTML_DIR=`pwd`/$REPORT_DIR
-if [ -d "$HTML_DIR" ]; then
-	echo Launching default browser to see clang static analyzis report...
-	python -mwebbrowser $HTML_DIR
-fi
+/path/to/scan-build -v -o $REPORT_DIR $SCAN_OPT cmake -DCMAKE_CXX_COMPILER=/path/to/c++-analyzer -DCMAKE_C_COMPILER=/path/to/ccc-analyzer ..
+make cmocka
+/path/to/scan-build -v -o $REPORT_DIR $SCAN_OPT make

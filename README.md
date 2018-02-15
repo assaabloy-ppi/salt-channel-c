@@ -19,10 +19,10 @@ The salt-channel-c is mainly developed using the following tools:
 * CMocka
 * lcov
 
-### To test the implementation or contribute with development: 
+### To test the implementation or contribute with development:
 1. Install tools
 ```
-$ apt-get install cmake libcmocka-dev lcov
+$ apt-get install cmake lcov
 ```
 2. Build
 ```
@@ -32,6 +32,12 @@ $ cmake ..
 $ make
 $ make test
 ```
+
+### Fuzz testing
+See the [fuzz-tests directory](fuzz-tests).
+
+### Static analysis
+[scan-build](https://clang-analyzer.llvm.org/scan-build.html) cen be used to do static code analysis. It requires LLVM and clang to be installed. See **static-analyzer.sh** for an example of how it could be used. A HTML report with potential bugs will be created.
 
 ### Importing to eclipse
 Eclipse can be used for development and debugging. Assumed that this repository is cloned to your home folder and that the eclipse workspace is located in **~/workspace** the setup could be done similar to this:
@@ -55,8 +61,8 @@ Note: If any cmake configuration files is modified you need to repeat **step 1**
 An echo salt-channel host is provided. If a message that is sent to the host starts with the byte **0x01** the host will echo the same message to the client.
 
 **Host-side:**
-``` 
-$ ./examples/host_echo 
+```
+$ ./examples/host_echo
 Socket created
 bind done
 Waiting for incoming connections...
@@ -67,14 +73,14 @@ Salt handshake succeeded.
 ```
 **Client-side:**
 ```
-$ ./examples/client_echo 
+$ ./examples/client_echo
 Connection to 127.0.0.1
 Connected successfully - Please enter string
 Salt handshake succeeded.
 Enter message: Hello
 client: Hello
 host: Hello
-Enter message: 
+Enter message:
 
 ```
 
@@ -83,11 +89,11 @@ Enter message:
 Salt-channel-c is an implementation of the salt-channel over a serial stream. I.e., the expected input data format and the output data format follows the following structure:
 
     **** Stream message structure ****
-    
+
     4   Size.
         Four size bytes in Littleendian byte order. E.g.:
         Size = 4: sizeBytes[4] = { 0x04, 0x00, 0x00, 0x00 }
-    
+
 
 ### Goals
 
@@ -113,7 +119,7 @@ Except for message *M1* each message follows this structure:
 
     **** Salt-channel message structure ****
     2   Header.
-    
+
     N   Payload.
 
 ### TweetNaCl API
@@ -146,12 +152,3 @@ sha512 is used for hashing and the size of a hash is 64 bytes. If the message to
 
 **Signing:**
 The TweetNaCl API doesn't allow to only generate a signature (64 bytes) or verify a message with the signature separated from the message. Further, the API requires a seperate buffer to put the signed and unsigned message in.
-
-
-### Server handshaking procedure
-
-TODO: Write or refer to  code.
-
-### Client handshaking procedure
-
-TODO: Write or refer to code.

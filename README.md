@@ -91,14 +91,17 @@ Salt-channel-c is an implementation of the salt-channel over a serial stream. I.
     **** Stream message structure ****
 
     4   Size.
-        Four size bytes in Littleendian byte order. E.g.:
+        Four size bytes in Little endian byte order. E.g.:
         Size = 4: sizeBytes[4] = { 0x04, 0x00, 0x00, 0x00 }
 
+    N   Payload
+
+I.e., to send a payload of length **n**, the number of transmitted bytes are **n+4**.
 
 ### Goals
 
 * **Non-blocking:**
-The salt-channel implementation should be non-blocking. I.e., the implementation must be able to run on a system without threads. However, the user of the implementation may make it blocking depending on user injected I/O implementation. The state of each salt-channel process must be either SUCCESS, PENDING or error.
+The salt-channel implementation should be non-blocking. I.e., the implementation must be able to run on a system without threads. However, the user of the implementation may make it blocking depending on user injected I/O implementation. The state of each salt-channel process must be either SUCCESS, PENDING or ERROR.
 
 
 * **No dynamic memory allocation:**
@@ -106,9 +109,9 @@ The salt-channel-c implementation must work on systems with no heap. However, it
 
 
 * **Slow I/O:**
-Do cryptographic computations during I/O. If the I/O is slow, some of the crypthographic computations can be calculated while waiting for I/O:
+Do cryptographic computations during I/O. If the I/O is slow, some of the cryptographic computations can be calculated while waiting for I/O:
 
-    * Client sends the ehpemeral public encryption key in message M1.
+    * Client sends the ephemeral public encryption key in message M1.
     * Host received the client key and immediately sends the host key in message M2.
     * While I/O, calculate the ephemeral key. Immediately after this, start calculating the signature used for M3.
     * Client received the host key and immediately starts calculating this. This can be done while the M3 message is received from the host. Directly after this, the client starts calculating the signature used for M4.
@@ -126,7 +129,7 @@ Except for message *M1* each message follows this structure:
 The TweetNaCl library is a subset of the NaCl library and the crypto API used for this implementation is available at https://nacl.cr.yp.to/.
 
 **Encryption:**
-The encryption API crypto_box_afternm requires the first 32 (crypto_secretbox_ZEROBYTES) bytes to be zero (0x00) padded. After encryption the first 16 (crypto_secretbox_BOXZEROBYTES) will be zero (0x00):
+The encryption API *crypto_box_afternm* requires the first 32 (crypto_secretbox_ZEROBYTES) bytes to be zero (0x00) padded. After encryption the first 16 (crypto_secretbox_BOXZEROBYTES) will be zero (0x00):
 ```
 --> Clear text data must be zero padded:
     clearText[N] = { zeroPadded[32] , clearText[N-32] }
@@ -136,7 +139,7 @@ The encryption API crypto_box_afternm requires the first 32 (crypto_secretbox_ZE
 In order to minimize send data over slow I/O channels the 16 zero padded bytes are neglected.
 
 **Decryption:**
-The decryption API crypto_box_open_afternm requires the first 16 bytes to be zero (0x00) padded. After decryption the first 32 bytes will be zero.
+The decryption API *crypto_box_open_afternm* requires the first 16 bytes to be zero (0x00) padded. After decryption the first 32 bytes will be zero.
 ```
 --> Cipher data must be zero padded:
     encryptedAndAuthenticated[N] = { zeroPadded[16] , cipher[N-16] }
@@ -144,11 +147,11 @@ The decryption API crypto_box_open_afternm requires the first 16 bytes to be zer
     clearText[N-32] = { zeroPadded[32] , clearText[N-32] }
 ```
 
-Both the crypto_box_afternm and the crypto_box_open_afternm methods allows to perform the cryptographic operations directly on the buffers.
+Both the *crypto_box_afternm* and the *crypto_box_open_afternm* methods allows to perform the cryptographic operations directly on the buffers.
 
 
 **Hashing:**
-sha512 is used for hashing and the size of a hash is 64 bytes. If the message to hash is larger than 64 bytes, the API allows for putting the hash where the original message was. I.e.: We don't need a specific storage for the hash, if we dont want to save the original message.
+SHA512 is used for hashing and the size of a hash is 64 bytes. If the message to hash is larger than 64 bytes, the API allows for putting the hash where the original message was. I.e.: We don't need a specific storage for the hash, if we don't want to save the original message.
 
 **Signing:**
-The TweetNaCl API doesn't allow to only generate a signature (64 bytes) or verify a message with the signature separated from the message. Further, the API requires a seperate buffer to put the signed and unsigned message in.
+The TweetNaCl API doesn't allow to only generate a signature (64 bytes) or verify a message with the signature separated from the message. Further, the API requires a separate buffer to put the signed and unsigned message in.

@@ -37,7 +37,7 @@ $ make test
 See the [fuzz-tests directory](fuzz-tests).
 
 ### Static analysis
-[scan-build](https://clang-analyzer.llvm.org/scan-build.html) cen be used to do static code analysis. It requires LLVM and clang to be installed. See **static-analyzer.sh** for an example of how it could be used. A HTML report with potential bugs will be created.
+[scan-build](https://clang-analyzer.llvm.org/scan-build.html) can be used to do static code analysis. It requires LLVM and clang to be installed. See **static-analyzer.sh** for an example of how it could be used, if used as in the example a HTML report with potential bugs will be created.
 
 ### Importing to eclipse
 Eclipse can be used for development and debugging. Assumed that this repository is cloned to your home folder and that the eclipse workspace is located in **~/workspace** the setup could be done similar to this:

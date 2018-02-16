@@ -29,7 +29,7 @@ static salt_ret_t salt_channel_read(salt_io_channel_t *p_rchannel);
 static salt_ret_t salt_channel_write(salt_io_channel_t *p_wchannel);
 
 /*======= Global function implementations ===================================*/
-
+#ifndef USE_SODIUM
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
     FILE* fr = fopen("/dev/urandom", "r");
@@ -45,6 +45,7 @@ void randombytes(unsigned char *p_bytes, unsigned long long length)
     }
     
 }
+#endif
 
 salt_mock_t *salt_mock_create(void)
 {

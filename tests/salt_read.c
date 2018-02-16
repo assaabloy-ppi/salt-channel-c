@@ -11,11 +11,13 @@
 #include "salti_util.h"
 #include "salti_handshake.h"
 
+#ifndef USE_SODIUM
 void randombytes(unsigned char *p_bytes, unsigned long long length)
 {
     (void) p_bytes;
     (void) length;
 }
+#endif
 
 static void read_test(void **state)
 {

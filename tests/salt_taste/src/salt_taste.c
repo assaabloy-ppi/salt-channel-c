@@ -145,6 +145,17 @@ static uint8_t msg2[34] = {
     0x4d, 0x9b, 0x5c, 0x56, 0xf7, 0x55
 };
 
+static uint8_t sha512_abc[64] = {
+    0xdd, 0xaf, 0x35, 0xa1, 0x93, 0x61, 0x7a, 0xba,
+    0xcc, 0x41, 0x73, 0x49, 0xae, 0x20, 0x41, 0x31,
+    0x12, 0xe6, 0xfa, 0x4e, 0x89, 0xa9, 0x7e, 0xa2,
+    0x0a, 0x9e, 0xee, 0xe6, 0x4b, 0x55, 0xd3, 0x9a,
+    0x21, 0x92, 0x99, 0x2a, 0x27, 0x4f, 0xc1, 0xa8,
+    0x36, 0xba, 0x3c, 0x23, 0xa3, 0xfe, 0xeb, 0xbd,
+    0x45, 0x4d, 0x44, 0x23, 0x64, 0x3c, 0xe8, 0x0e,
+    0x2a, 0x9a, 0xc9, 0x4f, 0xa5, 0x4c, 0xa4, 0x9f
+};
+
 static salt_ret_t client_io_write(salt_io_channel_t *p_wchannel)
 {
     uint8_t *expected;
@@ -268,6 +279,11 @@ void randombytes_none(unsigned char *p_bytes, unsigned long long length)
 }
 
 
+/*void randombytes_zero(unsigned char *p_bytes, unsigned long long length)
+{
+    memset(p_bytes, 0, length);
+}
+*/
 
 /* HAL entry point should pass control here */
 int salt_taste_entry_point(salt_taste_hal_api_t *hal, int argc, char *argv[])
@@ -467,6 +483,57 @@ static bool test_crypto_sanity(salt_crypto_api_t *crypto_api, salt_taste_hal_api
 		return false;
     }
 
+    /* crypto_box_keypair() */
+    hal->write_str(1, "... crypto_box_keypair()\r\n");
+    crypto_api->crypto_box_keypair(pdst, client_ek_sec);
+    if (memcmp(pdst, client_ek_pub, crypto_box_PUBLICKEYBYTES))
+    {
+        hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_FAILURE);
+        util_dump(hal, pdst, crypto_box_PUBLICKEYBYTES);
+        return false;   
+    }
+
+    /* crypto_box_beforenm() */
+    hal->write_str(1, "... crypto_box_beforenm()\r\n");
+    crypto_api->crypto_box_beforenm(pdst, host_ek_pub, client_ek_sec);    
+    crypto_api->crypto_box_beforenm(pdst2, client_ek_pub, host_ek_sec); 
+
+    if (memcmp(pdst, pdst2, crypto_box_BEFORENMBYTES))
+    {
+        hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_FAILURE);
+        util_dump(hal, pdst, crypto_box_BEFORENMBYTES);
+        util_dump(hal, pdst2, crypto_box_BEFORENMBYTES);
+        return false;   
+    }
+
+    uint8_t n[crypto_box_NONCEBYTES] = {0};
+    uint8_t m[crypto_box_ZEROBYTES + sizeof(msg)] = {0};
+    uint8_t c[sizeof(m)] = {0};
+    //uint8_t m2[sizeof(m)] = {0};
+
+    memcpy(m + crypto_box_ZEROBYTES, msg, sizeof(msg));
+        
+    crypto_api->crypto_box_afternm(c, m, sizeof(m), n, pdst);
+    util_dump(hal, c, sizeof(c));
+    crypto_api->crypto_box_open_afternm(c, c, sizeof(m), n, pdst);
+
+    if (memcmp(msg, c + crypto_box_ZEROBYTES, sizeof(msg)))
+    {
+        hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_FAILURE);
+        util_dump(hal, c, sizeof(c));
+        return false;   
+    }
+
+    /* crypto_hash() */
+    hal->write_str(1, "... crypto_hash()\r\n");
+    crypto_api->crypto_hash(pdst, "abc", 3);
+
+    if (memcmp(pdst, sha512_abc, crypto_hash_BYTES))
+    {
+        hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_FAILURE);
+        util_dump(hal, sha512_abc, crypto_hash_BYTES);
+        return false;   
+    }
 
 	hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_SUCCESS);
 	return true;

@@ -9,6 +9,12 @@
 #include "salti_util.h"
 #include "salt.h"
 
+void randombytes(unsigned char *p_bytes, unsigned long long length)
+{
+    (void) p_bytes;
+    (void) length;
+}
+
 static void dummy(void **state)
 {
     (void) state;
@@ -37,6 +43,12 @@ static void dummy(void **state)
     assert_true(time_check(5000, 5000, 0, 1000));
     assert_false(time_check(5000, 6001, 0, 1000));
 
+    /*
+    assert_true(time_check(INT32_MAX, INT32_MAX, 0, 1000));
+    assert_true(time_check(INT32_MAX, INT32_MAX+1000, 0, 1000));
+    assert_false(time_check(INT32_MAX, INT32_MAX+1001, 0, 1000));
+    */
+    assert_true(false);
 }
 
 int main(void)

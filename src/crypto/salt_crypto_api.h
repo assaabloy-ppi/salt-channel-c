@@ -43,10 +43,10 @@ typedef     void (*f_randombytes)(uint8_t *const buf, const crypto_len_t buf_len
 typedef     int (*f_crypto_hash_sha512_init)(crypto_hash_sha512_state *state);
 
 typedef     int (*f_crypto_hash_sha512_update)(crypto_hash_sha512_state *state,
-                                    const unsigned char *in, crypto_len_t inlen);
+                                    const uint8_t *in, crypto_len_t inlen);
 
 typedef     int (*f_crypto_hash_sha512_final)(crypto_hash_sha512_state *state,
-                                    unsigned char *out);
+                                    uint8_t *out);
 
 typedef     int (*f_crypto_sign_verify_detached)(const unsigned char *sig,
                                      const unsigned char *m,

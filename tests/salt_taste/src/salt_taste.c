@@ -483,6 +483,13 @@ static bool test_crypto_sanity(salt_crypto_api_t *crypto_api, salt_taste_hal_api
 		return false;
     }
 
+    hal->write_str(1, "... crypto_sign_verify_detached()\r\n");
+    int signdet_res = crypto_api->crypto_sign_verify_detached(pdst, msg, sizeof(msg), &(client_sk_sec[32]));
+    if (!signdet_res) {
+        hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_FAILURE);
+        return false;        
+    }
+
     /* crypto_box_keypair() */
     hal->write_str(1, "... crypto_box_keypair()\r\n");
     crypto_api->crypto_box_keypair(pdst, client_ek_sec);
@@ -526,7 +533,7 @@ static bool test_crypto_sanity(salt_crypto_api_t *crypto_api, salt_taste_hal_api
 
     /* crypto_hash() */
     hal->write_str(1, "... crypto_hash()\r\n");
-    crypto_api->crypto_hash(pdst, "abc", 3);
+    crypto_api->crypto_hash(pdst, (const uint8_t*)"abc", 3);
 
     if (memcmp(pdst, sha512_abc, crypto_hash_BYTES))
     {
@@ -534,6 +541,24 @@ static bool test_crypto_sanity(salt_crypto_api_t *crypto_api, salt_taste_hal_api
         util_dump(hal, sha512_abc, crypto_hash_BYTES);
         return false;   
     }
+
+    /* multipart crypto_hash_sha512 */
+    hal->write_str(1, "... crypto_hash_sha512_*()\r\n");
+    
+    crypto_hash_sha512_state_tweet  hash_state;
+    crypto_api->crypto_hash_sha512_init(&hash_state);
+    crypto_api->crypto_hash_sha512_update(&hash_state, (const uint8_t*)"a", 1);
+    crypto_api->crypto_hash_sha512_update(&hash_state, (const uint8_t*)"bc", 2);
+    crypto_api->crypto_hash_sha512_final(&hash_state, pdst);
+
+    if (memcmp(pdst, sha512_abc, crypto_hash_BYTES))
+    {
+        hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_FAILURE);
+        util_dump(hal, sha512_abc, crypto_hash_BYTES);
+        return false;   
+    }
+
+
 
 	hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_SUCCESS);
 	return true;

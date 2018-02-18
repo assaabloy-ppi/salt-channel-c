@@ -108,7 +108,7 @@ uint64_t trigger_elapsed_counter(int counter_idx, bool start_it)
 		  diff.tv_sec = end.tv_sec - ts[counter_idx].tv_sec;
 		  diff.tv_nsec = end.tv_nsec - ts[counter_idx].tv_nsec;
 	    }
-		return diff.tv_sec * 1000ULL + diff.tv_nsec / 1000000ULL;
+		return diff.tv_sec * 1000ULL + diff.tv_nsec / 1000ULL; //1000000ULL;
 	}
 
 }

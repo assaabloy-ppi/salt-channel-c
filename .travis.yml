@@ -1,8 +1,9 @@
 language: C
-install: make cmake valgrind libsodium-dev
+install: make cmake valgrind
 compiler:
  - gcc
 script:
+ - sh travis-install-libsodium.sh
  - mkdir -p build_tweetnacl
  - cd build_tweetnacl
  - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug ..

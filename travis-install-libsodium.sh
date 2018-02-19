@@ -11,7 +11,7 @@ if [ ! -d "$HOME/libsodium/lib" ]; then
   tar xvfz libsodium-1.0.11.tar.gz
   cd libsodium-1.0.11
   ./configure --prefix=$HOME/libsodium
-  make
+  make -j
   make install
 else
   echo 'Using cached directory.'

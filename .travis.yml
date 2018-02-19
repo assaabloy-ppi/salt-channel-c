@@ -3,11 +3,15 @@ addons:
     apt:
       packages:
        - valgrind
-install: make cmake valgrind
+cache:
+    apt: true
+    directories: $HOME/libsodium
+install:
+  - sh travis-install-libsodium.sh
+  - export LD_LIBRARY_PATH=$HOME/libsodium/lib:$HOME/capnp:$LD_LIBRARY_PATH
 compiler:
  - gcc
 script:
- - sh travis-install-libsodium.sh
  - mkdir -p build_tweetnacl
  - cd build_tweetnacl
  - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug ..

@@ -1,12 +1,20 @@
 language: C
-install: make cmake valgrind
+install: make cmake valgrind libsodium-dev
 compiler:
  - gcc
 script:
- - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug .
+ - mkdir -p build_tweetnacl
+ - cd build_tweetnacl
+ - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug ..
  - make
  - make test
+ - sh valgrind.sh
  - gcov src/CMakeFiles/salt.dir/salt.c.gcno src/CMakeFiles/salt.dir/salti_handshake.c.gcno src/CMakeFiles/salt.dir/salti_util.c.gcno
+ - cd ..
+ - mkdir -p build_sodium
+ - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug ..
+ - make
+ - make test
  - sh valgrind.sh
 
 after_success:

@@ -9,6 +9,7 @@
 
 /* C Library includes */
 #include <string.h> /* memcpy, memset */
+#include <stdlib.h> /* labs */
 
 /* Salt library includes */
 #include "salti_util.h"
@@ -505,22 +506,19 @@ uint8_t salt_write_create(salt_msg_t *p_msg)
 
 }
 
-#include <stdio.h>
 bool time_check(uint32_t first, uint32_t now, uint32_t peer_time, uint32_t thresh)
 {
 
-    first   &= 0x7FFFFFFF;
-    now     &= 0x7FFFFFFF;
+    int32_t diff = peer_time - now + first;
 
-    printf("first: %u\r\n", first);
-    printf("now: %u\r\n", now);
-    printf("peer_time: %u\r\n", peer_time);
-    printf("thresh: %u\r\n", thresh);
+    if (INT32_MIN == diff) {
+        diff = INT32_MAX;
+    }
+    else {
+        diff = (diff < 0) ? -diff : diff;
+    }
 
-    printf("now - first: %u\r\n", now - first);
-    printf("peer_time + thresh: %u\r\n", peer_time + thresh);
-
-    if (now - first > peer_time + thresh) {
+    if ((uint32_t) diff > thresh) {
         return false;
     }
 

@@ -3,9 +3,12 @@ addons:
     apt:
       packages:
        - valgrind
-       - libsodium-dev
 cache:
     apt: true
+    directories: $HOME/libsodium
+install:
+  - sh travis-install-libsodium.sh
+  - export LD_LIBRARY_PATH=$HOME/libsodium/lib:$HOME/capnp:$LD_LIBRARY_PATH
 compiler:
  - gcc
 script:

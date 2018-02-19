@@ -262,7 +262,6 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
                                                  p_channel->write_channel.size);
 
                 if (SALT_SUCCESS == ret_code) {
-                    memset(p_channel->hdshk_buffer, 0x00U, p_channel->hdshk_buffer_size);
                     /*
                      * If an expected public key of the peer is procided, check
                      * that this matches the from the one authenticated in M4.
@@ -444,8 +443,6 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
 
                 if (SALT_SUCCESS == ret_code) {
                     p_channel->state = SALT_SESSION_ESTABLISHED;
-                    memset(p_channel->hdshk_buffer, 0x00, p_channel->hdshk_buffer_size);
-
                 }
                 break;
             case SALT_ERROR_STATE:

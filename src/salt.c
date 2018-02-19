@@ -377,6 +377,11 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with)
         ret = salti_handshake_client(p_channel, p_with);
     }
 
+    if (ret != SALT_PENDING) {
+        /* If handshake succeeded or failed, clear the handshake buffer. */
+        memset(p_channel->hdshk_buffer, 0x00U, p_channel->hdshk_buffer_size);
+    }
+
     return ret;
 
 }

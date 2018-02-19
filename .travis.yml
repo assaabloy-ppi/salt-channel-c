@@ -8,7 +8,7 @@ cache:
     directories: $HOME/libsodium
 install:
   - sh travis-install-libsodium.sh
-  - export LD_LIBRARY_PATH=$HOME/libsodium/lib:$HOME/capnp:$LD_LIBRARY_PATH
+  - export LD_LIBRARY_PATH=$HOME/libsodium/lib
 compiler:
  - gcc
 script:

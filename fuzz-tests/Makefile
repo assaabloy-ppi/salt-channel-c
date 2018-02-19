@@ -3,9 +3,9 @@ FLAGS_COMMON = -Wall -Wpedantic -Wextra -Werror -std=c99
 INC_PATHS_GCC = -I../src -I../tests -I../src/external/tweetnacl
 INC_PATHS_AFL = -I../src -I../tests -I../src/external/tweetnacl
 
-GCC_FLAGS = $(INC_PATHS_GCC) $(FLAGS_COMMON) -O0 -g -ggdb
+GCC_FLAGS = $(INC_PATHS_GCC) $(FLAGS_COMMON) -O0 -g -ggdb -fprofile-arcs -ftest-coverage
 AFL_FLAGS = $(INC_PATHS_AFL) -std=c99
-SRC = ../src/salt.c ../src/salti_util.c ../src/salti_handshake.c read_util.c
+SRC = ../src/salt.c ../src/salti_util.c ../src/salti_handshake.c
 
 FUZZ_TARGETS = host_a1m1 client_m2 client_m3 host_m4 client_a2 host_app client_app read_parse
 
@@ -26,25 +26,25 @@ endif
 .PHONY: all
 
 _build/salt.o: ../src/salt.c
-	$(CC) -c $^ $(GCC_FLAGS) -o $@
+	gcc -c $^ $(GCC_FLAGS) -o $@
 
 _build/salti_util.o: ../src/salti_util.c
-	$(CC) -c $^ $(GCC_FLAGS) -o $@
+	gcc -c $^ $(GCC_FLAGS) -o $@
 
 _build/salti_handshake.o: ../src/salti_handshake.c
-	$(CC) -c $^ $(GCC_FLAGS) -o $@
+	gcc -c $^ $(GCC_FLAGS) -o $@
 
 _build/crypt_mock.o: crypt_mock.c
-	$(CC) -c $^ -o $@ $(INC_PATHS_GCC)
+	gcc -c $^ -o $@ $(INC_PATHS_GCC)
 
 _build/test_data_mock.o: test_data_mock.c
-	$(CC) -c $^ $(GCC_FLAGS) -o $@
+	gcc -c $^ $(GCC_FLAGS) -o $@
 
 _build/test_data.o: ../tests/test_data.c
-	$(CC) -c $^ $(GCC_FLAGS) -o $@
+	gcc -c $^ $(GCC_FLAGS) -o $@
 
 _build/tweetnacl.o: ../src/external/tweetnacl/tweetnacl.c
-	$(CC) -c $^ $(GCC_FLAGS) -o $@
+	gcc -c $^ $(GCC_FLAGS) -o $@
 
 $(EXE_FUZZ_TARGETS):
 
@@ -58,7 +58,7 @@ $(EXE_COV):
 %.cmin: $(SRC) $(SRC_FUZZ_TARGETS)
 	mkdir -p _build
 	mkdir -p output
-	$(CC) -DAFL $(SRC) $*.c  $(AFL_FLAGS) -o _build/$*.fuzz
+	afl-gcc -DAFL $(SRC) $*.c  $(AFL_FLAGS) -o _build/$*.fuzz
 	afl-cmin -i input/$* -o input/cmin_$* ./_build/$*.fuzz
 	rm -rf ./input/$*
 	mv ./input/cmin_$* ./input/$*	
@@ -67,21 +67,21 @@ $(EXE_COV):
 %.fuzz:  $(SRC) $(SRC_FUZZ_TARGETS) 
 	mkdir -p _build
 	mkdir -p output
-	AFL_HARDEN=1 $(CC) -DAFL $(SRC) $*.c  $(AFL_FLAGS) -o _build/$*.fuzz
+	AFL_HARDEN=1 afl-gcc -DAFL $(SRC) $*.c  $(AFL_FLAGS) -o _build/$*.fuzz
 	AFL_HARDEN=1 afl-fuzz -i input/$* -o output/$* ./_build/$*.fuzz
 
 # AFL fuzz with ASAN sanitizer
 %.afuzz:  $(SRC) $(SRC_FUZZ_TARGETS) 
 	mkdir -p _build
 	mkdir -p output
-	AFL_USE_ASAN=1 $(CC) -DAFL $(SRC) $*.c  $(AFL_FLAGS) -o _build/$*.fuzz
+	AFL_USE_ASAN=1 afl-gcc -m32 -DAFL $(SRC) $*.c  $(AFL_FLAGS) -o _build/$*.fuzz
 	AFL_USE_ASAN=1 afl-fuzz -m none -i input/$* -o output/$* ./_build/$*.fuzz
 
 # libFuzzer fuzz with ASAN+UBSAN sanitizers
 %.libfuzz: $(SRC)
 	mkdir -p _build
 	mkdir -p output	
-	$(CC) $(GCC_FLAGS) -Wno-unused-parameter -fsanitize=fuzzer,address,undefined  \
+	clang $(GCC_FLAGS) -Wno-unused-parameter -fsanitize=fuzzer,address,undefined  \
 				 $(SRC) $*.c \
 				-lm -o _build/$*.libfuzz
 	
@@ -96,8 +96,8 @@ $(EXE_COV):
 %.cov: $(EXE_OBJ)
 	mkdir -p _build
 	mkdir -p ./output/$*/queue
-	$(CC) -c $*.c -DAFL $(GCC_FLAGS) -o _build/$*.o
-	$(CC) -lm $^ _build/$*.o -o _build/$@  --coverage $(GCC_FLAGS)
+	gcc -c $*.c -DAFL $(GCC_FLAGS) -o _build/$*.o
+	gcc -lm $^ _build/$*.o -o _build/$@  -lgcov --coverage $(GCC_FLAGS)
 	cd _build; find ../input/$* -type f -exec bash -c "cat {} | ../_build/$*.cov" \;
 	cd _build; find ../output/$*/queue -type f -exec bash -c "cat {} | ../_build/$*.cov" \;
 	lcov --base-directory . --directory . --capture --output-file _build/coverage.info

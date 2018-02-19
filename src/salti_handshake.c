@@ -646,12 +646,18 @@ salt_state_t salti_handle_m1(salt_channel_t *p_channel,
         return SALT_ERROR_STATE;
     }
 
-    if (salti_bytes_to_u32(&p_data[6]) == 1) {
+    uint32_t time = salti_bytes_to_u32(&p_data[6]);
+
+    if (time == 1U) {
         salti_get_time(p_channel, &p_channel->peer_epoch);
         p_channel->time_supported &= 1;
     }
-    else {
+    else if (time == 0U) {
         p_channel->time_supported = 0;
+    }
+    else {
+        p_channel->err_code = SALT_ERR_BAD_PROTOCOL;
+        return SALT_ERROR_STATE;
     }
 
     if (((p_data[5] & SALT_M1_SIG_KEY_INCLUDED_FLAG) > 0U) && (size == 74U)) {
@@ -790,13 +796,18 @@ salt_state_t salti_handle_m2(salt_channel_t *p_channel,
         return SALT_ERROR_STATE;
     }
 
+    uint32_t time = salti_bytes_to_u32(&p_data[2]);
 
-    if (salti_bytes_to_u32(&p_data[2]) == 1) {
+    if (time == 1U) {
         salti_get_time(p_channel, &p_channel->peer_epoch);
         p_channel->time_supported &= 1;
     }
-    else {
+    else if (time == 0U) {
         p_channel->time_supported = 0;
+    }
+    else {
+        p_channel->err_code = SALT_ERR_BAD_PROTOCOL;
+        return SALT_ERROR_STATE;
     }
 
     /* crypto_box_beforenm always returns 0 */

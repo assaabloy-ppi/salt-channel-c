@@ -135,6 +135,8 @@ salt_err_t salt_read_init(uint8_t type,
 
 uint8_t salt_write_create(salt_msg_t *p_msg);
 
+bool time_check(uint32_t first, uint32_t my_time, uint32_t peer_time, uint32_t thresh);
+
 /**
  * @brief Return a pointer to salt mode string.
  *

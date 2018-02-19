@@ -98,6 +98,9 @@ Salt-channel-c is an implementation of the salt-channel over a serial stream. I.
 
 I.e., to send a payload of length **n**, the number of transmitted bytes are **n+4**.
 
+### Thread safety
+No effort is put to making the salt-channel-c library thread safe.
+
 ### Goals
 
 * **Non-blocking:**

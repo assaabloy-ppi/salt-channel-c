@@ -1,4 +1,8 @@
 language: C
+addons:
+    apt:
+      packages:
+       - valgrind
 install: make cmake valgrind
 compiler:
  - gcc
@@ -9,14 +13,17 @@ script:
  - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug ..
  - make
  - make test
- - sh valgrind.sh
- - gcov src/CMakeFiles/salt.dir/salt.c.gcno src/CMakeFiles/salt.dir/salti_handshake.c.gcno src/CMakeFiles/salt.dir/salti_util.c.gcno
  - cd ..
  - mkdir -p build_sodium
+ - cd build_sodium
  - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug ..
  - make
  - make test
+ - cd ..
  - sh valgrind.sh
+ - cd build_tweetnacl
+ - gcov src/CMakeFiles/salt.dir/salt.c.gcno src/CMakeFiles/salt.dir/salti_handshake.c.gcno src/CMakeFiles/salt.dir/salti_util.c.gcno
+
 
 after_success:
  - bash <(curl -s https://codecov.io/bash)

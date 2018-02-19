@@ -16,7 +16,7 @@ script:
  - cd ..
  - mkdir -p build_sodium
  - cd build_sodium
- - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug ..
+ - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug -DUSE_SODIUM=1 ..
  - make
  - make test
  - cd ..

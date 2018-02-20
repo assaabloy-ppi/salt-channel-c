@@ -97,6 +97,6 @@ int main(void)
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(read_test),
         cmocka_unit_test(second_test),
-    };    
+    };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

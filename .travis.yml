@@ -1,5 +1,5 @@
 language: C
-install: make cmake
+install: make cmake valgrind
 compiler:
  - gcc
 script:
@@ -7,6 +7,4 @@ script:
  - make
  - make test
  - gcov src/CMakeFiles/salt.dir/salt.c.gcno src/CMakeFiles/salt.dir/salti_handshake.c.gcno src/CMakeFiles/salt.dir/salti_util.c.gcno
-
-after_success:
- git push- bash <(curl -s https://codecov.io/bash)
+ - sh valgrind.sh

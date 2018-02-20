@@ -108,6 +108,11 @@ int crypto_verify_32(const u8 *x,const u8 *y)
   return vn(x,y,32);
 }
 
+int crypto_verify_64(const u8 *x,const u8 *y)
+{
+  return vn(x,y,64);
+}
+
 sv core(u8 *out,const u8 *in,const u8 *k,const u8 *c,int h)
 {
   u32 w[16],x[16],y[16],t[4];
@@ -772,7 +777,6 @@ int crypto_sign_verify_detached_tweet(const unsigned char *sig,
     u8 t[32],h[64];
     gf p[4],q[4];
 
-    if (mlen < 64) return -1;
     if (unpackneg(q,pk)) return -1;
 
     crypto_hash_sha512_init_tweet(&hash_state);
@@ -783,6 +787,7 @@ int crypto_sign_verify_detached_tweet(const unsigned char *sig,
     crypto_hash_sha512_update_tweet(&hash_state, h, 64);
     crypto_hash_sha512_update_tweet(&hash_state, m, mlen);
     crypto_hash_sha512_final_tweet(&hash_state, h);
+
     reduce(h);
     scalarmult(p,q,h);
     scalarbase(q,sig + 32);

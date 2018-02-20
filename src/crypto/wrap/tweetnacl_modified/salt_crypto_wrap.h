@@ -7,9 +7,10 @@ extern "C" {
 #endif
 
 #include "tweetnacl_modified.h"
-	
+
 /* map impl-dependent to unified naming */
 typedef struct crypto_hash_sha512_state_tweet crypto_hash_sha512_state;
+	
 
 #ifdef __cplusplus
 }

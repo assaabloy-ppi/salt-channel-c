@@ -9,12 +9,16 @@ extern "C" {
  * @file salt.h
  *
  * Salt channel version 2 header file. The salt-channel-c follows the specification:
- * https://github.com/assaabloy-ppi/salt-channel/blob/master/files/spec/spec-salt-channel-v2-draft4.md
+ * https://github.com/assaabloy-ppi/salt-channel/blob/master/files/spec/salt-channel-v2-final1.md
  *
  * Current state is:
- *      - The time field is supported, but is never checked when received.
  *      - Resume is not supported.
  *      - Virtual hosting is not supported.
+ *      
+ *      
+ * Implementation details:
+ *  No functionality is thread safe, if using in a milti threaded environment the user
+ *  must make sure to handle thread safety.
  *
  */
 

@@ -14,7 +14,7 @@ clean: ## Project cleanup
 build__x86_64-linux-stdout_full: clean  ## Build for HAL 'x86_64-linux-stdout_full'
 	mkdir build && cd build && \
 	cmake -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain/x86_64-linux-elf-gcc.cmake \
-		  -DCRYPTO_BACKEND=tweetnacl_modified \
+		  -DCRYPTO_BACKEND=libsodium \
 		  -DHAL=x86_64-linux-stdout_full .. && \
 	cmake --build . && \
 	./salt_taste

@@ -40,13 +40,14 @@ static void host_delay_threshold_m1_m4(void **state)
     memset(client_buffer, 0xEE, sizeof(client_buffer));
 
     host_ret = salt_create_signature(host_channel);
+    assert_true(SALT_SUCCESS == host_ret);
     host_ret = salt_init_session(host_channel, host_buffer, SALT_HNDSHK_BUFFER_SIZE);
+    assert_true(SALT_SUCCESS == host_ret);
 
     client_ret = salt_create_signature(client_channel);
+    assert_true(SALT_SUCCESS == client_ret);
     client_ret = salt_init_session(client_channel, client_buffer, SALT_HNDSHK_BUFFER_SIZE);
-
-    host_ret = SALT_PENDING;
-    client_ret = SALT_PENDING;
+    assert_true(SALT_SUCCESS == client_ret);
 
     salt_set_delay_threshold(host_channel, 5);
 

@@ -18,18 +18,19 @@ int my_crypto_sign_keypair(unsigned char *pk, unsigned char *sk)
 
 void salt_crypto_api_init(salt_crypto_api_t *api, randombytes_t rng)
 {
+    /* sodium init will block if no RNG impl. defined */
+    /* but in deterministic scenario it's not required so leaved commented for now */
     //randombytes_set_implementation(&randombytes_salsa20_implementation);
-    sodium_init();
-    //int res = sodium_init(); // [TODO]
-    //res++;
-
+    //int res = sodium_init();
+    //(void)res;
+    
 	salt_crypto_api_t _api = {
 		//.crypto_sign_keypair = crypto_sign_keypair,       // [NONDETERMINISTIC]
         .crypto_sign_keypair = my_crypto_sign_keypair,  // [DETERMINISTIC]
     	.crypto_sign = crypto_sign,
     	.crypto_sign_open = crypto_sign_open,
     	//.crypto_box_keypair = crypto_box_keypair,   // [NONDETERMINISTIC]
-        .crypto_box_keypair = crypto_scalarmult_base, // [DETERMINISTIC]
+        .crypto_box_keypair = (f_crypto_box_keypair)crypto_scalarmult_base, // [DETERMINISTIC]
     	.crypto_box_beforenm = crypto_box_beforenm,
     	.crypto_box_afternm = crypto_box_afternm,
     	.crypto_box_open_afternm = crypto_box_open_afternm,

@@ -35,9 +35,9 @@ macro(hal_update_exe_target target )
     # additional POST BUILD setps to create the .bin and .hex files
     add_custom_command(TARGET ${target}
             POST_BUILD
-            COMMAND arm-none-eabi-size ${target}.out
-            COMMAND arm-none-eabi-objcopy -O binary ${target}.out "${target}.bin"
-            COMMAND arm-none-eabi-objcopy -O ihex ${target}.out "${target}.hex"
+            COMMAND ${TOOLCHAIN_ROOT}/bin/arm-none-eabi-size ${target}.out
+            COMMAND ${TOOLCHAIN_ROOT}/bin/arm-none-eabi-objcopy -O binary ${target}.out "${target}.bin"
+            COMMAND ${TOOLCHAIN_ROOT}/bin/arm-none-eabi-objcopy -O ihex ${target}.out "${target}.hex"
             COMMENT "post build steps for ${target}")
 
     add_nrf_targets(${target})

@@ -21,9 +21,11 @@ build__x86_64-linux-stdout_full: clean  ## Build for HAL 'x86_64-linux-stdout_fu
 
 #-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON 
 #-DCRYPTO_BACKEND=tweetnacl_modified
-rebuild__arm_nrf52-none-eabi-gcc: clean  ## Build for HAL 'arm_nrf52-none-eabi-gcc'
+build__arm_nrf52-none-eabi-gcc: clean  ## Build for HAL 'arm_nrf52-none-eabi-gcc'
+
 	mkdir build && cd build && \
 	cmake -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain/arm_nrf5x-none-eabi-gcc.cmake \
+		  -DTOOLCHAIN_ROOT=/arm \
 		  -DNRF5_SDK_ROOT=/home/kotomysha/ASSA/dev/nrf-sdk \
 		  -DSOFTDEVICE_REL_PATH=components/softdevice/s132/hex/s132_nrf52_5.0.0_softdevice.hex \
 		  -DNRF_TARGET=NRF52  \

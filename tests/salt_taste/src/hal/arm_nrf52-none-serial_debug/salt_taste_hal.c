@@ -215,16 +215,16 @@ uint64_t trigger_elapsed_counter(int counter_idx, bool start_it)
 	else {
 		uint32_t end;
 		int32_t ticks_diff = 0;
-		int32_t ms;
+		uint64_t us;
 
 
 		//ts[counter_idx] = app_timer_cnt_get();
 		//nrf_delay_ms(2500);
 		end = app_timer_cnt_get();
 		ticks_diff = app_timer_cnt_diff_compute(end, ts[counter_idx]);
-		ms = ticks_diff * ( ( APP_TIMER_CONFIG_RTC_FREQUENCY + 1 ) * 1000 ) / APP_TIMER_CLOCK_FREQ;
+		us = ticks_diff * ( ( APP_TIMER_CONFIG_RTC_FREQUENCY + 1 ) * 1000000ULL ) / APP_TIMER_CLOCK_FREQ;
 		//printf("ms: %"PRIu32" \r\n", (uint32_t)ms); // debug output
-		return ms;
+		return us;
 		//leave_rt();
 
 		

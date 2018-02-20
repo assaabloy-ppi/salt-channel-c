@@ -10,7 +10,7 @@ endif ()
 
 set(CMAKE_LIBRARY_ARCHITECTURE arm)
 
-cmake_force_c_compiler(arm-none-eabi-gcc GNU)
+cmake_force_c_compiler(${TOOLCHAIN_ROOT}/bin/arm-none-eabi-gcc GNU)
 
 execute_process(
   COMMAND ${CMAKE_C_COMPILER} -print-file-name=libc.a
@@ -185,9 +185,9 @@ macro(nRF5x_setup)
     set(CMAKE_CXX_STANDARD 98)
 
     # configure cmake to use the arm-none-eabi-gcc
-    set(CMAKE_C_COMPILER "arm-none-eabi-gcc")
-    set(CMAKE_CXX_COMPILER "arm-none-eabi-c++")
-    set(CMAKE_ASM_COMPILER "arm-none-eabi-gcc")
+    #set(CMAKE_C_COMPILER "arm-none-eabi-gcc")
+    #set(CMAKE_CXX_COMPILER "arm-none-eabi-c++")
+    #set(CMAKE_ASM_COMPILER "arm-none-eabi-gcc")
 
     #include_directories(
     #        "${NRF5_SDK_ROOT}/components/softdevice/common/softdevice_handler"

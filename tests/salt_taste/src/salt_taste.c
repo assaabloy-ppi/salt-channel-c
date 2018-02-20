@@ -1,5 +1,6 @@
 #include <stdio.h>
 //#include <stdbool.h>
+#include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -289,12 +290,14 @@ void randombytes_none(unsigned char *p_bytes, unsigned long long length)
 int salt_taste_entry_point(salt_taste_hal_api_t *hal, int argc, char *argv[])
 {	
 	bool success = false;
-	uint64_t ms;
-
-	salt_crypto_api_init(&crypto, randombytes_none);
+	uint64_t us;
 
 	hal->write_str(1, "\r\n\r\n");
 	success = test_build(&crypto, hal);
+
+    hal->write_str(1, "Crypto init ... ");
+    salt_crypto_api_init(&crypto, randombytes_none);
+    hal->write_str(1, "done \r\n");
 
 	for (int i=0; i<42; i++)
 		hal->write_str(1, "=");
@@ -310,8 +313,9 @@ int salt_taste_entry_point(salt_taste_hal_api_t *hal, int argc, char *argv[])
 
 	if (success) {
 		hal->write_str(1, "------ Handshake measurement (loops: 1)...\r\n");
-		ms = calc_handshake_perf(&crypto, hal, 1);
-		hal->dprintf(1, "------ Spent in one loop: %d us.\r\n", ms);
+		us = calc_handshake_perf(&crypto, hal, 1);
+		hal->dprintf(1, "------ Spent in one loop: %ld ms (%ld%ld us).\r\n", 
+                        (uint32_t)us/1000, (uint32_t)us/1000, (uint32_t)us%1000);
 	}
 
 
@@ -482,13 +486,13 @@ static bool test_crypto_sanity(salt_crypto_api_t *crypto_api, salt_taste_hal_api
 		return false;
     }
 
-   /* hal->write_str(1, "... crypto_sign_verify_detached()\r\n");
+/*    hal->write_str(1, "... crypto_sign_verify_detached()\r\n");
     int signdet_res = crypto_api->crypto_sign_verify_detached(pdst, msg, sizeof(msg), &(client_sk_sec[32]));
     if (!signdet_res) {
         hal->notify(SALT_TASTE_EVENT_CRYPTO_SANITY_STATUS, SALT_TASTE_STATUS_FAILURE);
         return false;        
-    }*/
-
+    }
+*/
     /* crypto_box_keypair() */
     hal->write_str(1, "... crypto_box_keypair()\r\n");
     crypto_api->crypto_box_keypair(pdst, client_ek_sec);

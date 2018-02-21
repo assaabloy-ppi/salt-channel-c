@@ -34,6 +34,41 @@ Quick start - NRF52
 5. Run: `make build__arm_nrf52-none-eabi-gcc`
 
 
+Typical output
+====================
+
+Below is log for Linux x86_64 target with `tweetnacl_modified` backend:
+```
+Ready ... 
+Crypto backend: tweetnacl_modified
+Crypto init ... done 
+Version: ?
+==========================================
+EVENT: id=ready              status=done/ok           
+EVENT: id=HAL                status=init              
+EVENT: id=HAL                status=done/ok           
+EVENT: id=crypto_sanity      status=init              
+... crypto_sign_keypair()
+... crypto_sign()
+      srcline:565, ptr: 0x7ffc7ce37c90, size: 67 -> 7f4e2596d65bef43defcc4b0de8ffadc68f642c608859c9b7a1cebcb520ad0b0e91659a1374001707305cc25dfbb7cb720f51c2eb843d9ea344bc66d65d66c0d030303
+... crypto_sign_open()
+... crypto_box_keypair()
+... crypto_box_beforenm()
+      srcline:565, ptr: 0x7ffc7ce37c60, size: 35 -> 0000000000000000000000000000000001bf37050fa8165ab2cb2e874c29034805d321
+... crypto_hash()
+... crypto_hash_sha512_*()
+EVENT: id=crypto_sanity      status=done/ok           
+------ Handshake measurement (loops: 1)...
+EVENT: id=handshake          status=init              
+EVENT: id=handshake          status=done/ok           
+------ Spent in one loop: 55 ms (55450 us).
+EVENT: id=shutdown           status=init
+```
+
+BTW, all above events may be easely handled in HAL layer, for example, 
+when HAL has no console, custom event handler may change specific pin level to monitor execution state.
+
+
 HowTo: switch crypto backend (tweetnacl/libsodium)
 ==============================
 
@@ -59,5 +94,5 @@ ToDo
 * cleanup
 * add server-side handshake perfmetering
 * option: MINIMIZE_MEMUSE
-* your suggestions ...
+* your suggestions ... please report via adding issues (bug/enhancement)
 

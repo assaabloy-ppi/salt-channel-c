@@ -37,3 +37,9 @@ build/
 *.su
 *.gcno
 *.profraw
+
+# Exceptions
+
+!src/crypto/lib/libsodium/lib/**/*.a
+
+

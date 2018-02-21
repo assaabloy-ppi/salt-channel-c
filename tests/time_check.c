@@ -9,11 +9,6 @@
 #include "salti_util.h"
 #include "salt.h"
 
-/*void randombytes(unsigned char *p_bytes, unsigned long long length)
-{
-    (void) p_bytes;
-    (void) length;
-}*/
 
 static void dummy(void **state)
 {

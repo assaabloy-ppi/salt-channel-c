@@ -5,14 +5,14 @@
 extern salt_crypto_api_t crypto;
 
 
-/* TweetNaCl doesn't provide RNG so use externally defined */
+/* TweetNaCl doesn't provide RNG so use this one, externally defined */
 void randombytes(unsigned char *p_bytes, unsigned long long length){
-    crypto.randombytes(p_bytes, length);
+    if (crypto.randombytes) 
+        crypto.randombytes(p_bytes, length);
 }
 
 void salt_crypto_api_init(salt_crypto_api_t *api, randombytes_t rng)
 {
-
 	salt_crypto_api_t _api = {
 		.crypto_sign_keypair = crypto_sign_ed25519_tweet_keypair, 
     	.crypto_sign = crypto_sign_ed25519_tweet,

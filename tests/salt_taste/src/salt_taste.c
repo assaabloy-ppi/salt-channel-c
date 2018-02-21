@@ -273,19 +273,6 @@ bool test_client_handshake(void) {
 
 
 
-void randombytes_none(unsigned char *p_bytes, unsigned long long length)
-{
-    (void) p_bytes;
-    (void) length;
-}
-
-
-/*void randombytes_zero(unsigned char *p_bytes, unsigned long long length)
-{
-    memset(p_bytes, 0, length);
-}
-*/
-
 /* HAL entry point should pass control here */
 int salt_taste_entry_point(salt_taste_hal_api_t *hal, int argc, char *argv[])
 {	
@@ -296,7 +283,7 @@ int salt_taste_entry_point(salt_taste_hal_api_t *hal, int argc, char *argv[])
 	success = test_build(&crypto, hal);
 
     hal->write_str(1, "Crypto init ... ");
-    salt_crypto_api_init(&crypto, randombytes_none);
+    salt_crypto_api_init(&crypto, NULL);  /* deterministic mode */
     hal->write_str(1, "done \r\n");
 
 	for (int i=0; i<42; i++)

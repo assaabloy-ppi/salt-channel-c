@@ -11,11 +11,6 @@
 #include "salti_util.h"
 #include "salti_handshake.h"
 
-void my_randombytes(unsigned char *p_bytes, unsigned long long length)
-{
-    (void) p_bytes;
-    (void) length;
-}
 
 static void read_test(void **state)
 {
@@ -92,7 +87,7 @@ static void second_test(void **state) {
 
 int main(void)
 {
-    salt_crypto_init(my_randombytes);
+    salt_crypto_init(NULL);  /* NULL RNG pointer means deterministic mode */
 
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(read_test),

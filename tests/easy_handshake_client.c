@@ -8,11 +8,6 @@
 #include <assert.h>
 #include "salt.h"
 
-void randombytes(unsigned char *p_bytes, unsigned long long length)
-{
-    (void) p_bytes;
-    (void) length;
-}
 
 static uint8_t client_sk_sec[64] = {
     0x55, 0xf4, 0xd1, 0xd1, 0x98, 0x09, 0x3c, 0x84,
@@ -202,6 +197,8 @@ bool test_client_handshake(void) {
     salt_channel_t channel;
     salt_ret_t ret;
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
+
+    salt_crypto_init(NULL);  /* NULL RNG pointer means deterministic mode */
 
     ret = salt_create(&channel, SALT_CLIENT, client_io_write, client_io_read, NULL);
     ret = salt_set_signature(&channel, client_sk_sec);

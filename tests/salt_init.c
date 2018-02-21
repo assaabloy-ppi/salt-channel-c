@@ -11,11 +11,6 @@
 #include "salt_mock.h"
 #include "test_data.h"
 
-void my2_randombytes(unsigned char *p_bytes, unsigned long long length)
-{
-    (void) p_bytes;
-    (void) length;
-}
 
 static void test_salt_create(void **state)
 {
@@ -127,7 +122,7 @@ static void test_salt_init_session(void **state)
 
 int main(void)
 {
-    salt_crypto_init(my2_randombytes);
+    salt_crypto_init(NULL);  /* NULL RNG pointer means deterministic mode */
     
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_salt_create),

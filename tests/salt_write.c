@@ -11,11 +11,6 @@
 #include "salti_util.h"
 #include "salti_handshake.h"
 
-void my_randombytes(unsigned char *p_bytes, unsigned long long length)
-{
-    (void) p_bytes;
-    (void) length;
-}
 
 static void salt_write_begin_buffer_size(void **state)
 {
@@ -187,7 +182,7 @@ static void write_append_no_copy(void **state)
 }
 
 int main(void) {
-    salt_crypto_init(my_randombytes);
+    salt_crypto_init(NULL);  /* NULL RNG pointer means deterministic mode */
     
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(salt_write_begin_buffer_size),

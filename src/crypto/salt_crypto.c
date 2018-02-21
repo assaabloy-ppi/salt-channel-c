@@ -16,10 +16,16 @@
 salt_crypto_api_t crypto;
 
 
+salt_crypto_api_t* salt_crypto_get_api()
+{
+	return &crypto;
+}
+
 void salt_crypto_init(randombytes_t rng)
 {
-    salt_crypto_api_init(&crypto, rng);
+    salt_crypto_api_init(salt_crypto_get_api(), rng);
 }
+
 
 void salt_crypto_set_rng(salt_crypto_api_t *api, randombytes_t rng)
 {

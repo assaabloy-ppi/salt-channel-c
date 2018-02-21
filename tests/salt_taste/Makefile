@@ -14,7 +14,7 @@ clean: ## Project cleanup
 build__x86_64-linux-stdout_full: clean  ## Build for HAL 'x86_64-linux-stdout_full'
 	mkdir build && cd build && \
 	cmake -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain/x86_64-linux-elf-gcc.cmake \
-		  -DCRYPTO_BACKEND=libsodium \
+		  -DCRYPTO_BACKEND=tweetnacl_modified \
 		  -DHAL=x86_64-linux-stdout_full .. && \
 	cmake --build . && \
 	./salt_taste
@@ -29,7 +29,7 @@ build__arm_nrf52-none-eabi-gcc: clean  ## Build for HAL 'arm_nrf52-none-eabi-gcc
 		  -DNRF5_SDK_ROOT=/home/kotomysha/ASSA/dev/nrf-sdk \
 		  -DSOFTDEVICE_REL_PATH=components/softdevice/s132/hex/s132_nrf52_5.0.0_softdevice.hex \
 		  -DNRF_TARGET=NRF52  \
-		  -DCRYPTO_BACKEND=tweetnacl_modified \
+		  -DCRYPTO_BACKEND=libsodium \
 		  -DHAL=arm_nrf52-none-serial_debug .. && \
 	cmake --build . && \
 	make f_salt_taste

@@ -6,14 +6,23 @@ extern salt_crypto_api_t crypto;
 
 
 /* TweetNaCl doesn't provide RNG so use this one, externally defined */
-void randombytes(unsigned char *p_bytes, unsigned long long length){
+void randombytes(unsigned char *p_bytes, unsigned long long length)
+{
     if (crypto.randombytes) 
         crypto.randombytes(p_bytes, length);
 }
 
+const char* get_version_tweet()
+{
+    return "?";
+}
+
+
 void salt_crypto_api_init(salt_crypto_api_t *api, randombytes_t rng)
 {
 	salt_crypto_api_t _api = {
+        .get_version = get_version_tweet,
+
 		.crypto_sign_keypair = crypto_sign_ed25519_tweet_keypair, 
     	.crypto_sign = crypto_sign_ed25519_tweet,
     	.crypto_sign_open = crypto_sign_ed25519_tweet_open,

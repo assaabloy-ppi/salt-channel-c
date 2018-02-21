@@ -22,6 +22,7 @@ extern "C" {
 
 #include "salt_crypto_api.h"
 
+salt_crypto_api_t* salt_crypto_get_api();
 
 void salt_crypto_init(randombytes_t rng);
 void salt_crypto_set_rng(salt_crypto_api_t *api, randombytes_t rng);

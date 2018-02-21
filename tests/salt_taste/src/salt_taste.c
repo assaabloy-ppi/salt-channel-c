@@ -280,11 +280,17 @@ int salt_taste_entry_point(salt_taste_hal_api_t *hal, int argc, char *argv[])
 	uint64_t us;
 
 	hal->write_str(1, "\r\n\r\n");
-	success = test_build(&crypto, hal);
+    hal->write_str(1, "Ready ... \r\n");    
+
+	success = test_build(salt_crypto_get_api(), hal);
 
     hal->write_str(1, "Crypto init ... ");
-    salt_crypto_api_init(&crypto, NULL);  /* deterministic mode */
+    salt_crypto_api_init(salt_crypto_get_api(), NULL);  /* deterministic mode */
     hal->write_str(1, "done \r\n");
+
+    hal->write_str(1, "Version: ");
+    hal->write_str(1, salt_crypto_get_api()->get_version());
+    hal->write_str(1, "\r\n");    
 
 	for (int i=0; i<42; i++)
 		hal->write_str(1, "=");
@@ -316,7 +322,7 @@ static bool test_build(salt_crypto_api_t *crypto_api, salt_taste_hal_api_t *hal)
 	/* print system/build info */
 	hal->write_str(1, "Crypto backend: ");
 	hal->write_str(1, salt_crypto_get_name(crypto_api));
-	hal->write_str(1, "\r\n");
+    hal->write_str(1, "\r\n");
 
 	return true;
 }

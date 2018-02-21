@@ -51,6 +51,8 @@ struct randombytes_implementation randombytes_salt_crypto_wrap_implementation = 
 };
 
 
+
+
 void salt_crypto_api_init(salt_crypto_api_t *api, randombytes_t rng)
 {
     rng_tmp = rng;
@@ -60,6 +62,8 @@ void salt_crypto_api_init(salt_crypto_api_t *api, randombytes_t rng)
     (void)res;
 
 	salt_crypto_api_t _api = {
+        .get_version = sodium_version_string,
+
 		.crypto_sign_keypair = crypto_sign_keypair,  // [NONDETERMINISTIC]
     	.crypto_sign = crypto_sign,
     	.crypto_sign_open = crypto_sign_open,

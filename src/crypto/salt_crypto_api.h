@@ -16,6 +16,8 @@ typedef unsigned long long crypto_len_t;
 
 typedef void (*randombytes_t)(uint8_t *const buf, const crypto_len_t buf_len);
 
+typedef  const char* (*f_get_version)();
+
 typedef     int (*f_crypto_sign_keypair)(uint8_t *pk, uint8_t *sk);    
     
 typedef     int (*f_crypto_sign)(uint8_t *sm, crypto_len_t *smlen_p,
@@ -54,6 +56,8 @@ typedef     int (*f_crypto_sign_verify_detached)(const unsigned char *sig,
                                       const unsigned char *pk);
 
 struct salt_crypto_api_s {
+  f_get_version                 get_version;
+
   f_crypto_sign_keypair         crypto_sign_keypair;
   f_crypto_sign                 crypto_sign;
   f_crypto_sign_open            crypto_sign_open;

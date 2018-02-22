@@ -31,7 +31,8 @@ Quick start - NRF52
 2. Locate target `build__arm_nrf52-none-eabi-gcc`
 3. Update next commandline parameters: `TOOLCHAIN_ROOT, NRF5_SDK_ROOT, SOFTDEVICE_REL_PATH`
 4. Connect NRF52 development board
-5. Run: `make build__arm_nrf52-none-eabi-gcc`
+5. Run serial terminal on devboard's port, usually `/dev/ttyACM0` with settings `115200-8-N-1`.
+6. Run: `make build__arm_nrf52-none-eabi-gcc`
 
 
 Typical output
@@ -88,11 +89,13 @@ HAL directory must be specified with `-DHAL=` parameter.
 
 ToDo
 =====
+* cleanup
 * test/fix fuzzing
 * implement all required "detached" calls
 * fix platform tests: RNG, Timer 
-* cleanup
+* add indeterministic tests using HAL's RNG
 * add server-side handshake perfmetering
+* solve high memuse & slow operation with libsodium 1.0.16
 * option: MINIMIZE_MEMUSE
-* your suggestions ... please report via adding issues (bug/enhancement)
+* your suggestions ... please report by adding issues (bug/enhancement flags)
 

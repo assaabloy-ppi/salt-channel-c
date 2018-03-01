@@ -8,7 +8,8 @@ extern "C" {
 /**
  * @file salti_util.h
  *
- * Description
+ * Internal routines used by salt-channel. Not intended to use directly.
+ * Due to this, these routines does not check for NULL pointers etc.
  *
  */
 

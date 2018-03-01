@@ -284,12 +284,11 @@ typedef union salt_msg_u {
  * @return SALT_ERROR   Any input pointer was a NULL pointer or invalid salt mode.
  *
  */
-salt_ret_t salt_create(
-    salt_channel_t *p_channel,
-    salt_mode_t mode,
-    salt_io_impl write_impl,
-    salt_io_impl read_impl,
-    salt_time_t *time_impl);
+salt_ret_t salt_create(salt_channel_t *p_channel,
+                       salt_mode_t mode,
+                       salt_io_impl write_impl,
+                       salt_io_impl read_impl,
+                       salt_time_t *time_impl);
 
 /**
  * @brief Sets the context passed to the user injected read implementation.
@@ -301,10 +300,9 @@ salt_ret_t salt_create(
  * @return SALT_SUCCESS The context was successfully set.
  * @return SALT_ERROR   p_channel was a NULL pointer.
  */
-salt_ret_t salt_set_context(
-    salt_channel_t *p_channel,
-    void *p_write_context,
-    void *p_read_context);
+salt_ret_t salt_set_context(salt_channel_t *p_channel,
+                            void *p_write_context,
+                            void *p_read_context);
 
 /**
  * @brief Initiates to add information about supported protocols to host.

@@ -44,46 +44,46 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
     salt_io_channel_t *channel = &p_channel->read_channel;
 
     switch (channel->state) {
-    case SALT_IO_READY:
+      case SALT_IO_READY:
 
-        channel->p_data = p_data;
-        channel->max_size = *size;
-        channel->size_expected = SALT_LENGTH_SIZE;
-        channel->size = 0;
-        channel->state = SALT_IO_SIZE;
-    /* Intentional fall-through */
-    case SALT_IO_SIZE:
-        ret_code = p_channel->read_impl(&p_channel->read_channel);
+          channel->p_data = p_data;
+          channel->max_size = *size;
+          channel->size_expected = SALT_LENGTH_SIZE;
+          channel->size = 0;
+          channel->state = SALT_IO_SIZE;
+      /* Intentional fall-through */
+      case SALT_IO_SIZE:
+          ret_code = p_channel->read_impl(&p_channel->read_channel);
 
-        if (SALT_SUCCESS != ret_code) {
-            /* Pending or error. */
-            break;
-        }
+          if (SALT_SUCCESS != ret_code) {
+              /* Pending or error. */
+              break;
+          }
 
-        channel->size_expected = salti_bytes_to_u32(channel->p_data);
+          channel->size_expected = salti_bytes_to_u32(channel->p_data);
 
-        if (channel->size_expected > channel->max_size) {
-            p_channel->err_code = SALT_ERR_BUFF_TO_SMALL;
-            ret_code = SALT_ERROR;
-            *size = 0;
-            break;
-        }
+          if (channel->size_expected > channel->max_size) {
+              p_channel->err_code = SALT_ERR_BUFF_TO_SMALL;
+              ret_code = SALT_ERROR;
+              *size = 0;
+              break;
+          }
 
-        channel->state = SALT_IO_PENDING;
-        channel->size = 0;
-    /* Intentional fall-through */
-    case SALT_IO_PENDING:
+          channel->state = SALT_IO_PENDING;
+          channel->size = 0;
+      /* Intentional fall-through */
+      case SALT_IO_PENDING:
 
-        ret_code = p_channel->read_impl(&p_channel->read_channel);
+          ret_code = p_channel->read_impl(&p_channel->read_channel);
 
-        if (SALT_SUCCESS == ret_code) {
-            (*size) = channel->size;
-            channel->state = SALT_IO_READY;
-        }
+          if (SALT_SUCCESS == ret_code) {
+              (*size) = channel->size;
+              channel->state = SALT_IO_READY;
+          }
 
-        break;
-    default:
-        SALT_ERROR(SALT_ERR_INVALID_STATE);
+          break;
+      default:
+          SALT_ERROR(SALT_ERR_INVALID_STATE);
 
     }
 
@@ -118,21 +118,21 @@ salt_ret_t salti_io_write(salt_channel_t *p_channel,
     salt_io_channel_t *channel = &p_channel->write_channel;
 
     switch (channel->state) {
-    case SALT_IO_READY:
-        channel->p_data = p_data;
-        channel->size = 0;
-        channel->size_expected = size;
-        channel->state = SALT_IO_PENDING;
-    /* Intentional fall-through */
-    case SALT_IO_PENDING:
-        ret_code = p_channel->write_impl(&p_channel->write_channel);
-        if (SALT_SUCCESS == ret_code) {
-            channel->state = SALT_IO_READY;
-        }
-        break;
-    default:
-        SALT_ERROR(SALT_ERR_INVALID_STATE);
-    }
+      case SALT_IO_READY:
+          channel->p_data = p_data;
+          channel->size = 0;
+          channel->size_expected = size;
+          channel->state = SALT_IO_PENDING;
+      /* Intentional fall-through */
+      case SALT_IO_PENDING:
+          ret_code = p_channel->write_impl(&p_channel->write_channel);
+          if (SALT_SUCCESS == ret_code) {
+              channel->state = SALT_IO_READY;
+          }
+          break;
+      default:
+          SALT_ERROR(SALT_ERR_INVALID_STATE);
+      }
 
     return ret_code;
 }
@@ -215,12 +215,11 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
     time -= p_channel->my_epoch;
     salti_u32_to_bytes(&p_data[34], time);
 
-    ret = crypto_box_afternm(
-              p_data,
-              p_data,
-              size + 6U + crypto_secretbox_ZEROBYTES,
-              p_channel->write_nonce,
-              p_channel->ek_common);
+    ret = crypto_box_afternm(p_data,
+                             p_data,
+                             size + 6U + crypto_secretbox_ZEROBYTES,
+                             p_channel->write_nonce,
+                             p_channel->ek_common);
 
     SALT_VERIFY(0 == ret, SALT_ERR_ENCRYPTION);
 
@@ -273,7 +272,7 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
                         uint32_t *unwrapped_length)
 {
     /* Header in p_data[14:15] must be { 0x06 , 0x00 } */
-    SALT_VERIFY(p_data[14] == 0x06U,
+    SALT_VERIFY(0x06U == p_data[14],
                 SALT_ERR_BAD_PROTOCOL);
 
     if ((p_data[15] & SALT_LAST_FLAG) > 0U) {
@@ -285,12 +284,12 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
     memset(p_data, 0x00U, crypto_secretbox_BOXZEROBYTES);
     size = size + crypto_secretbox_BOXZEROBYTES - 2U;
 
-    int ret = crypto_box_open_afternm(
-                  p_data,
-                  p_data,
-                  size,
-                  p_channel->read_nonce,
-                  p_channel->ek_common);
+    int ret = crypto_box_open_afternm(p_data,
+                                      p_data,
+                                      size,
+                                      p_channel->read_nonce,
+                                      p_channel->ek_common);
+
     SALT_VERIFY(0 == ret, SALT_ERR_DECRYPTION);
 
     salti_increase_nonce(p_channel->read_nonce, p_channel->read_nonce_incr);
@@ -397,78 +396,78 @@ salt_err_t salt_read_init(uint8_t type,
     p_msg->read.buffer_size = buffer_size;
 
     switch (type) {
-    case SALT_APP_PKG_MSG_HEADER_VALUE:
+      case SALT_APP_PKG_MSG_HEADER_VALUE:
 
-        /*
-         * Single message:
-         * p_msg->read.p_buffer[0:31] = 0x00
-         * p_msg->read.p_buffer[32] = header
-         * p_msg->read.p_buffer[33] = 0x00
-         * p_msg->read.p_buffer[34:37] = time[4]
-         * p_msg->read.p_buffer[38:p_msg->read.buffer_used - 6U] = message[p_msg->read.buffer_used - 6U]
-         *
-         * { zeroPadding[32] , header[2] , time[4] , msg[n] }
-         *                   |<---  p_msg->read.buffer_used  --->|
-         *
-         */
-        p_msg->read.messages_left = 0;
-        p_msg->read.p_payload = p_buffer;
-        p_msg->read.message_size = buffer_size;
+          /*
+           * Single message:
+           * p_msg->read.p_buffer[0:31] = 0x00
+           * p_msg->read.p_buffer[32] = header
+           * p_msg->read.p_buffer[33] = 0x00
+           * p_msg->read.p_buffer[34:37] = time[4]
+           * p_msg->read.p_buffer[38:p_msg->read.buffer_used - 6U] = message[p_msg->read.buffer_used - 6U]
+           *
+           * { zeroPadding[32] , header[2] , time[4] , msg[n] }
+           *                   |<---  p_msg->read.buffer_used  --->|
+           *
+           */
+          p_msg->read.messages_left = 0;
+          p_msg->read.p_payload = p_buffer;
+          p_msg->read.message_size = buffer_size;
 
-        break;
-    case SALT_MULTI_APP_PKG_MSG_HEADER_VALUE:
+          break;
+      case SALT_MULTI_APP_PKG_MSG_HEADER_VALUE:
 
-        if (buffer_size < 2U) {
-            return SALT_ERR_BAD_PROTOCOL;
-        }
+          if (buffer_size < 2U) {
+              return SALT_ERR_BAD_PROTOCOL;
+          }
 
-        /*
-         * Single message:
-         * p_msg->read.p_buffer[0:31] = 0x00
-         * p_msg->read.p_buffer[32] = header
-         * p_msg->read.p_buffer[33] = 0x00
-         * p_msg->read.p_buffer[34:37] = time[4]
-         * p_msg->read.p_buffer[38:39] = count[2]
-         * p_msg->read.p_buffer[40:41] = size1[2]
-         * p_msg->read.p_buffer[42:42+size1] = msg1[size1]
-         *
-         * { zeroPadding[32] , header[2] , time[4] , count[2] , size1[2] , msg1[n] , ... }
-         *                   |<---                p_msg->read.buffer_used                 --->|
-         *                                                    |<-- p_msg->read.buffer_size -->|
-         */
+          /*
+           * Single message:
+           * p_msg->read.p_buffer[0:31] = 0x00
+           * p_msg->read.p_buffer[32] = header
+           * p_msg->read.p_buffer[33] = 0x00
+           * p_msg->read.p_buffer[34:37] = time[4]
+           * p_msg->read.p_buffer[38:39] = count[2]
+           * p_msg->read.p_buffer[40:41] = size1[2]
+           * p_msg->read.p_buffer[42:42+size1] = msg1[size1]
+           *
+           * { zeroPadding[32] , header[2] , time[4] , count[2] , size1[2] , msg1[n] , ... }
+           *                   |<---                p_msg->read.buffer_used                 --->|
+           *                                                    |<-- p_msg->read.buffer_size -->|
+           */
 
-        p_msg->read.messages_left = salti_bytes_to_u16(p_msg->read.p_buffer);
-        p_msg->read.buffer_used = 0;
-        p_msg->read.p_payload = &p_msg->read.p_buffer[2];
+          p_msg->read.messages_left = salti_bytes_to_u16(p_msg->read.p_buffer);
+          p_msg->read.buffer_used = 0;
+          p_msg->read.p_payload = &p_msg->read.p_buffer[2];
 
-        if (p_msg->read.messages_left == 0) {
-            return SALT_ERR_BAD_PROTOCOL;
-        }
+          if (0 == p_msg->read.messages_left) {
+              return SALT_ERR_BAD_PROTOCOL;
+          }
 
-        uint32_t total_size = p_msg->read.buffer_size;
-        uint16_t messages_left = p_msg->read.messages_left;
-        uint32_t buffer_used = 0;
+          uint32_t total_size = p_msg->read.buffer_size;
+          uint16_t messages_left = p_msg->read.messages_left;
+          uint32_t buffer_used = 0;
 
-        while (messages_left > 0) {
-            uint16_t message_size = salti_bytes_to_u16(p_msg->read.p_payload);
-            p_msg->read.p_payload += 2 + message_size;
-            buffer_used += 2 + message_size;
-            if (buffer_used < total_size) {
-                messages_left--;
-            }
-            else {
-                return SALT_ERR_BAD_PROTOCOL;
-            }
-        }
+          while (messages_left > 0) {
+              uint16_t message_size = salti_bytes_to_u16(p_msg->read.p_payload);
+              p_msg->read.p_payload += 2 + message_size;
+              buffer_used += 2 + message_size;
+              if (buffer_used < total_size) {
+                  messages_left--;
+              }
+              else {
+                  return SALT_ERR_BAD_PROTOCOL;
+              }
+          }
 
-        p_msg->read.message_size = salti_bytes_to_u16(&p_msg->read.p_buffer[2]);
-        p_msg->read.p_payload = &p_msg->read.p_buffer[4];
-        p_msg->read.messages_left--;
-        p_msg->read.buffer_used = 4 + p_msg->read.message_size;
+          p_msg->read.message_size = salti_bytes_to_u16(&p_msg->read.p_buffer[2]);
+          p_msg->read.p_payload = &p_msg->read.p_buffer[4];
+          p_msg->read.messages_left--;
+          p_msg->read.buffer_used = 4 + p_msg->read.message_size;
 
-        break;
-    default:
-        return SALT_ERR_BAD_PROTOCOL;
+          break;
+      default:
+          return SALT_ERR_BAD_PROTOCOL;
     }
 
     return SALT_ERR_NONE;
@@ -491,7 +490,7 @@ uint8_t salt_write_create(salt_msg_t *p_msg)
 
     p_msg->write.state = 1;
 
-    if (p_msg->write.message_count == 1) {
+    if (1 == p_msg->write.message_count) {
         p_msg->write.p_buffer = &p_msg->write.p_buffer[4];
         p_msg->write.buffer_size -= (p_msg->write.buffer_available + SALT_OVERHEAD_SIZE + 4);
         p_msg->write.p_payload = &p_msg->write.p_buffer[SALT_OVERHEAD_SIZE];

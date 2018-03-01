@@ -42,19 +42,18 @@ static uint8_t sc2protocol[10] = { 0x53, 0x43, 0x76, 0x32, 0x2d, 0x2d, 0x2d, 0x2
 
 /*======= Global function implementations =====================================*/
 
-salt_ret_t salt_create(
-    salt_channel_t *p_channel,
-    salt_mode_t mode,
-    salt_io_impl write_impl,
-    salt_io_impl read_impl,
-    salt_time_t *time_impl)
+salt_ret_t salt_create(salt_channel_t *p_channel,
+                       salt_mode_t mode,
+                       salt_io_impl write_impl,
+                       salt_io_impl read_impl,
+                       salt_time_t *time_impl)
 {
 
     SALT_VERIFY_VALID_CHANNEL(p_channel);
 
     memset(p_channel, 0x00U, sizeof(salt_channel_t));
 
-    SALT_VERIFY(mode == SALT_CLIENT || mode == SALT_SERVER,
+    SALT_VERIFY(((SALT_CLIENT == mode) || (SALT_SERVER == mode)),
                 SALT_ERR_NOT_SUPPORTED);
 
     p_channel->mode = mode;
@@ -114,7 +113,7 @@ salt_ret_t salt_protocols_create(salt_protocols_t *p_protocols,
      * { size[4] , header[2] , count[1] , p1[10], p2[10] }
      *
      */
-    if(size < (7U + 2 * sizeof(salt_protocol_t))) {
+    if(size < (7U + (2 * sizeof(salt_protocol_t)))) {
         return SALT_ERROR;
     }
 
@@ -137,12 +136,12 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
                                  uint8_t size)
 {
 
-    if (p_protocols == NULL) {
+    if (NULL == p_protocols) {
         return SALT_ERROR;
     }
 
     /* 20 bytes required for next protocol */
-    if (p_protocols->buf_size - p_protocols->buf_used < sizeof(salt_protocol_t) * 2) {
+    if ((p_protocols->buf_size - p_protocols->buf_used) < (sizeof(salt_protocol_t) * 2)) {
         return SALT_ERROR;
     }
 
@@ -186,72 +185,72 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
     SALT_VERIFY_VALID_CHANNEL(p_channel);
     SALT_VERIFY_NOT_NULL(p_buffer);
 
-    SALT_VERIFY(p_channel->state >= SALT_CREATED && p_channel->state < SALT_M1_IO,
+    SALT_VERIFY(((p_channel->state >= SALT_CREATED) && (p_channel->state < SALT_M1_IO)),
                 SALT_ERR_INVALID_STATE);
 
     while (proceed) {
         proceed = 0;
         switch (p_channel->state) {
-        case SALT_CREATED:
-        case SALT_SIGNATURE_SET:
-        case SALT_SESSION_INITIATED:
-            p_buffer[SALT_LENGTH_SIZE] = SALT_A1_HEADER;
-            p_buffer[SALT_LENGTH_SIZE + 1] = 0x00U;
+            case SALT_CREATED:
+            case SALT_SIGNATURE_SET:
+            case SALT_SESSION_INITIATED:
+                p_buffer[SALT_LENGTH_SIZE] = SALT_A1_HEADER;
+                p_buffer[SALT_LENGTH_SIZE + 1] = 0x00U;
 
-            if (p_with != NULL) {
-                p_buffer[SALT_LENGTH_SIZE + 2] = 0x01;
-                salti_u16_to_bytes(&p_buffer[SALT_LENGTH_SIZE + 3], 32);
-                memcpy(&p_buffer[SALT_LENGTH_SIZE + 5], p_with, 32);
-                a1_size = 37;
-            } else {
-                p_buffer[SALT_LENGTH_SIZE + 2] = 0x00;
-                p_buffer[SALT_LENGTH_SIZE + 3] = 0x00;
-                p_buffer[SALT_LENGTH_SIZE + 4] = 0x00;
-                a1_size = 5;
-            }
-
-            salti_u32_to_bytes(p_buffer, a1_size);
-            a1_size += SALT_LENGTH_SIZE;
-            p_channel->state = SALT_A1_IO;
-            proceed = 1;
-            break;
-        case SALT_A1_IO:
-            ret_code = salti_io_write(p_channel, p_buffer, a1_size);
-            if (SALT_SUCCESS == ret_code) {
-                proceed = 1;
-                p_channel->state = SALT_A2_IO;
-            }
-            break;
-        case SALT_A2_IO:
-            ret_code = salti_io_read(p_channel, p_buffer, &size);
-            if (SALT_SUCCESS == ret_code) {
-
-                /*
-                 * Expected format of p_buffer:
-                 *  { header[2] , count[1] , protocols[ count * 2 * sizeof(salt_protocol_t) ] }
-                 */
-
-                SALT_VERIFY(p_buffer[0] == SALT_A2_HEADER && (p_buffer[1] & SALT_LAST_FLAG) > 0,
-                            SALT_ERR_BAD_PROTOCOL);
-
-                if ((p_buffer[1] & SALT_NO_SUCH_SERVER_FLAG) > 0) {
-                    p_channel->err_code = SALT_ERR_NO_SUCH_SERVER;
-                    return SALT_ERROR;
+                if (NULL != p_with) {
+                    p_buffer[SALT_LENGTH_SIZE + 2] = 0x01;
+                    salti_u16_to_bytes(&p_buffer[SALT_LENGTH_SIZE + 3], 32);
+                    memcpy(&p_buffer[SALT_LENGTH_SIZE + 5], p_with, 32);
+                    a1_size = 37;
+                } else {
+                    p_buffer[SALT_LENGTH_SIZE + 2] = 0x00;
+                    p_buffer[SALT_LENGTH_SIZE + 3] = 0x00;
+                    p_buffer[SALT_LENGTH_SIZE + 4] = 0x00;
+                    a1_size = 5;
                 }
 
-                /* Remove header and count from read size */
-                size -= 3;
+                salti_u32_to_bytes(p_buffer, a1_size);
+                a1_size += SALT_LENGTH_SIZE;
+                p_channel->state = SALT_A1_IO;
+                proceed = 1;
+                break;
+            case SALT_A1_IO:
+                ret_code = salti_io_write(p_channel, p_buffer, a1_size);
+                if (SALT_SUCCESS == ret_code) {
+                    proceed = 1;
+                    p_channel->state = SALT_A2_IO;
+                }
+                break;
+            case SALT_A2_IO:
+                ret_code = salti_io_read(p_channel, p_buffer, &size);
+                if (SALT_SUCCESS == ret_code) {
 
-                SALT_VERIFY(size == p_buffer[2] * 2 * sizeof(salt_protocol_t), SALT_ERR_BAD_PROTOCOL);
-                p_protocols->count = p_buffer[2] * 2;
-                p_protocols->p_protocols = (salt_protocol_t *) &p_buffer[3];
+                    /*
+                     * Expected format of p_buffer:
+                     *  { header[2] , count[1] , protocols[ count * 2 * sizeof(salt_protocol_t) ] }
+                     */
 
-                p_channel->state = SALT_SESSION_INITIATED;
-                ret_code = SALT_SUCCESS;
-            }
-            break;
-        default:
-            return SALT_ERROR;
+                    SALT_VERIFY(p_buffer[0] == SALT_A2_HEADER && (p_buffer[1] & SALT_LAST_FLAG) > 0,
+                                SALT_ERR_BAD_PROTOCOL);
+
+                    if ((p_buffer[1] & SALT_NO_SUCH_SERVER_FLAG) > 0) {
+                        p_channel->err_code = SALT_ERR_NO_SUCH_SERVER;
+                        return SALT_ERROR;
+                    }
+
+                    /* Remove header and count from read size */
+                    size -= 3;
+
+                    SALT_VERIFY(size == p_buffer[2] * 2 * sizeof(salt_protocol_t), SALT_ERR_BAD_PROTOCOL);
+                    p_protocols->count = p_buffer[2] * 2;
+                    p_protocols->p_protocols = (salt_protocol_t *) &p_buffer[3];
+
+                    p_channel->state = SALT_SESSION_INITIATED;
+                    ret_code = SALT_SUCCESS;
+                }
+                break;
+            default:
+                return SALT_ERROR;
         }
     }
 
@@ -318,7 +317,7 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
     memset(p_channel->read_nonce, 0x00U, sizeof(p_channel->read_nonce));
 
     /* Initiate write and read nonce */
-    if (p_channel->mode == SALT_SERVER) {
+    if (SALT_SERVER == p_channel->mode) {
         p_channel->write_nonce[0]  = SALT_WRITE_NONCE_INIT_SERVER;
         p_channel->read_nonce[0] = SALT_READ_NONCE_INIT_SERVER;
         p_channel->write_nonce_incr = SALT_WRITE_NONCE_INCR_SERVER;
@@ -335,7 +334,7 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
     p_channel->read_channel.state = SALT_IO_READY;
 
 
-    if (ek_pub == NULL || ek_sec == NULL) {
+    if ((ek_pub == NULL) || (ek_sec == NULL)) {
         /*
          * Create ephemeral keypair used for only this session.
          * hdshk_buffer[0:31]:  Public key
@@ -344,7 +343,8 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
          * until the common key is calculated.
          */
         crypto_box_keypair(hdshk_buffer, &hdshk_buffer[32]);
-    } else {
+    }
+    else {
         memcpy(hdshk_buffer, ek_pub, 32);
         memcpy(&hdshk_buffer[32], ek_sec, 32);
     }
@@ -370,14 +370,14 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with)
     salt_ret_t ret;
     SALT_VERIFY_VALID_CHANNEL(p_channel);
 
-    if (p_channel->mode == SALT_SERVER) {
+    if (SALT_SERVER == p_channel->mode) {
         ret = salti_handshake_server(p_channel, p_with);
     }
     else {
         ret = salti_handshake_client(p_channel, p_with);
     }
 
-    if (ret != SALT_PENDING) {
+    if (SALT_PENDING != ret) {
         /* If handshake succeeded or failed, clear the handshake buffer. */
         memset(p_channel->hdshk_buffer, 0x00U, p_channel->hdshk_buffer_size);
     }
@@ -403,7 +403,7 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
 
     ret = salti_io_read(p_channel, &p_buffer[14], &size);
 
-    if (ret == SALT_SUCCESS) {
+    if (SALT_SUCCESS == ret) {
 
         /*
          * salti_unwrap returns pointer to clear text message to
@@ -442,7 +442,7 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg)
      */
     p_msg->read.p_payload += p_msg->read.message_size;
     
-    if (p_msg->read.buffer_size < p_msg->read.buffer_used + 2) {
+    if (p_msg->read.buffer_size < (p_msg->read.buffer_used + 2)) {
         return SALT_ERROR;
     }
 
@@ -472,11 +472,11 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
                             salt_msg_t *p_msg)
 {
 
-    if (p_buffer == NULL) {
+    if (NULL == p_buffer) {
         return SALT_ERROR;
     }
 
-    if (p_msg == NULL) {
+    if (NULL == p_msg) {
         return SALT_ERROR;
     }
 
@@ -547,7 +547,7 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
                 SALT_ERR_INVALID_STATE);
     SALT_VERIFY_NOT_NULL(p_msg);
 
-    if (p_msg->write.state == 0) {
+    if (0 == p_msg->write.state) {
         uint8_t type = salt_write_create(p_msg);
 
         ret = salti_wrap(p_channel,

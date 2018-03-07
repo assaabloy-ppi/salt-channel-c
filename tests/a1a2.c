@@ -120,11 +120,13 @@ static void a1a2_known_host(void **state)
 
     host_ret = salt_create_signature(host_channel);
     assert_true(host_ret == SALT_SUCCESS);
-    host_ret = salt_init_session(host_channel, host_buffer, SALT_HNDSHK_BUFFER_SIZE);
-    assert_true(host_ret == SALT_SUCCESS);
 
-    uint8_t protocol_buf[128];
+    uint8_t protocol_buf[67];
     salt_protocols_t my_protocols;
+
+    host_ret = salt_protocols_init(host_channel, &my_protocols, protocol_buf, 8);
+    assert_true(host_ret == SALT_ERROR);
+
     host_ret = salt_protocols_init(host_channel, &my_protocols, protocol_buf, sizeof(protocol_buf));
     assert_true(host_ret == SALT_SUCCESS);
     host_ret = salt_protocols_append(&my_protocols, "Echo", 4);
@@ -132,6 +134,21 @@ static void a1a2_known_host(void **state)
     host_ret = salt_protocols_append(&my_protocols, "Temp", 4);
     assert_true(host_ret == SALT_SUCCESS);
     host_ret = salt_protocols_append(&my_protocols, "Sensor", 6);
+    assert_true(host_ret == SALT_SUCCESS);
+
+    host_ret = salt_protocols_append(&my_protocols, "Sensor", 6);
+    assert_true(host_ret == SALT_ERROR);
+
+    host_ret = salt_protocols_append(NULL, "Sensor", 6);
+    assert_true(host_ret == SALT_ERROR);
+
+    host_ret = salt_protocols_append(&my_protocols, NULL, 6);
+    assert_true(host_ret == SALT_ERROR);
+
+    host_ret = salt_protocols_append(&my_protocols, "Sensor", sizeof(salt_protocol_t) + 1);
+    assert_true(host_ret == SALT_ERROR);
+
+    host_ret = salt_init_session(host_channel, host_buffer, SALT_HNDSHK_BUFFER_SIZE);
     assert_true(host_ret == SALT_SUCCESS);
 
     client_ret = salt_create_signature(client_channel);

@@ -133,7 +133,7 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
                                  uint8_t size)
 {
 
-    if (NULL == p_protocols) {
+    if ((NULL == p_protocols) || (NULL == p_buffer)) {
         return SALT_ERROR;
     }
 

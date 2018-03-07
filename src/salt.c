@@ -3,9 +3,6 @@
  *
  * Salt channel version 2 implementation.
  *
- * See v2notes.txt for implementation details.
- *
- * TODO: Refer to v2notes.txt for tricks when placing messages in hanshake buffer.
  *
  */
 
@@ -35,8 +32,8 @@
 
 /*======= Local variable declarations =========================================*/
 
-/* Salt-channel v2 protocol, ASCII "SC2-------" */
-static uint8_t sc2protocol[10] = { 0x53, 0x43, 0x76, 0x32, 0x2d, 0x2d, 0x2d, 0x2d, 0x2d, 0x2d };
+/* Salt-channel v2 protocol, ASCII "SCv2------" */
+static uint8_t sc2protocol[10] = "SCv2------";
 
 /*======= Local function prototypes ===========================================*/
 

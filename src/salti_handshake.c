@@ -52,6 +52,9 @@
 #define SALT_M1_HASH_OFFSET                     (72U)
 #define SALT_M2_HASH_OFFSET                     (136U)
 
+#define SALT_PROTOCOL_INDICATOR                 "SCv2"
+#define SALT_PROTOCOL_INDICATOR_SIZE            (4U)
+
 /*======= Type Definitions ==================================================*/
 /*======= Local variable declarations =======================================*/
 
@@ -329,7 +332,7 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
                 /*
                  * Read the M2 message to hdshk_buffer[128]. If the message is OK the
                  * hash is saved to hdshk_buffer[64]. Now we have the hashes of M1
-                 * and M2 in hdshk_buffer[0:127].
+                 * and M2 in hdshk_buffer[0:127]. The only valid size of M2 is 38 bytes.
                  */
                 size = 38U;
 
@@ -426,6 +429,11 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
 
                 break;
             case SALT_M3_WRAP:
+                /*
+                 * Clear text M3 was previous created in p_channel->hdshk_buffer[406].
+                 * The wrapping requires 38 bytes overhead and the clear text buffer
+                 * must be placed in 38 bytes offset.
+                 */
                 ret_code = salti_wrap(p_channel,
                                       &p_channel->hdshk_buffer[406 - 38],
                                       p_channel->write_channel.size,
@@ -512,7 +520,7 @@ salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
      * salt-channel v2 and reveals nothing about overlying protocol(s).
      * I.e., the answer will be:
      *
-     * SupportedProtocols = "SC2-------","----------"
+     * SupportedProtocols = "SCv2------","----------"
      *
      * This message is created in p_channel->hdshk_buffer[64] since
      * we have the ephemeral keypair in p_channel->hdshk_buffer[0:63]
@@ -582,10 +590,15 @@ void salti_create_m1(salt_channel_t *p_channel,
     (*size) = 42U;
 
     /* Protocol indicator */
-    p_data[SALT_LENGTH_SIZE + 0] = 'S';
-    p_data[SALT_LENGTH_SIZE + 1] = 'C';
-    p_data[SALT_LENGTH_SIZE + 2] = 'v';
-    p_data[SALT_LENGTH_SIZE + 3] = '2';
+    memcpy(&p_data[SALT_LENGTH_SIZE],
+           SALT_PROTOCOL_INDICATOR,
+           SALT_PROTOCOL_INDICATOR_SIZE);
+
+    /*
+     * SALT_PROTOCOL_INDICATOR_SIZE is equal to 4.
+     * Continue creating M1 after the protocol indicator.
+     */
+
     p_data[SALT_LENGTH_SIZE + 4] = SALT_M1_HEADER_VALUE;
 
     if (p_with != NULL) {
@@ -635,7 +648,7 @@ salt_state_t salti_handle_m1(salt_channel_t *p_channel,
         return SALT_ERROR_STATE;
     }
 
-    if (memcmp(p_data, "SCv2", 4) != 0) {
+    if (memcmp(p_data, SALT_PROTOCOL_INDICATOR, SALT_PROTOCOL_INDICATOR_SIZE) != 0) {
         p_channel->err_code = SALT_ERR_BAD_PROTOCOL;
         return SALT_ERROR_STATE;
     }
@@ -798,8 +811,13 @@ salt_state_t salti_handle_m2(salt_channel_t *p_channel,
     uint32_t time = salti_bytes_to_u32(&p_data[2]);
 
     if (1U == time) {
-        salti_get_time(p_channel, &p_channel->peer_epoch);
+        salt_ret_t ret = salti_get_time(p_channel, &p_channel->peer_epoch);
+        (void) ret;
         p_channel->time_supported &= 1;
+        /*
+         * TODO: What to do is our timekeeping is broken, but not the peers?
+         * Is the session allowed our should we close it?
+         */
     }
     else if (0U == time) {
         p_channel->time_supported = 0;

@@ -296,13 +296,26 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
     (*header) = &p_data[32];
 
-    if (p_channel->time_supported && p_channel->delay_threshold > 0) {
+    if ((p_channel->time_supported) && (p_channel->delay_threshold > 0)) {
+
+        /* Package time sent by the peer. */
         uint32_t t_package = salti_bytes_to_u32(&p_data[34]);
+
+        /* Only 31 bits are allowed, the 32 bit must be 0. */
         SALT_VERIFY((t_package & 0x8000000) == 0, SALT_ERR_BAD_PROTOCOL);
+
+        /* Get our time */
         uint32_t t_arrival = 0;
-        SALT_VERIFY(SALT_SUCCESS == salti_get_time(p_channel, &t_arrival), SALT_ERR_INVALID_STATE);
-        /* bool time_check(uint32_t first, uint32_t now, uint32_t peer_time, uint32_t thresh) */
-        bool valid_time = time_check(p_channel->peer_epoch, t_arrival, t_package, p_channel->delay_threshold);
+        salt_ret_t ret = salti_get_time(p_channel, &t_arrival);
+
+        /* If our time is broken, do not continue the session. */
+        SALT_VERIFY(SALT_SUCCESS == ret, SALT_ERR_INVALID_STATE);
+        
+        /* Verify that the package is not delayed. */
+        bool valid_time = time_check(p_channel->peer_epoch,
+                                     t_arrival,
+                                     t_package,
+                                     p_channel->delay_threshold);
         SALT_VERIFY(true == valid_time, SALT_ERR_DELAY_DETECTED);
     }
 

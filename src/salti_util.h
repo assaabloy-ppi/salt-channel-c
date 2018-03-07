@@ -40,6 +40,12 @@ extern "C" {
 /* Encrypted message header */
 #define SALT_ENCRYPTED_MSG_HEADER_VALUE         (0x06U)
 
+/**
+ * SALT_VERIFY is only and MUST only used internal by the implementation.
+ * x is a condition, if it is not true SALT_ERROR will be returned
+ * by the function using the macro. The pointer to the channel structure,
+ * p_channel must have exactly the name p_channel.
+ */
 #ifdef SALT_DEBUG
 #include <stdio.h>
 #define SALT_VERIFY(x, error_code)                                          \

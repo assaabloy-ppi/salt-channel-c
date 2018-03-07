@@ -14,7 +14,7 @@ set(CLIENT_ECHO_SRC client_echo.c salt_io.c)
 if(USE_SODIUM) 
 else (USE_SODIUM)
   set(HOST_ECHO_SRC ${HOST_ECHO_SRC} randombytes_linux.c)
-  set(CLIENT_ECHO_SRC ${HOST_ECHO_SRC} randombytes_linux.c)
+  set(CLIENT_ECHO_SRC ${CLIENT_ECHO_SRC} randombytes_linux.c)
 endif(USE_SODIUM)
 
 add_executable(host_echo ${HOST_ECHO_SRC})

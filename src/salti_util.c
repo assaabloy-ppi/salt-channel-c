@@ -44,46 +44,46 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
     salt_io_channel_t *channel = &p_channel->read_channel;
 
     switch (channel->state) {
-      case SALT_IO_READY:
+        case SALT_IO_READY:
 
-          channel->p_data = p_data;
-          channel->max_size = *size;
-          channel->size_expected = SALT_LENGTH_SIZE;
-          channel->size = 0;
-          channel->state = SALT_IO_SIZE;
-      /* Intentional fall-through */
-      case SALT_IO_SIZE:
-          ret_code = p_channel->read_impl(&p_channel->read_channel);
+            channel->p_data = p_data;
+            channel->max_size = *size;
+            channel->size_expected = SALT_LENGTH_SIZE;
+            channel->size = 0;
+            channel->state = SALT_IO_SIZE;
+            /* Intentional fall-through */
+        case SALT_IO_SIZE:
+            ret_code = p_channel->read_impl(&p_channel->read_channel);
 
-          if (SALT_SUCCESS != ret_code) {
+            if (SALT_SUCCESS != ret_code) {
               /* Pending or error. */
               break;
-          }
+            }
 
-          channel->size_expected = salti_bytes_to_u32(channel->p_data);
+            channel->size_expected = salti_bytes_to_u32(channel->p_data);
 
-          if (channel->size_expected > channel->max_size) {
+            if (channel->size_expected > channel->max_size) {
               p_channel->err_code = SALT_ERR_BUFF_TO_SMALL;
               ret_code = SALT_ERROR;
               *size = 0;
               break;
-          }
+            }
 
-          channel->state = SALT_IO_PENDING;
-          channel->size = 0;
-      /* Intentional fall-through */
-      case SALT_IO_PENDING:
+            channel->state = SALT_IO_PENDING;
+            channel->size = 0;
+            /* Intentional fall-through */
+        case SALT_IO_PENDING:
 
-          ret_code = p_channel->read_impl(&p_channel->read_channel);
+            ret_code = p_channel->read_impl(&p_channel->read_channel);
 
-          if (SALT_SUCCESS == ret_code) {
+            if (SALT_SUCCESS == ret_code) {
               (*size) = channel->size;
               channel->state = SALT_IO_READY;
-          }
+            }
 
-          break;
-      default:
-          SALT_ERROR(SALT_ERR_INVALID_STATE);
+            break;
+        default:
+            SALT_ERROR(SALT_ERR_INVALID_STATE);
 
     }
 
@@ -118,21 +118,21 @@ salt_ret_t salti_io_write(salt_channel_t *p_channel,
     salt_io_channel_t *channel = &p_channel->write_channel;
 
     switch (channel->state) {
-      case SALT_IO_READY:
-          channel->p_data = p_data;
-          channel->size = 0;
-          channel->size_expected = size;
-          channel->state = SALT_IO_PENDING;
-      /* Intentional fall-through */
-      case SALT_IO_PENDING:
-          ret_code = p_channel->write_impl(&p_channel->write_channel);
-          if (SALT_SUCCESS == ret_code) {
-              channel->state = SALT_IO_READY;
-          }
-          break;
-      default:
-          SALT_ERROR(SALT_ERR_INVALID_STATE);
-      }
+        case SALT_IO_READY:
+            channel->p_data = p_data;
+            channel->size = 0;
+            channel->size_expected = size;
+            channel->state = SALT_IO_PENDING;
+            /* Intentional fall-through */
+        case SALT_IO_PENDING:
+            ret_code = p_channel->write_impl(&p_channel->write_channel);
+            if (SALT_SUCCESS == ret_code) {
+                channel->state = SALT_IO_READY;
+            }
+            break;
+        default:
+            SALT_ERROR(SALT_ERR_INVALID_STATE);
+    }
 
     return ret_code;
 }
@@ -301,10 +301,9 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
         SALT_VERIFY((t_package & 0x8000000) == 0, SALT_ERR_BAD_PROTOCOL);
         uint32_t t_arrival = 0;
         SALT_VERIFY(SALT_SUCCESS == salti_get_time(p_channel, &t_arrival), SALT_ERR_INVALID_STATE);
-        if (t_arrival - p_channel->peer_epoch > t_package + p_channel->delay_threshold) {
-            /* Delay detected */
-            SALT_ERROR(SALT_ERR_DELAY_DETECTED);
-        }
+        /* bool time_check(uint32_t first, uint32_t now, uint32_t peer_time, uint32_t thresh) */
+        bool valid_time = time_check(p_channel->peer_epoch, t_arrival, t_package, p_channel->delay_threshold);
+        SALT_VERIFY(true == valid_time, SALT_ERR_DELAY_DETECTED);
     }
 
 

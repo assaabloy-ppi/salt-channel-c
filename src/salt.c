@@ -19,12 +19,8 @@
 /*======= Local Macro Definitions =============================================*/
 
 /* Nonce initial values and increments */
-#define SALT_WRITE_NONCE_INCR_SERVER            (2U)
-#define SALT_WRITE_NONCE_INCR_CLIENT            (2U)
 #define SALT_WRITE_NONCE_INIT_SERVER            (2U)
 #define SALT_WRITE_NONCE_INIT_CLIENT            (1U)
-#define SALT_READ_NONCE_INCR_SERVER             (2U)
-#define SALT_READ_NONCE_INCR_CLIENT             (2U)
 #define SALT_READ_NONCE_INIT_SERVER             (1U)
 #define SALT_READ_NONCE_INIT_CLIENT             (2U)
 
@@ -227,7 +223,13 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                      *  { header[2] , count[1] , protocols[ count * 2 * sizeof(salt_protocol_t) ] }
                      */
 
-                    SALT_VERIFY(p_buffer[0] == SALT_A2_HEADER && (p_buffer[1] & SALT_LAST_FLAG) > 0,
+                    SALT_VERIFY((p_buffer[0] == SALT_A2_HEADER),
+                                SALT_ERR_BAD_PROTOCOL);
+
+                    /*
+                     * Allowed value in p_buffer[1] is SALT_LAST_FLAG and/or SALT_NO_SUCH_SERVER_FLAG
+                     */
+                    SALT_VERIFY((0x00 == (p_buffer[1] & ~(SALT_NO_SUCH_SERVER_FLAG | SALT_LAST_FLAG))),
                                 SALT_ERR_BAD_PROTOCOL);
 
                     if ((p_buffer[1] & SALT_NO_SUCH_SERVER_FLAG) > 0) {
@@ -317,14 +319,10 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
     if (SALT_SERVER == p_channel->mode) {
         p_channel->write_nonce[0]  = SALT_WRITE_NONCE_INIT_SERVER;
         p_channel->read_nonce[0] = SALT_READ_NONCE_INIT_SERVER;
-        p_channel->write_nonce_incr = SALT_WRITE_NONCE_INCR_SERVER;
-        p_channel->read_nonce_incr = SALT_READ_NONCE_INCR_SERVER;
     }
     else {
         p_channel->write_nonce[0]  = SALT_WRITE_NONCE_INIT_CLIENT;
         p_channel->read_nonce[0] = SALT_READ_NONCE_INIT_CLIENT;
-        p_channel->write_nonce_incr = SALT_WRITE_NONCE_INCR_CLIENT;
-        p_channel->read_nonce_incr = SALT_READ_NONCE_INCR_CLIENT;
     }
 
     p_channel->write_channel.state = SALT_IO_READY;

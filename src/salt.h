@@ -73,7 +73,8 @@ typedef enum salt_err_e {
     SALT_ERR_IO_WRITE,              /**< Error occured during I/O. */
     SALT_ERR_DELAY_DETECTED,        /**< Error if a delayed packet was detected. */
     SALT_ERR_BAD_PEER,              /**< If expected peer didn't match or signature verification faild. */
-    SALT_ERR_CONNECTION_CLOSED      /**< If the session was closed, internally or by peer. */
+    SALT_ERR_CONNECTION_CLOSED,     /**< If the session was closed, internally or by peer. */
+    SALT_ERR_NONCE_WRAPPED          /**< If nonce wrapped. */
 } salt_err_t;
 
 
@@ -221,8 +222,6 @@ typedef struct salt_channel_s {
     uint8_t     *my_sk_pub;                             /**< My public signature key, points to &my_sk_sec[32]. */
     uint8_t     write_nonce[crypto_box_NONCEBYTES];     /**< Write nonce. */
     uint8_t     read_nonce[crypto_box_NONCEBYTES];      /**< Read nonce. */
-    uint8_t     write_nonce_incr;                       /**< Write nonce increment. */
-    uint8_t     read_nonce_incr;                        /**< Read nonce increment. */
 
     /* Time checking stuff */
     uint32_t    my_epoch;

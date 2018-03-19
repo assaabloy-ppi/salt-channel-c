@@ -99,7 +99,9 @@ Salt-channel-c is an implementation of the salt-channel over a serial stream. I.
 I.e., to send a payload of length **n**, the number of transmitted bytes are **n+4**.
 
 ### Thread safety
-No effort is put to making the salt-channel-c library thread safe.
+Salt-channel-c is optimized for portability and does not perform any platform specific memory or threading safety operations. Such operations need to be performed by calling application, if required.
+* The library is not thread safe.
+* Memory security operations such as memset_s, SecureZeroMemory, mlock/munlock are not performed by the library.
 
 ### Goals
 

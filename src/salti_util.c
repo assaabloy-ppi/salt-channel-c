@@ -15,6 +15,9 @@
 #include "salti_util.h"
 
 /*======= Local Macro Definitions ===========================================*/
+
+#define SALT_NONCE_INCR     (2U)
+
 /*======= Type Definitions ==================================================*/
 /*======= Local function prototypes =========================================*/
 /*======= Local variable declarations =======================================*/
@@ -223,7 +226,9 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
 
     SALT_VERIFY(0 == ret, SALT_ERR_ENCRYPTION);
 
-    salti_increase_nonce(p_channel->write_nonce, p_channel->write_nonce_incr);
+    SALT_VERIFY(salti_increase_nonce(p_channel->write_nonce) == SALT_SUCCESS,
+        SALT_ERR_NONCE_WRAPPED);
+    
     p_data[14] = SALT_ENCRYPTED_MSG_HEADER_VALUE;
     p_data[15] = (last_msg) ? SALT_LAST_FLAG : 0x00U;
     size += 24;
@@ -257,7 +262,7 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
  * parameter pointers.
  *
  * @param p_channel         Pointer to salt channel structure.
- * @param p_data            Pointer to ciåher text message.
+ * @param p_data            Pointer to cipher text message.
  * @param size              Size of cipher message, exluding overhead bytes,
  * @param type              Return type of message.
  * @param unwrapped         Return pointer to clear text message.
@@ -271,8 +276,11 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
                         uint8_t **unwrapped,
                         uint32_t *unwrapped_length)
 {
-    /* Header in p_data[14:15] must be { 0x06 , 0x00 } */
-    SALT_VERIFY(0x06U == p_data[14],
+    /*
+     * Header in p_data[14:15] must be
+     *  { 0x06 , 0x00 } or { 0x06 , SALT_LAST_FLAG }
+     */
+    SALT_VERIFY((0x06U == p_data[14]) && (0x00 == (p_data[15] & ~SALT_LAST_FLAG)),
                 SALT_ERR_BAD_PROTOCOL);
 
     if ((p_data[15] & SALT_LAST_FLAG) > 0U) {
@@ -292,7 +300,8 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
     SALT_VERIFY(0 == ret, SALT_ERR_DECRYPTION);
 
-    salti_increase_nonce(p_channel->read_nonce, p_channel->read_nonce_incr);
+    SALT_VERIFY(salti_increase_nonce(p_channel->read_nonce) == SALT_SUCCESS,
+        SALT_ERR_NONCE_WRAPPED);
 
     (*header) = &p_data[32];
 
@@ -302,14 +311,14 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
         uint32_t t_package = salti_bytes_to_u32(&p_data[34]);
 
         /* Only 31 bits are allowed, the 32 bit must be 0. */
-        SALT_VERIFY((t_package & 0x8000000) == 0, SALT_ERR_BAD_PROTOCOL);
+        SALT_VERIFY((t_package <= INT32_MAX), SALT_ERR_BAD_PROTOCOL);
 
         /* Get our time */
         uint32_t t_arrival = 0;
-        salt_ret_t ret = salti_get_time(p_channel, &t_arrival);
+        salt_ret_t time_ret = salti_get_time(p_channel, &t_arrival);
 
         /* If our time is broken, do not continue the session. */
-        SALT_VERIFY(SALT_SUCCESS == ret, SALT_ERR_INVALID_STATE);
+        SALT_VERIFY(SALT_SUCCESS == time_ret, SALT_ERR_INVALID_STATE);
         
         /* Verify that the package is not delayed. */
         bool valid_time = time_check(p_channel->peer_epoch,
@@ -327,10 +336,10 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
 }
 
-void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment)
+salt_ret_t salti_increase_nonce(uint8_t *p_nonce)
 {
     /* Thanks to Libsodium */
-    uint_fast16_t c = increment;
+    uint_fast16_t c = SALT_NONCE_INCR; /* (2U) */
     uint8_t i;
 
     for (i = 0U; i < crypto_box_NONCEBYTES; i++) {
@@ -338,6 +347,8 @@ void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment)
         p_nonce[i] = (uint8_t) c;
         c >>= 8U;
     }
+
+    return c ? SALT_ERROR : SALT_SUCCESS;
 
 }
 

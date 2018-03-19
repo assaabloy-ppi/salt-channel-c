@@ -394,6 +394,7 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
                 SALT_ERR_INVALID_STATE);
 
     SALT_VERIFY(buffer_size >= SALT_OVERHEAD_SIZE, SALT_ERR_BUFF_TO_SMALL);
+    SALT_VERIFY(NULL != p_msg, SALT_ERR_NULL_PTR);
 
     ret = salti_io_read(p_channel, &p_buffer[14], &size);
 
@@ -427,36 +428,47 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
 salt_ret_t salt_read_next(salt_msg_t *p_msg)
 {
 
+    uint16_t payload_size;
+    uint32_t buffer_left;
+
     if (p_msg->read.messages_left == 0) {
         return SALT_ERROR;
     }
 
     /*
-     * Increase p_payload to end of current message.
+     * First message, p_msg->read.message_size will be 0. Otherwise it will be
+     * the length of last message.
+     * 
+     * First:
+     * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
+     * buffer_used ----------->
+     * 
+     * Otherwise:
+     * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
+     * buffer_used ----------------------->
+     *                           message_size = n1
+     * 
      */
-    p_msg->read.p_payload += p_msg->read.message_size;
-    
-    if (p_msg->read.buffer_size < (p_msg->read.buffer_used + 2)) {
+    p_msg->read.buffer_used += p_msg->read.message_size;
+    buffer_left = p_msg->read.buffer_size - p_msg->read.buffer_used;
+
+    /* Two bytes required for payload size */
+    if (buffer_left < 2U) {
         return SALT_ERROR;
     }
 
-    /*
-     * Get next message size.
-     */
-    p_msg->read.message_size = salti_bytes_to_u16(p_msg->read.p_payload);
-    /*
-     * Increase p_payload to next message.
-     */
-    p_msg->read.p_payload += 2;
-    p_msg->read.buffer_used += 2 + p_msg->read.message_size;
+    payload_size = salti_bytes_to_u16(&p_msg->read.p_buffer[p_msg->read.buffer_used]);
 
+    p_msg->read.buffer_used += 2U;
+    buffer_left -= 2U;
 
-    if (p_msg->read.buffer_used > p_msg->read.buffer_size) {
+    if (payload_size > buffer_left) {
         return SALT_ERROR;
     }
 
+    p_msg->read.p_payload = &p_msg->read.p_buffer[p_msg->read.buffer_used];
+    p_msg->read.message_size = payload_size;
     p_msg->read.messages_left--;
-
 
     return SALT_SUCCESS;
 }

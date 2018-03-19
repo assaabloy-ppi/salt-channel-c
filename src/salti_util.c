@@ -415,82 +415,78 @@ salt_err_t salt_read_init(uint8_t type,
                           salt_msg_t *p_msg)
 {
 
+    memset(p_msg, 0x00, sizeof(salt_msg_t));
     p_msg->read.p_buffer = p_buffer;
     p_msg->read.buffer_size = buffer_size;
 
     switch (type) {
-      case SALT_APP_PKG_MSG_HEADER_VALUE:
+        case SALT_APP_PKG_MSG_HEADER_VALUE:
 
-          /*
-           * Single message:
-           * p_msg->read.p_buffer[0:31] = 0x00
-           * p_msg->read.p_buffer[32] = header
-           * p_msg->read.p_buffer[33] = 0x00
-           * p_msg->read.p_buffer[34:37] = time[4]
-           * p_msg->read.p_buffer[38:p_msg->read.buffer_used - 6U] = message[p_msg->read.buffer_used - 6U]
-           *
-           * { zeroPadding[32] , header[2] , time[4] , msg[n] }
-           *                   |<---  p_msg->read.buffer_used  --->|
-           *
-           */
-          p_msg->read.messages_left = 0;
-          p_msg->read.p_payload = p_buffer;
-          p_msg->read.message_size = buffer_size;
 
-          break;
-      case SALT_MULTI_APP_PKG_MSG_HEADER_VALUE:
+            /*
+             * p_buffer structure:
+             * p_buffer = { payload[buffer_size] }
+             */
+            p_msg->read.messages_left = 0;
+            p_msg->read.p_payload = p_buffer;
+            p_msg->read.message_size = buffer_size;
 
-          if (buffer_size < 2U) {
-              return SALT_ERR_BAD_PROTOCOL;
-          }
+            break;
+        case SALT_MULTI_APP_PKG_MSG_HEADER_VALUE:
 
-          /*
-           * Single message:
-           * p_msg->read.p_buffer[0:31] = 0x00
-           * p_msg->read.p_buffer[32] = header
-           * p_msg->read.p_buffer[33] = 0x00
-           * p_msg->read.p_buffer[34:37] = time[4]
-           * p_msg->read.p_buffer[38:39] = count[2]
-           * p_msg->read.p_buffer[40:41] = size1[2]
-           * p_msg->read.p_buffer[42:42+size1] = msg1[size1]
-           *
-           * { zeroPadding[32] , header[2] , time[4] , count[2] , size1[2] , msg1[n] , ... }
-           *                   |<---                p_msg->read.buffer_used                 --->|
-           *                                                    |<-- p_msg->read.buffer_size -->|
-           */
+            if (buffer_size < 2U) {
+                /*
+                 * Buffer size must be at least 2 bytes for a multi app
+                 * package with zero message.
+                 */
+                return SALT_ERR_BAD_PROTOCOL;
+            }
 
-          p_msg->read.messages_left = salti_bytes_to_u16(p_msg->read.p_buffer);
-          p_msg->read.buffer_used = 0;
-          p_msg->read.p_payload = &p_msg->read.p_buffer[2];
 
-          if (0 == p_msg->read.messages_left) {
-              return SALT_ERR_BAD_PROTOCOL;
-          }
+            /*
+             * p_buffer structure:
+             * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
+             * 
+             * count = num messages. We verify here that the payload is valid and that the format
+             * is followed. Zero length messages is OK. Num message >= 1.
+             *
+             * Here we verify that there exists correct number of messages and that
+             * the size of them does not exceed the length of p_buffer.
+             */
 
-          uint32_t total_size = p_msg->read.buffer_size;
-          uint16_t messages_left = p_msg->read.messages_left;
-          uint32_t buffer_used = 0;
+            p_msg->read.messages_left = salti_bytes_to_u16(p_msg->read.p_buffer);
 
-          while (messages_left > 0) {
-              uint16_t message_size = salti_bytes_to_u16(p_msg->read.p_payload);
-              p_msg->read.p_payload += 2 + message_size;
-              buffer_used += 2 + message_size;
-              if (buffer_used < total_size) {
-                  messages_left--;
-              }
-              else {
-                  return SALT_ERR_BAD_PROTOCOL;
-              }
-          }
+            if (p_msg->read.messages_left == 0) {
+                return SALT_ERR_BAD_PROTOCOL;
+            }
 
-          p_msg->read.message_size = salti_bytes_to_u16(&p_msg->read.p_buffer[2]);
-          p_msg->read.p_payload = &p_msg->read.p_buffer[4];
-          p_msg->read.messages_left--;
-          p_msg->read.buffer_used = 4 + p_msg->read.message_size;
+            p_msg->read.buffer_used = 2;
+            uint16_t messages_found = 0;
+            while (salt_read_next(p_msg) == SALT_SUCCESS) {
+                messages_found++;
+            }
 
-          break;
-      default:
-          return SALT_ERR_BAD_PROTOCOL;
+            p_msg->read.messages_left = salti_bytes_to_u16(p_msg->read.p_buffer);
+
+            /* Num messages pased by salt_read_next must be equal to num messages in count[2]. */
+            if (messages_found != p_msg->read.messages_left) {
+                return SALT_ERR_BAD_PROTOCOL;
+            }
+
+            /*
+             * Initiate first message.
+             */
+            p_msg->read.buffer_used = 2;
+            p_msg->read.message_size = salti_bytes_to_u16(&p_msg->read.p_buffer[p_msg->read.buffer_used]);
+            p_msg->read.buffer_used += 2;
+            p_msg->read.p_payload = &p_msg->read.p_buffer[p_msg->read.buffer_used];
+            p_msg->read.messages_left--;
+
+            return SALT_ERR_NONE;
+
+            break;
+        default:
+            return SALT_ERR_BAD_PROTOCOL;
     }
 
     return SALT_ERR_NONE;

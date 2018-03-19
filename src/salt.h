@@ -196,7 +196,7 @@ struct salt_time_s {
     void            *p_context;
 };
 
-typedef char salt_protocol_t[10];
+typedef uint8_t salt_protocol_t[10];
 
 typedef struct salt_protocols_s {
     uint8_t     *p_buffer;

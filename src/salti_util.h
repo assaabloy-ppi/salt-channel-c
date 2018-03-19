@@ -74,7 +74,6 @@ extern "C" {
 #define SALT_VERIFY_NOT_NULL(x)                                             \
     SALT_VERIFY(((x) != NULL), SALT_ERR_NULL_PTR)
 
-#define SALT_VERIFY_VALID_CHANNEL(x) if ((x) == NULL) return SALT_ERROR
 #define SALT_TRIGGER_ERROR(err_code) SALT_VERIFY(0x00, err_code)
 #define MEMSET_ZERO(x) memset((x), 0, sizeof((x)))
 

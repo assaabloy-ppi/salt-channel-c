@@ -128,7 +128,7 @@ salt_ret_t salti_io_write(salt_channel_t *p_channel,
             channel->state = SALT_IO_PENDING;
             /* Intentional fall-through */
         case SALT_IO_PENDING:
-            ret_code = p_channel->write_impl(&p_channel->write_channel);
+            ret_code = p_channel->write_impl(channel);
             if (SALT_SUCCESS == ret_code) {
                 channel->state = SALT_IO_READY;
             }

@@ -96,7 +96,7 @@ typedef enum salt_mode_e {
  * After the handshake, the state should always be SALT_SESSION_ESTABLISHED.
  */
 typedef enum salt_state_e {
-    SALT_CREATED = 0,
+    SALT_CREATED = 1,
     SALT_SIGNATURE_SET,
     SALT_SESSION_INITIATED,
     SALT_A1_IO,

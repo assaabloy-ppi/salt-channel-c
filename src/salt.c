@@ -42,7 +42,9 @@ salt_ret_t salt_create(salt_channel_t *p_channel,
                        salt_time_t *time_impl)
 {
 
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
 
     memset(p_channel, 0x00U, sizeof(salt_channel_t));
 
@@ -70,7 +72,10 @@ salt_ret_t salt_set_context(salt_channel_t *p_channel,
                             void *p_write_context,
                             void *p_read_context)
 {
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     p_channel->write_channel.p_context = p_write_context;
     p_channel->read_channel.p_context = p_read_context;
 
@@ -82,7 +87,10 @@ salt_ret_t salt_protocols_init(salt_channel_t *p_channel,
                                uint8_t *p_buffer,
                                uint32_t size)
 {
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     SALT_VERIFY_NOT_NULL(p_protocols);
     SALT_VERIFY_NOT_NULL(p_buffer);
 
@@ -178,7 +186,7 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
     uint8_t proceed = 1;
     uint32_t a1_size = 0;
 
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) return SALT_ERROR;
     SALT_VERIFY_NOT_NULL(p_buffer);
 
     SALT_VERIFY(((p_channel->state >= SALT_CREATED) && (p_channel->state < SALT_M1_IO)),
@@ -263,7 +271,10 @@ salt_ret_t salt_set_signature(salt_channel_t *p_channel,
                               const uint8_t *p_signature)
 {
 
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     SALT_VERIFY_NOT_NULL(p_signature);
 
     memcpy(p_channel->my_sk_sec, p_signature, crypto_sign_SECRETKEYBYTES);
@@ -276,7 +287,10 @@ salt_ret_t salt_set_signature(salt_channel_t *p_channel,
 
 salt_ret_t salt_create_signature(salt_channel_t *p_channel)
 {
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     crypto_sign_keypair(p_channel->my_sk_pub, p_channel->my_sk_sec);
     p_channel->state = SALT_SIGNATURE_SET;
     return SALT_SUCCESS;
@@ -299,7 +313,11 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
                                        uint8_t *ek_pub,
                                        uint8_t *ek_sec)
 {
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     SALT_VERIFY(p_channel->state >= SALT_SIGNATURE_SET,
                 SALT_ERR_NO_SIGNATURE);
 
@@ -357,7 +375,11 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
 
 salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel, uint32_t delay_threshold)
 {
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     p_channel->delay_threshold = delay_threshold;
 
     return SALT_SUCCESS;
@@ -366,7 +388,10 @@ salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel, uint32_t delay_th
 salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with)
 {
     salt_ret_t ret;
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
 
     if (SALT_SERVER == p_channel->mode) {
         ret = salti_handshake_server(p_channel, p_with);
@@ -393,7 +418,10 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
     uint32_t size = buffer_size - 14U;
     uint8_t *header;
 
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
 
@@ -435,7 +463,11 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg)
     uint16_t payload_size;
     uint32_t buffer_left;
 
-    if (p_msg->read.messages_left == 0) {
+    if (NULL == p_msg) {
+        return SALT_ERROR;
+    }
+
+    if (0 == p_msg->read.messages_left) {
         return SALT_ERROR;
     }
 
@@ -552,7 +584,11 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
                               bool last_msg)
 {
     salt_ret_t ret = SALT_ERROR;
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+    
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
     SALT_VERIFY_NOT_NULL(p_msg);

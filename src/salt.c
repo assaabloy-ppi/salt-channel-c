@@ -66,10 +66,9 @@ salt_ret_t salt_create(salt_channel_t *p_channel,
     return SALT_SUCCESS;
 }
 
-salt_ret_t salt_set_context(
-    salt_channel_t *p_channel,
-    void *p_write_context,
-    void *p_read_context)
+salt_ret_t salt_set_context(salt_channel_t *p_channel,
+                            void *p_write_context,
+                            void *p_read_context)
 {
     SALT_VERIFY_VALID_CHANNEL(p_channel);
     p_channel->write_channel.p_context = p_write_context;

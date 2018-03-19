@@ -56,7 +56,7 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
             channel->state = SALT_IO_SIZE;
             /* Intentional fall-through */
         case SALT_IO_SIZE:
-            ret_code = p_channel->read_impl(&p_channel->read_channel);
+            ret_code = p_channel->read_impl(channel);
 
             if (SALT_SUCCESS != ret_code) {
               /* Pending or error. */
@@ -77,7 +77,7 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
             /* Intentional fall-through */
         case SALT_IO_PENDING:
 
-            ret_code = p_channel->read_impl(&p_channel->read_channel);
+            ret_code = p_channel->read_impl(channel);
 
             if (SALT_SUCCESS == ret_code) {
               (*size) = channel->size;
@@ -86,7 +86,7 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
 
             break;
         default:
-            SALT_ERROR(SALT_ERR_INVALID_STATE);
+            SALT_TRIGGER_ERROR(SALT_ERR_INVALID_STATE);
 
     }
 
@@ -134,7 +134,7 @@ salt_ret_t salti_io_write(salt_channel_t *p_channel,
             }
             break;
         default:
-            SALT_ERROR(SALT_ERR_INVALID_STATE);
+            SALT_TRIGGER_ERROR(SALT_ERR_INVALID_STATE);
     }
 
     return ret_code;

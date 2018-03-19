@@ -133,7 +133,12 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
     }
 
     /* 20 bytes required for next protocol */
-    if ((p_protocols->buf_size - p_protocols->buf_used) < (sizeof(salt_protocol_t) * 2)) {
+    if (p_protocols->buf_size < p_protocols->buf_used) {
+        return SALT_ERROR;
+    }
+
+    uint32_t remains = p_protocols->buf_size - p_protocols->buf_used;
+    if (remains < (sizeof(salt_protocol_t)*2)) {
         return SALT_ERROR;
     }
 
@@ -145,13 +150,12 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
     memcpy(&p_protocols->p_buffer[p_protocols->buf_used], sc2protocol, sizeof(salt_protocol_t));
     p_protocols->buf_used += sizeof(salt_protocol_t);
 
+    /* Pad with "-" */
+    memset(&p_protocols->p_buffer[p_protocols->buf_used], 0x2DU, sizeof(salt_protocol_t));
+
     /* Append protocol */
     memcpy(&p_protocols->p_buffer[p_protocols->buf_used], p_buffer, size);
-    p_protocols->buf_used += size;
-
-    /* Pad with "-" */
-    memset(&p_protocols->p_buffer[p_protocols->buf_used], 0x2DU, sizeof(salt_protocol_t) - size);
-    p_protocols->buf_used += sizeof(salt_protocol_t) - size;
+    p_protocols->buf_used += sizeof(salt_protocol_t);
 
     p_protocols->count += 2;
     p_protocols->p_buffer[SALT_LENGTH_SIZE + 2] = p_protocols->count / 2;

@@ -524,23 +524,31 @@ uint8_t salt_write_create(salt_msg_t *p_msg)
 
 }
 
+/*
+static bool u32_sub(uint32_t a, uint32_t b, uint32_t *sub)
+{
+    uint32_t c = a-b;
+    *sub = c;
+    return c > a;
+}
+*/
+
 bool time_check(uint32_t first, uint32_t now, uint32_t peer_time, uint32_t thresh)
 {
 
-    int32_t diff = peer_time - now + first;
+    uint32_t my_time, diff;
 
-    if (INT32_MIN == diff) {
-        diff = INT32_MAX;
+    //if (u32_sub(now, first, &my_time)) return false; /* Necessary? */
+
+    my_time = now - first;
+
+    if (my_time > peer_time) {
+        diff = my_time - peer_time;
     }
     else {
-        diff = (diff < 0) ? -diff : diff;
+        diff = peer_time - my_time;
     }
-
-    if ((uint32_t) diff > thresh) {
-        return false;
-    }
-
-    return true;
+    return diff <= thresh;
 }
 
 char *salt_mode2str(salt_mode_t mode)

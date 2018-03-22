@@ -253,7 +253,7 @@ typedef union salt_msg_u {
         uint8_t     *p_buffer;          /**< Message buffer. */
         uint8_t     *p_payload;         /**< Pointer to current message. */
         uint32_t    buffer_size;        /**< Message buffer size. */
-        uint32_t    buffer_used;
+        uint32_t    buffer_used;        /**< Index of how many bytes have been processed. */
         uint16_t    messages_left;      /**< Number of messages left to read. */
         uint16_t    message_size;       /**< Current message size. */
     } read;

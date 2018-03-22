@@ -19,12 +19,8 @@
 /*======= Local Macro Definitions =============================================*/
 
 /* Nonce initial values and increments */
-#define SALT_WRITE_NONCE_INCR_SERVER            (2U)
-#define SALT_WRITE_NONCE_INCR_CLIENT            (2U)
 #define SALT_WRITE_NONCE_INIT_SERVER            (2U)
 #define SALT_WRITE_NONCE_INIT_CLIENT            (1U)
-#define SALT_READ_NONCE_INCR_SERVER             (2U)
-#define SALT_READ_NONCE_INCR_CLIENT             (2U)
 #define SALT_READ_NONCE_INIT_SERVER             (1U)
 #define SALT_READ_NONCE_INIT_CLIENT             (2U)
 
@@ -46,7 +42,9 @@ salt_ret_t salt_create(salt_channel_t *p_channel,
                        salt_time_t *time_impl)
 {
 
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
 
     memset(p_channel, 0x00U, sizeof(salt_channel_t));
 
@@ -70,12 +68,14 @@ salt_ret_t salt_create(salt_channel_t *p_channel,
     return SALT_SUCCESS;
 }
 
-salt_ret_t salt_set_context(
-    salt_channel_t *p_channel,
-    void *p_write_context,
-    void *p_read_context)
+salt_ret_t salt_set_context(salt_channel_t *p_channel,
+                            void *p_write_context,
+                            void *p_read_context)
 {
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     p_channel->write_channel.p_context = p_write_context;
     p_channel->read_channel.p_context = p_read_context;
 
@@ -87,7 +87,10 @@ salt_ret_t salt_protocols_init(salt_channel_t *p_channel,
                                uint8_t *p_buffer,
                                uint32_t size)
 {
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     SALT_VERIFY_NOT_NULL(p_protocols);
     SALT_VERIFY_NOT_NULL(p_buffer);
 
@@ -138,7 +141,12 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
     }
 
     /* 20 bytes required for next protocol */
-    if ((p_protocols->buf_size - p_protocols->buf_used) < (sizeof(salt_protocol_t) * 2)) {
+    if (p_protocols->buf_size < p_protocols->buf_used) {
+        return SALT_ERROR;
+    }
+
+    uint32_t remains = p_protocols->buf_size - p_protocols->buf_used;
+    if (remains < (sizeof(salt_protocol_t)*2)) {
         return SALT_ERROR;
     }
 
@@ -150,13 +158,12 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
     memcpy(&p_protocols->p_buffer[p_protocols->buf_used], sc2protocol, sizeof(salt_protocol_t));
     p_protocols->buf_used += sizeof(salt_protocol_t);
 
+    /* Pad with "-" */
+    memset(&p_protocols->p_buffer[p_protocols->buf_used], 0x2DU, sizeof(salt_protocol_t));
+
     /* Append protocol */
     memcpy(&p_protocols->p_buffer[p_protocols->buf_used], p_buffer, size);
-    p_protocols->buf_used += size;
-
-    /* Pad with "-" */
-    memset(&p_protocols->p_buffer[p_protocols->buf_used], 0x2DU, sizeof(salt_protocol_t) - size);
-    p_protocols->buf_used += sizeof(salt_protocol_t) - size;
+    p_protocols->buf_used += sizeof(salt_protocol_t);
 
     p_protocols->count += 2;
     p_protocols->p_buffer[SALT_LENGTH_SIZE + 2] = p_protocols->count / 2;
@@ -179,7 +186,7 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
     uint8_t proceed = 1;
     uint32_t a1_size = 0;
 
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) return SALT_ERROR;
     SALT_VERIFY_NOT_NULL(p_buffer);
 
     SALT_VERIFY(((p_channel->state >= SALT_CREATED) && (p_channel->state < SALT_M1_IO)),
@@ -227,7 +234,13 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
                      *  { header[2] , count[1] , protocols[ count * 2 * sizeof(salt_protocol_t) ] }
                      */
 
-                    SALT_VERIFY(p_buffer[0] == SALT_A2_HEADER && (p_buffer[1] & SALT_LAST_FLAG) > 0,
+                    SALT_VERIFY((p_buffer[0] == SALT_A2_HEADER),
+                                SALT_ERR_BAD_PROTOCOL);
+
+                    /*
+                     * Allowed value in p_buffer[1] is SALT_LAST_FLAG and/or SALT_NO_SUCH_SERVER_FLAG
+                     */
+                    SALT_VERIFY((0x00 == (p_buffer[1] & ~(SALT_NO_SUCH_SERVER_FLAG | SALT_LAST_FLAG))),
                                 SALT_ERR_BAD_PROTOCOL);
 
                     if ((p_buffer[1] & SALT_NO_SUCH_SERVER_FLAG) > 0) {
@@ -258,7 +271,10 @@ salt_ret_t salt_set_signature(salt_channel_t *p_channel,
                               const uint8_t *p_signature)
 {
 
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     SALT_VERIFY_NOT_NULL(p_signature);
 
     memcpy(p_channel->my_sk_sec, p_signature, crypto_sign_SECRETKEYBYTES);
@@ -271,7 +287,10 @@ salt_ret_t salt_set_signature(salt_channel_t *p_channel,
 
 salt_ret_t salt_create_signature(salt_channel_t *p_channel)
 {
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     crypto_sign_keypair(p_channel->my_sk_pub, p_channel->my_sk_sec);
     p_channel->state = SALT_SIGNATURE_SET;
     return SALT_SUCCESS;
@@ -294,7 +313,11 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
                                        uint8_t *ek_pub,
                                        uint8_t *ek_sec)
 {
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     SALT_VERIFY(p_channel->state >= SALT_SIGNATURE_SET,
                 SALT_ERR_NO_SIGNATURE);
 
@@ -317,14 +340,10 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
     if (SALT_SERVER == p_channel->mode) {
         p_channel->write_nonce[0]  = SALT_WRITE_NONCE_INIT_SERVER;
         p_channel->read_nonce[0] = SALT_READ_NONCE_INIT_SERVER;
-        p_channel->write_nonce_incr = SALT_WRITE_NONCE_INCR_SERVER;
-        p_channel->read_nonce_incr = SALT_READ_NONCE_INCR_SERVER;
     }
     else {
         p_channel->write_nonce[0]  = SALT_WRITE_NONCE_INIT_CLIENT;
         p_channel->read_nonce[0] = SALT_READ_NONCE_INIT_CLIENT;
-        p_channel->write_nonce_incr = SALT_WRITE_NONCE_INCR_CLIENT;
-        p_channel->read_nonce_incr = SALT_READ_NONCE_INCR_CLIENT;
     }
 
     p_channel->write_channel.state = SALT_IO_READY;
@@ -356,7 +375,11 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
 
 salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel, uint32_t delay_threshold)
 {
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     p_channel->delay_threshold = delay_threshold;
 
     return SALT_SUCCESS;
@@ -365,7 +388,10 @@ salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel, uint32_t delay_th
 salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with)
 {
     salt_ret_t ret;
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
 
     if (SALT_SERVER == p_channel->mode) {
         ret = salti_handshake_server(p_channel, p_with);
@@ -392,11 +418,15 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
     uint32_t size = buffer_size - 14U;
     uint8_t *header;
 
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
 
     SALT_VERIFY(buffer_size >= SALT_OVERHEAD_SIZE, SALT_ERR_BUFF_TO_SMALL);
+    SALT_VERIFY(NULL != p_msg, SALT_ERR_NULL_PTR);
 
     ret = salti_io_read(p_channel, &p_buffer[14], &size);
 
@@ -430,36 +460,51 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
 salt_ret_t salt_read_next(salt_msg_t *p_msg)
 {
 
-    if (p_msg->read.messages_left == 0) {
+    uint16_t payload_size;
+    uint32_t buffer_left;
+
+    if (NULL == p_msg) {
+        return SALT_ERROR;
+    }
+
+    if (0 == p_msg->read.messages_left) {
         return SALT_ERROR;
     }
 
     /*
-     * Increase p_payload to end of current message.
+     * First message, p_msg->read.message_size will be 0. Otherwise it will be
+     * the length of last message.
+     * 
+     * First:
+     * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
+     * buffer_used ----------->
+     * 
+     * Otherwise:
+     * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
+     * buffer_used ----------------------->
+     *                           message_size = n1
+     * 
      */
-    p_msg->read.p_payload += p_msg->read.message_size;
-    
-    if (p_msg->read.buffer_size < (p_msg->read.buffer_used + 2)) {
+    p_msg->read.buffer_used += p_msg->read.message_size;
+    buffer_left = p_msg->read.buffer_size - p_msg->read.buffer_used;
+
+    /* Two bytes required for payload size */
+    if (buffer_left < 2U) {
         return SALT_ERROR;
     }
 
-    /*
-     * Get next message size.
-     */
-    p_msg->read.message_size = salti_bytes_to_u16(p_msg->read.p_payload);
-    /*
-     * Increase p_payload to next message.
-     */
-    p_msg->read.p_payload += 2;
-    p_msg->read.buffer_used += 2 + p_msg->read.message_size;
+    payload_size = salti_bytes_to_u16(&p_msg->read.p_buffer[p_msg->read.buffer_used]);
 
+    p_msg->read.buffer_used += 2U;
+    buffer_left -= 2U;
 
-    if (p_msg->read.buffer_used > p_msg->read.buffer_size) {
+    if (payload_size > buffer_left) {
         return SALT_ERROR;
     }
 
+    p_msg->read.p_payload = &p_msg->read.p_buffer[p_msg->read.buffer_used];
+    p_msg->read.message_size = payload_size;
     p_msg->read.messages_left--;
-
 
     return SALT_SUCCESS;
 }
@@ -539,7 +584,11 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
                               bool last_msg)
 {
     salt_ret_t ret = SALT_ERROR;
-    SALT_VERIFY_VALID_CHANNEL(p_channel);
+
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+    
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
     SALT_VERIFY_NOT_NULL(p_msg);

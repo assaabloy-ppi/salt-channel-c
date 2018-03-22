@@ -73,7 +73,8 @@ typedef enum salt_err_e {
     SALT_ERR_IO_WRITE,              /**< Error occured during I/O. */
     SALT_ERR_DELAY_DETECTED,        /**< Error if a delayed packet was detected. */
     SALT_ERR_BAD_PEER,              /**< If expected peer didn't match or signature verification faild. */
-    SALT_ERR_CONNECTION_CLOSED      /**< If the session was closed, internally or by peer. */
+    SALT_ERR_CONNECTION_CLOSED,     /**< If the session was closed, internally or by peer. */
+    SALT_ERR_NONCE_WRAPPED          /**< If nonce wrapped. */
 } salt_err_t;
 
 
@@ -95,7 +96,7 @@ typedef enum salt_mode_e {
  * After the handshake, the state should always be SALT_SESSION_ESTABLISHED.
  */
 typedef enum salt_state_e {
-    SALT_CREATED = 0,
+    SALT_CREATED = 1,
     SALT_SIGNATURE_SET,
     SALT_SESSION_INITIATED,
     SALT_A1_IO,
@@ -195,7 +196,7 @@ struct salt_time_s {
     void            *p_context;
 };
 
-typedef char salt_protocol_t[10];
+typedef uint8_t salt_protocol_t[10];
 
 typedef struct salt_protocols_s {
     uint8_t     *p_buffer;
@@ -221,8 +222,6 @@ typedef struct salt_channel_s {
     uint8_t     *my_sk_pub;                             /**< My public signature key, points to &my_sk_sec[32]. */
     uint8_t     write_nonce[crypto_box_NONCEBYTES];     /**< Write nonce. */
     uint8_t     read_nonce[crypto_box_NONCEBYTES];      /**< Read nonce. */
-    uint8_t     write_nonce_incr;                       /**< Write nonce increment. */
-    uint8_t     read_nonce_incr;                        /**< Read nonce increment. */
 
     /* Time checking stuff */
     uint32_t    my_epoch;
@@ -254,7 +253,7 @@ typedef union salt_msg_u {
         uint8_t     *p_buffer;          /**< Message buffer. */
         uint8_t     *p_payload;         /**< Pointer to current message. */
         uint32_t    buffer_size;        /**< Message buffer size. */
-        uint32_t    buffer_used;
+        uint32_t    buffer_used;        /**< Index of how many bytes have been processed. */
         uint16_t    messages_left;      /**< Number of messages left to read. */
         uint16_t    message_size;       /**< Current message size. */
     } read;

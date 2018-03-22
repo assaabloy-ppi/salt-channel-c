@@ -74,9 +74,7 @@ extern "C" {
 #define SALT_VERIFY_NOT_NULL(x)                                             \
     SALT_VERIFY(((x) != NULL), SALT_ERR_NULL_PTR)
 
-#define SALT_VERIFY_VALID_CHANNEL(x) if ((x) == NULL) return SALT_ERROR
-#define SALT_TRIGGER_ERROR                      (0x00U)
-#define SALT_ERROR(err_code) SALT_VERIFY(SALT_TRIGGER_ERROR, err_code)
+#define SALT_TRIGGER_ERROR(err_code) SALT_VERIFY(0x00, err_code)
 #define MEMSET_ZERO(x) memset((x), 0, sizeof((x)))
 
 
@@ -123,7 +121,7 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
                         uint8_t **unwrapped,
                         uint32_t *unwrapped_length);
 
-void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment);
+salt_ret_t salti_increase_nonce(uint8_t *p_nonce);
 
 void salti_u16_to_bytes(uint8_t *dest, uint16_t size);
 

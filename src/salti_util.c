@@ -44,7 +44,13 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
                          uint32_t *size)
 {
     salt_ret_t ret_code = SALT_ERROR;
-    salt_io_channel_t *channel = &p_channel->read_channel;
+    salt_io_channel_t *channel;
+
+    if (p_channel == NULL) {
+        return SALT_ERROR;
+    }
+
+    channel = &p_channel->read_channel;
 
     switch (channel->state) {
         case SALT_IO_READY:
@@ -67,6 +73,7 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
 
             if (channel->size_expected > channel->max_size) {
               p_channel->err_code = SALT_ERR_BUFF_TO_SMALL;
+              p_channel->state = SALT_SESSION_CLOSED;
               ret_code = SALT_ERROR;
               *size = 0;
               break;
@@ -118,7 +125,13 @@ salt_ret_t salti_io_write(salt_channel_t *p_channel,
                           uint32_t size)
 {
     salt_ret_t ret_code = SALT_ERROR;
-    salt_io_channel_t *channel = &p_channel->write_channel;
+    salt_io_channel_t *channel;
+
+    if (p_channel == NULL) {
+        return SALT_ERROR;
+    }
+
+    channel = &p_channel->write_channel;
 
     switch (channel->state) {
         case SALT_IO_READY:
@@ -290,6 +303,15 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
     SALT_VERIFY(size >= 24U, SALT_ERR_BAD_PROTOCOL);
 
     memset(p_data, 0x00U, crypto_secretbox_BOXZEROBYTES);
+
+    /*
+     * crypto_box_open_afternm requires 16 bytes of 0x00 before the
+     * encrypted package. Also, two bytes header where sent in the
+     * wrapped message. The I/O started reading the enrypted package
+     * 14 bytes into the buffer. The first as these two are the header
+     * bytes. After verifying these, we memset the 16 bytes before
+     * the encrypted package to 0x00 which is required by the API.
+     */
     size = size + crypto_secretbox_BOXZEROBYTES - 2U;
 
     int ret = crypto_box_open_afternm(p_data,
@@ -330,6 +352,10 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
 
     (*unwrapped) = &p_data[38];
+
+    /*
+     * The real clear text payload is without the time and header bytes.
+     */
     (*unwrapped_length) = size - crypto_secretbox_ZEROBYTES - 2U - 4U;
 
     return SALT_SUCCESS;

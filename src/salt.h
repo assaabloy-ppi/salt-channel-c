@@ -406,10 +406,11 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
  *      }
  *
  *
- * @param p_channel Pointer to channel handle.
- * @param p_buffer  Buffer where to put the supported protocols.
- * @param p_size    Maximum size of buffer.
- * @param p_with    Expected public key of host, 32 bytes.
+ * @param p_channel     Pointer to channel handle.
+ * @param p_buffer      Buffer where to put the supported protocols.
+ * @param p_size        Maximum size of buffer.
+ * @param p_protocols   Pointer to protocol structure.
+ * @param p_with        Expected public key of host, 32 bytes.
  *
  * @return SALT_SUCCESS The A1 was sent successfully and the A2 was received successfully.
  * @return SALT_PENDING The A1/A2 session is still pending.
@@ -523,6 +524,7 @@ salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel,
  * @return SALT_SUCCESS When the handshake process is completed.
  * @return SALT_PENDING When the handshake process is still pending.
  * @return SALT_ERROR   If any error occured during the handshake process. At this time the session should be ended.
+ *                      After this occur, the channel MUST be reinitiated with salt_init_session*.
  *
  */
 salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with);
@@ -540,7 +542,9 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with);
  *
  * @return SALT_SUCCESS A message was successfully received.
  * @return SALT_PENDING The receive process is still pending.
- * @return SALT_ERROR   If any error occured during the read.
+ * @return SALT_ERROR   If any error occured during the read. If this occured, the session is considered
+ *                      closed and a new handshake must be performed. I.e., the session must be initated
+ *                      and then a handshake.
  */
 salt_ret_t salt_read_begin(salt_channel_t *p_channel,
                            uint8_t *p_buffer,
@@ -698,7 +702,9 @@ salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint16_t size);
  *
  * @return SALT_SUCCESS A message was successfully sent.
  * @return SALT_PENDING The sending process is still pending.
- * @return SALT_ERROR   If any error occured during the sending process.
+ * @return SALT_ERROR   If any error occured during the sending process. If this occured, the session is considered
+ *                      closed and a new handshake must be performed. I.e., the session must be initated
+ *                      and then a handshake.
  */
 salt_ret_t salt_write_execute(salt_channel_t *p_channel,
                               salt_msg_t *p_msg,

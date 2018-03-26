@@ -495,6 +495,10 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg)
 
     payload_size = salti_bytes_to_u16(&p_msg->read.p_buffer[p_msg->read.buffer_used]);
 
+    /*
+     * After size is read, two more bytes are used. Therefore, we have 2 bytes
+     * left in buffer.
+     */
     p_msg->read.buffer_used += 2U;
     buffer_left -= 2U;
 
@@ -502,6 +506,9 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg)
         return SALT_ERROR;
     }
 
+    /*
+     * Point current payload to next message.
+     */
     p_msg->read.p_payload = &p_msg->read.p_buffer[p_msg->read.buffer_used];
     p_msg->read.message_size = payload_size;
     p_msg->read.messages_left--;

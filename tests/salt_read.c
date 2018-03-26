@@ -340,6 +340,23 @@ static void crash_from_fuzz3(void **state)
 
 }
 
+static void bad_pkg_multi_app(void **state)
+{
+    uint8_t bad_pkg[4] = {
+        0x01, 0x00, /* Count = 1 */
+        0x01, 0x00, /* Length = 1 */
+    };
+
+    salt_msg_t msg;
+    salt_err_t ret = salt_read_init(SALT_MULTI_APP_PKG_MSG_HEADER_VALUE,
+                                    bad_pkg,
+                                    sizeof(bad_pkg),
+                                    &msg);
+
+    assert_true(ret == SALT_ERR_BAD_PROTOCOL);
+
+}
+
 int main(void)
 {
     const struct CMUnitTest tests[] = {
@@ -347,7 +364,8 @@ int main(void)
         cmocka_unit_test(second_test),
         cmocka_unit_test(crash_from_fuzz1),
         cmocka_unit_test(crash_from_fuzz2),
-        cmocka_unit_test(crash_from_fuzz3)
+        cmocka_unit_test(crash_from_fuzz3),
+        cmocka_unit_test(bad_pkg_multi_app)
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

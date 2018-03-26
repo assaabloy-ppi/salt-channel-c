@@ -426,7 +426,6 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
  *
  * This function will copy the signature in p_signature to the salt-channel structure.
  *
- * TODO: Consider adding size?
  *
  * @param p_channel     Pointer to channel handle.
  * @param p_signature   Pointer to signature. Must be crypto_sign_SECRETKEYBYTES bytes long.

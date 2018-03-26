@@ -73,7 +73,8 @@ typedef enum salt_err_e {
     SALT_ERR_IO_WRITE,              /**< Error occured during I/O. */
     SALT_ERR_DELAY_DETECTED,        /**< Error if a delayed packet was detected. */
     SALT_ERR_BAD_PEER,              /**< If expected peer didn't match or signature verification faild. */
-    SALT_ERR_CONNECTION_CLOSED      /**< If the session was closed, internally or by peer. */
+    SALT_ERR_CONNECTION_CLOSED,     /**< If the session was closed, internally or by peer. */
+    SALT_ERR_NONCE_WRAPPED          /**< If nonce wrapped. */
 } salt_err_t;
 
 
@@ -95,7 +96,7 @@ typedef enum salt_mode_e {
  * After the handshake, the state should always be SALT_SESSION_ESTABLISHED.
  */
 typedef enum salt_state_e {
-    SALT_CREATED = 0,
+    SALT_CREATED = 1,
     SALT_SIGNATURE_SET,
     SALT_SESSION_INITIATED,
     SALT_A1_IO,
@@ -195,7 +196,7 @@ struct salt_time_s {
     void            *p_context;
 };
 
-typedef char salt_protocol_t[10];
+typedef uint8_t salt_protocol_t[10];
 
 typedef struct salt_protocols_s {
     uint8_t     *p_buffer;
@@ -221,8 +222,6 @@ typedef struct salt_channel_s {
     uint8_t     *my_sk_pub;                             /**< My public signature key, points to &my_sk_sec[32]. */
     uint8_t     write_nonce[crypto_box_NONCEBYTES];     /**< Write nonce. */
     uint8_t     read_nonce[crypto_box_NONCEBYTES];      /**< Read nonce. */
-    uint8_t     write_nonce_incr;                       /**< Write nonce increment. */
-    uint8_t     read_nonce_incr;                        /**< Read nonce increment. */
 
     /* Time checking stuff */
     uint32_t    my_epoch;
@@ -254,7 +253,7 @@ typedef union salt_msg_u {
         uint8_t     *p_buffer;          /**< Message buffer. */
         uint8_t     *p_payload;         /**< Pointer to current message. */
         uint32_t    buffer_size;        /**< Message buffer size. */
-        uint32_t    buffer_used;
+        uint32_t    buffer_used;        /**< Index of how many bytes have been processed. */
         uint16_t    messages_left;      /**< Number of messages left to read. */
         uint16_t    message_size;       /**< Current message size. */
     } read;
@@ -407,10 +406,11 @@ salt_ret_t salt_protocols_append(salt_protocols_t *p_protocols,
  *      }
  *
  *
- * @param p_channel Pointer to channel handle.
- * @param p_buffer  Buffer where to put the supported protocols.
- * @param p_size    Maximum size of buffer.
- * @param p_with    Expected public key of host, 32 bytes.
+ * @param p_channel     Pointer to channel handle.
+ * @param p_buffer      Buffer where to put the supported protocols.
+ * @param p_size        Maximum size of buffer.
+ * @param p_protocols   Pointer to protocol structure.
+ * @param p_with        Expected public key of host, 32 bytes.
  *
  * @return SALT_SUCCESS The A1 was sent successfully and the A2 was received successfully.
  * @return SALT_PENDING The A1/A2 session is still pending.
@@ -427,7 +427,6 @@ salt_ret_t salt_a1a2(salt_channel_t *p_channel,
  *
  * This function will copy the signature in p_signature to the salt-channel structure.
  *
- * TODO: Consider adding size?
  *
  * @param p_channel     Pointer to channel handle.
  * @param p_signature   Pointer to signature. Must be crypto_sign_SECRETKEYBYTES bytes long.
@@ -525,6 +524,7 @@ salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel,
  * @return SALT_SUCCESS When the handshake process is completed.
  * @return SALT_PENDING When the handshake process is still pending.
  * @return SALT_ERROR   If any error occured during the handshake process. At this time the session should be ended.
+ *                      After this occur, the channel MUST be reinitiated with salt_init_session*.
  *
  */
 salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with);
@@ -542,7 +542,9 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with);
  *
  * @return SALT_SUCCESS A message was successfully received.
  * @return SALT_PENDING The receive process is still pending.
- * @return SALT_ERROR   If any error occured during the read.
+ * @return SALT_ERROR   If any error occured during the read. If this occured, the session is considered
+ *                      closed and a new handshake must be performed. I.e., the session must be initated
+ *                      and then a handshake.
  */
 salt_ret_t salt_read_begin(salt_channel_t *p_channel,
                            uint8_t *p_buffer,
@@ -700,7 +702,9 @@ salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint16_t size);
  *
  * @return SALT_SUCCESS A message was successfully sent.
  * @return SALT_PENDING The sending process is still pending.
- * @return SALT_ERROR   If any error occured during the sending process.
+ * @return SALT_ERROR   If any error occured during the sending process. If this occured, the session is considered
+ *                      closed and a new handshake must be performed. I.e., the session must be initated
+ *                      and then a handshake.
  */
 salt_ret_t salt_write_execute(salt_channel_t *p_channel,
                               salt_msg_t *p_msg,

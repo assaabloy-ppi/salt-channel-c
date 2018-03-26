@@ -512,7 +512,7 @@ salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
         }
     }
     else {
-        SALT_ERROR(SALT_ERR_BAD_PROTOCOL);
+        SALT_TRIGGER_ERROR(SALT_ERR_BAD_PROTOCOL);
     }
 
     /*

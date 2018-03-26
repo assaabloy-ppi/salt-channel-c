@@ -15,6 +15,9 @@
 #include "salti_util.h"
 
 /*======= Local Macro Definitions ===========================================*/
+
+#define SALT_NONCE_INCR     (2U)
+
 /*======= Type Definitions ==================================================*/
 /*======= Local function prototypes =========================================*/
 /*======= Local variable declarations =======================================*/
@@ -41,7 +44,13 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
                          uint32_t *size)
 {
     salt_ret_t ret_code = SALT_ERROR;
-    salt_io_channel_t *channel = &p_channel->read_channel;
+    salt_io_channel_t *channel;
+
+    if (p_channel == NULL) {
+        return SALT_ERROR;
+    }
+
+    channel = &p_channel->read_channel;
 
     switch (channel->state) {
         case SALT_IO_READY:
@@ -53,7 +62,7 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
             channel->state = SALT_IO_SIZE;
             /* Intentional fall-through */
         case SALT_IO_SIZE:
-            ret_code = p_channel->read_impl(&p_channel->read_channel);
+            ret_code = p_channel->read_impl(channel);
 
             if (SALT_SUCCESS != ret_code) {
               /* Pending or error. */
@@ -64,6 +73,7 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
 
             if (channel->size_expected > channel->max_size) {
               p_channel->err_code = SALT_ERR_BUFF_TO_SMALL;
+              p_channel->state = SALT_SESSION_CLOSED;
               ret_code = SALT_ERROR;
               *size = 0;
               break;
@@ -74,7 +84,7 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
             /* Intentional fall-through */
         case SALT_IO_PENDING:
 
-            ret_code = p_channel->read_impl(&p_channel->read_channel);
+            ret_code = p_channel->read_impl(channel);
 
             if (SALT_SUCCESS == ret_code) {
               (*size) = channel->size;
@@ -83,7 +93,7 @@ salt_ret_t salti_io_read(salt_channel_t *p_channel,
 
             break;
         default:
-            SALT_ERROR(SALT_ERR_INVALID_STATE);
+            SALT_TRIGGER_ERROR(SALT_ERR_INVALID_STATE);
 
     }
 
@@ -115,7 +125,13 @@ salt_ret_t salti_io_write(salt_channel_t *p_channel,
                           uint32_t size)
 {
     salt_ret_t ret_code = SALT_ERROR;
-    salt_io_channel_t *channel = &p_channel->write_channel;
+    salt_io_channel_t *channel;
+
+    if (p_channel == NULL) {
+        return SALT_ERROR;
+    }
+
+    channel = &p_channel->write_channel;
 
     switch (channel->state) {
         case SALT_IO_READY:
@@ -125,13 +141,13 @@ salt_ret_t salti_io_write(salt_channel_t *p_channel,
             channel->state = SALT_IO_PENDING;
             /* Intentional fall-through */
         case SALT_IO_PENDING:
-            ret_code = p_channel->write_impl(&p_channel->write_channel);
+            ret_code = p_channel->write_impl(channel);
             if (SALT_SUCCESS == ret_code) {
                 channel->state = SALT_IO_READY;
             }
             break;
         default:
-            SALT_ERROR(SALT_ERR_INVALID_STATE);
+            SALT_TRIGGER_ERROR(SALT_ERR_INVALID_STATE);
     }
 
     return ret_code;
@@ -223,7 +239,9 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
 
     SALT_VERIFY(0 == ret, SALT_ERR_ENCRYPTION);
 
-    salti_increase_nonce(p_channel->write_nonce, p_channel->write_nonce_incr);
+    SALT_VERIFY(salti_increase_nonce(p_channel->write_nonce) == SALT_SUCCESS,
+        SALT_ERR_NONCE_WRAPPED);
+    
     p_data[14] = SALT_ENCRYPTED_MSG_HEADER_VALUE;
     p_data[15] = (last_msg) ? SALT_LAST_FLAG : 0x00U;
     size += 24;
@@ -257,7 +275,7 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
  * parameter pointers.
  *
  * @param p_channel         Pointer to salt channel structure.
- * @param p_data            Pointer to ciåher text message.
+ * @param p_data            Pointer to cipher text message.
  * @param size              Size of cipher message, exluding overhead bytes,
  * @param type              Return type of message.
  * @param unwrapped         Return pointer to clear text message.
@@ -271,8 +289,11 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
                         uint8_t **unwrapped,
                         uint32_t *unwrapped_length)
 {
-    /* Header in p_data[14:15] must be { 0x06 , 0x00 } */
-    SALT_VERIFY(0x06U == p_data[14],
+    /*
+     * Header in p_data[14:15] must be
+     *  { 0x06 , 0x00 } or { 0x06 , SALT_LAST_FLAG }
+     */
+    SALT_VERIFY((0x06U == p_data[14]) && (0x00 == (p_data[15] & ~SALT_LAST_FLAG)),
                 SALT_ERR_BAD_PROTOCOL);
 
     if ((p_data[15] & SALT_LAST_FLAG) > 0U) {
@@ -282,6 +303,15 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
     SALT_VERIFY(size >= 24U, SALT_ERR_BAD_PROTOCOL);
 
     memset(p_data, 0x00U, crypto_secretbox_BOXZEROBYTES);
+
+    /*
+     * crypto_box_open_afternm requires 16 bytes of 0x00 before the
+     * encrypted package. Also, two bytes header where sent in the
+     * wrapped message. The I/O started reading the enrypted package
+     * 14 bytes into the buffer. The first as these two are the header
+     * bytes. After verifying these, we memset the 16 bytes before
+     * the encrypted package to 0x00 which is required by the API.
+     */
     size = size + crypto_secretbox_BOXZEROBYTES - 2U;
 
     int ret = crypto_box_open_afternm(p_data,
@@ -292,7 +322,8 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
     SALT_VERIFY(0 == ret, SALT_ERR_DECRYPTION);
 
-    salti_increase_nonce(p_channel->read_nonce, p_channel->read_nonce_incr);
+    SALT_VERIFY(salti_increase_nonce(p_channel->read_nonce) == SALT_SUCCESS,
+        SALT_ERR_NONCE_WRAPPED);
 
     (*header) = &p_data[32];
 
@@ -302,14 +333,14 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
         uint32_t t_package = salti_bytes_to_u32(&p_data[34]);
 
         /* Only 31 bits are allowed, the 32 bit must be 0. */
-        SALT_VERIFY((t_package & 0x8000000) == 0, SALT_ERR_BAD_PROTOCOL);
+        SALT_VERIFY((t_package <= INT32_MAX), SALT_ERR_BAD_PROTOCOL);
 
         /* Get our time */
         uint32_t t_arrival = 0;
-        salt_ret_t ret = salti_get_time(p_channel, &t_arrival);
+        salt_ret_t time_ret = salti_get_time(p_channel, &t_arrival);
 
         /* If our time is broken, do not continue the session. */
-        SALT_VERIFY(SALT_SUCCESS == ret, SALT_ERR_INVALID_STATE);
+        SALT_VERIFY(SALT_SUCCESS == time_ret, SALT_ERR_INVALID_STATE);
         
         /* Verify that the package is not delayed. */
         bool valid_time = time_check(p_channel->peer_epoch,
@@ -321,16 +352,20 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
 
     (*unwrapped) = &p_data[38];
+
+    /*
+     * The real clear text payload is without the time and header bytes.
+     */
     (*unwrapped_length) = size - crypto_secretbox_ZEROBYTES - 2U - 4U;
 
     return SALT_SUCCESS;
 
 }
 
-void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment)
+salt_ret_t salti_increase_nonce(uint8_t *p_nonce)
 {
     /* Thanks to Libsodium */
-    uint_fast16_t c = increment;
+    uint_fast16_t c = SALT_NONCE_INCR; /* (2U) */
     uint8_t i;
 
     for (i = 0U; i < crypto_box_NONCEBYTES; i++) {
@@ -338,6 +373,8 @@ void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment)
         p_nonce[i] = (uint8_t) c;
         c >>= 8U;
     }
+
+    return c ? SALT_ERROR : SALT_SUCCESS;
 
 }
 
@@ -404,82 +441,78 @@ salt_err_t salt_read_init(uint8_t type,
                           salt_msg_t *p_msg)
 {
 
+    memset(p_msg, 0x00, sizeof(salt_msg_t));
     p_msg->read.p_buffer = p_buffer;
     p_msg->read.buffer_size = buffer_size;
 
     switch (type) {
-      case SALT_APP_PKG_MSG_HEADER_VALUE:
+        case SALT_APP_PKG_MSG_HEADER_VALUE:
 
-          /*
-           * Single message:
-           * p_msg->read.p_buffer[0:31] = 0x00
-           * p_msg->read.p_buffer[32] = header
-           * p_msg->read.p_buffer[33] = 0x00
-           * p_msg->read.p_buffer[34:37] = time[4]
-           * p_msg->read.p_buffer[38:p_msg->read.buffer_used - 6U] = message[p_msg->read.buffer_used - 6U]
-           *
-           * { zeroPadding[32] , header[2] , time[4] , msg[n] }
-           *                   |<---  p_msg->read.buffer_used  --->|
-           *
-           */
-          p_msg->read.messages_left = 0;
-          p_msg->read.p_payload = p_buffer;
-          p_msg->read.message_size = buffer_size;
 
-          break;
-      case SALT_MULTI_APP_PKG_MSG_HEADER_VALUE:
+            /*
+             * p_buffer structure:
+             * p_buffer = { payload[buffer_size] }
+             */
+            p_msg->read.messages_left = 0;
+            p_msg->read.p_payload = p_buffer;
+            p_msg->read.message_size = buffer_size;
 
-          if (buffer_size < 2U) {
-              return SALT_ERR_BAD_PROTOCOL;
-          }
+            break;
+        case SALT_MULTI_APP_PKG_MSG_HEADER_VALUE:
 
-          /*
-           * Single message:
-           * p_msg->read.p_buffer[0:31] = 0x00
-           * p_msg->read.p_buffer[32] = header
-           * p_msg->read.p_buffer[33] = 0x00
-           * p_msg->read.p_buffer[34:37] = time[4]
-           * p_msg->read.p_buffer[38:39] = count[2]
-           * p_msg->read.p_buffer[40:41] = size1[2]
-           * p_msg->read.p_buffer[42:42+size1] = msg1[size1]
-           *
-           * { zeroPadding[32] , header[2] , time[4] , count[2] , size1[2] , msg1[n] , ... }
-           *                   |<---                p_msg->read.buffer_used                 --->|
-           *                                                    |<-- p_msg->read.buffer_size -->|
-           */
+            if (buffer_size < 2U) {
+                /*
+                 * Buffer size must be at least 2 bytes for a multi app
+                 * package with zero message.
+                 */
+                return SALT_ERR_BAD_PROTOCOL;
+            }
 
-          p_msg->read.messages_left = salti_bytes_to_u16(p_msg->read.p_buffer);
-          p_msg->read.buffer_used = 0;
-          p_msg->read.p_payload = &p_msg->read.p_buffer[2];
 
-          if (0 == p_msg->read.messages_left) {
-              return SALT_ERR_BAD_PROTOCOL;
-          }
+            /*
+             * p_buffer structure:
+             * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
+             * 
+             * count = num messages. We verify here that the payload is valid and that the format
+             * is followed. Zero length messages is OK. Num message >= 1.
+             *
+             * Here we verify that there exists correct number of messages and that
+             * the size of them does not exceed the length of p_buffer.
+             */
 
-          uint32_t total_size = p_msg->read.buffer_size;
-          uint16_t messages_left = p_msg->read.messages_left;
-          uint32_t buffer_used = 0;
+            p_msg->read.messages_left = salti_bytes_to_u16(p_msg->read.p_buffer);
 
-          while (messages_left > 0) {
-              uint16_t message_size = salti_bytes_to_u16(p_msg->read.p_payload);
-              p_msg->read.p_payload += 2 + message_size;
-              buffer_used += 2 + message_size;
-              if (buffer_used < total_size) {
-                  messages_left--;
-              }
-              else {
-                  return SALT_ERR_BAD_PROTOCOL;
-              }
-          }
+            if (p_msg->read.messages_left == 0) {
+                return SALT_ERR_BAD_PROTOCOL;
+            }
 
-          p_msg->read.message_size = salti_bytes_to_u16(&p_msg->read.p_buffer[2]);
-          p_msg->read.p_payload = &p_msg->read.p_buffer[4];
-          p_msg->read.messages_left--;
-          p_msg->read.buffer_used = 4 + p_msg->read.message_size;
+            p_msg->read.buffer_used = 2;
+            uint16_t messages_found = 0;
+            while (salt_read_next(p_msg) == SALT_SUCCESS) {
+                messages_found++;
+            }
 
-          break;
-      default:
-          return SALT_ERR_BAD_PROTOCOL;
+            p_msg->read.messages_left = salti_bytes_to_u16(p_msg->read.p_buffer);
+
+            /* Num messages pased by salt_read_next must be equal to num messages in count[2]. */
+            if (messages_found != p_msg->read.messages_left) {
+                return SALT_ERR_BAD_PROTOCOL;
+            }
+
+            /*
+             * Initiate first message.
+             */
+            p_msg->read.buffer_used = 2;
+            p_msg->read.message_size = salti_bytes_to_u16(&p_msg->read.p_buffer[p_msg->read.buffer_used]);
+            p_msg->read.buffer_used += 2;
+            p_msg->read.p_payload = &p_msg->read.p_buffer[p_msg->read.buffer_used];
+            p_msg->read.messages_left--;
+
+            return SALT_ERR_NONE;
+
+            break;
+        default:
+            return SALT_ERR_BAD_PROTOCOL;
     }
 
     return SALT_ERR_NONE;
@@ -517,23 +550,31 @@ uint8_t salt_write_create(salt_msg_t *p_msg)
 
 }
 
+/*
+static bool u32_sub(uint32_t a, uint32_t b, uint32_t *sub)
+{
+    uint32_t c = a-b;
+    *sub = c;
+    return c > a;
+}
+*/
+
 bool time_check(uint32_t first, uint32_t now, uint32_t peer_time, uint32_t thresh)
 {
 
-    int32_t diff = peer_time - now + first;
+    uint32_t my_time, diff;
 
-    if (INT32_MIN == diff) {
-        diff = INT32_MAX;
+    //if (u32_sub(now, first, &my_time)) return false; /* Necessary? */
+
+    my_time = now - first;
+
+    if (my_time > peer_time) {
+        diff = my_time - peer_time;
     }
     else {
-        diff = (diff < 0) ? -diff : diff;
+        diff = peer_time - my_time;
     }
-
-    if ((uint32_t) diff > thresh) {
-        return false;
-    }
-
-    return true;
+    return diff <= thresh;
 }
 
 char *salt_mode2str(salt_mode_t mode)

@@ -152,7 +152,7 @@ The decryption API *crypto_box_open_afternm* requires the first 16 bytes to be z
     clearText[N-32] = { zeroPadded[32] , clearText[N-32] }
 ```
 
-Both the *crypto_box_afternm* and the *crypto_box_open_afternm* methods allows to perform the cryptographic operations directly on the buffers.
+Both the *crypto_box_afternm* and the *crypto_box_open_afternm* methods seems to allow "in-place" operation. I.e., there is no need for two buffer (one for cipher, one for clear text). However, if using salt-channel-c, the user must verify that the underlying cryptographic library handles this.
 
 
 **Hashing:**

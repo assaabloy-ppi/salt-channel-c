@@ -24,6 +24,7 @@
 
 
 /* M1 Message defines */
+#define SALT_M1_MAX_SIZE                        (74U)
 #define SALT_M1_HEADER_VALUE                    (0x01U)
 #define SALT_M1_SIG_KEY_INCLUDED_FLAG           (0x01U)
 #define SALT_M1_TICKED_INCLUDED_FLAG            (0x20U)
@@ -83,7 +84,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
                 proceed = 1;
                 break;
             case SALT_M1_IO:
-                size = 204; /* Maximum size of M1 */
+                size = SALT_M1_MAX_SIZE; /* Maximum size of M1 */
                 ret_code = salti_io_read(p_channel,
                                          &p_channel->hdshk_buffer[SALT_M1_HASH_OFFSET],
                                          &size);
@@ -278,7 +279,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
 
                     p_channel->state = SALT_SESSION_ESTABLISHED;
                 }
-                
+
                 break;
             case SALT_ERROR_STATE:
             default:
@@ -968,4 +969,3 @@ salt_ret_t salti_verify_m3m4_sig(salt_channel_t *p_channel,
 
     return SALT_SUCCESS;
 }
-

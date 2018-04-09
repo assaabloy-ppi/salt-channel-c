@@ -299,4 +299,10 @@ int crypto_sign_verify_detached(const unsigned char *sig,
                                 unsigned long long mlen,
                                 const unsigned char *pk);
 
+int crypto_sign_detached(unsigned char *sig,
+                         unsigned long long *siglen_p,
+                         const unsigned char *m,
+                         unsigned long long mlen,
+                         const unsigned char *sk);
+
 #endif

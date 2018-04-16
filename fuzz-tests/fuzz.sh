@@ -275,7 +275,11 @@ do_continue_fuzz() {
 
     for a in $(seq 2 $num_cores); do
         slaveFuzzer=$a"Slave$mode$target"
-        screen -dmS $slaveFuzzer afl-fuzz $fuzz_args -i- -o $output_dir -S fuzzer$a -- ./$binary_dir/$target
+        indir="-"
+        if ! [ -d $output_dir/fuzzer$a ]; then
+            indir=$input_dir
+        fi
+        screen -dmS $slaveFuzzer afl-fuzz $fuzz_args -i$indir -o $output_dir -S fuzzer$a -- ./$binary_dir/$target
     done
 
     screen -x $masterFuzzer
@@ -295,7 +299,9 @@ do_copy_output() {
 
     while true; do 
 
-        read -p "What files do you want to copy to input?
+        read -p "
+    What files do you want to copy to input?
+    Only inputs resulting in return code 0 will be copied.
 
     [1] Raw output from afl-fuzz
     [2] Output from afl-cmin and afl-tmin
@@ -317,7 +323,13 @@ do_copy_output() {
 
     done
 
-    cp $source_dir/* $input_dir/ > /dev/null 2>&1
+    for file in `find $source_dir -type f`; do
+        if ./$debug_build_dir/$target < $file > /dev/null ; then
+            mdname=$(md5sum $file | awk '{print $1}')
+            echo "Copying file $file to name $mdname"
+            cp -f $file $input_dir/$mdname
+        fi
+    done
 
 }
 
@@ -328,9 +340,9 @@ do_reset() {
 }
 
 do_dry_run() {
-    find $output_dir -type f -exec sh -c "cat {} | ./$debug_build_dir/$target && echo \"Return with 0: {}\"" \;
+    find $output_dir -type f -exec sh -c "cat {} | ./$debug_build_dir/$target > /dev/null && echo \"Return with 0: {}\"" \;
     lcov --base-directory $debug_build_dir --directory $debug_build_dir --capture --output-file $debug_build_dir/coverage.info
-    genhtml -o $debug_build_dir/coverage_report $debug_build_dir/coverage.info > /dev/null
+    genhtml -o $debug_build_dir/coverage_report $debug_build_dir/coverage.info
     echo "Coverage report in $(pwd)/$debug_build_dir/coverage_report/index.html"
 }
 

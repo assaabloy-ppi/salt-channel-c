@@ -29,31 +29,16 @@ int main(void)
 
     memcpy(data, read_buf, size);
 
-    salt_err_t ret = salt_read_init(SALT_APP_PKG_MSG_HEADER_VALUE, data, size, &msg);
-    uint16_t num_messages = 0;
-    if (ret == SALT_ERR_NONE) {
-        printf("=== Single message ===\r\n");
-        do {
-            printf("Message %d: ", num_messages);
-            for (uint32_t i = 0; i < msg.read.message_size; i++) {
-                printf("%02x", msg.read.p_payload[i]);
-            }
-            printf("\r\n");
-        } while (salt_read_next(&msg) == SALT_SUCCESS);
-        free(data);
-        return 0;
-    }
-
-    ret = salt_read_init(SALT_MULTI_APP_PKG_MSG_HEADER_VALUE, data, size, &msg);
+    salt_err_t ret = salt_read_init(SALT_MULTI_APP_PKG_MSG_HEADER_VALUE, data, size, &msg);
 
     if (ret != SALT_ERR_NONE) {
         free(data);
         return -1;
     }
 
-    num_messages = 0;
+    uint16_t num_messages = 0;
     printf("=== Multi message ===\r\n");
-    
+
     do {
         printf("Message %d: ", num_messages);
         for (uint32_t i = 0; i < msg.read.message_size; i++) {

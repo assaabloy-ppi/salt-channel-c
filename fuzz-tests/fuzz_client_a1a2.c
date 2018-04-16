@@ -48,12 +48,11 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
     return SALT_PENDING;
 
 }
-
 int main(void) {
 
     salt_channel_t channel;
     salt_ret_t ret;
-    uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE + 1];
+    uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
     memset(hndsk_buffer, 0xcc, sizeof(hndsk_buffer));
 
     salt_create(&channel, SALT_CLIENT, my_write, my_read, NULL);
@@ -63,51 +62,24 @@ int main(void) {
                                 SALT_HNDSHK_BUFFER_SIZE,
                                 salt_example_session_1_data.client_ek_pub,
                                 salt_example_session_1_data.client_ek_sec);
+    salt_protocols_t host_protocols;
+    
 
     do {
-        ret = salt_handshake(&channel, NULL);
+        ret = salt_a1a2(&channel, hndsk_buffer, SALT_HNDSHK_BUFFER_SIZE, &host_protocols, NULL);
     } while (ret == SALT_PENDING);
 
-    assert(hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE] == 0xcc);
-    
-    if (ret == SALT_ERROR) {
+    if (ret == SALT_ERROR)
+    {
         return -1;
     }
+    
+    for (uint8_t i = 0; i < host_protocols.count; i+= 2) {
+        printf("Protocol %i: %*.*s\r\n", i, 0, (int) sizeof(salt_protocol_t), host_protocols.p_protocols[i+1]);
+    }
 
-    salt_msg_t read_msg;
+    return 0;
 
-    uint16_t num_messages = 0;
-
-    do {
-        uint8_t *buffer = malloc(MAX_READ_SIZE);
-
-        if (buffer == NULL) {
-            return -1;
-        }
-
-        do {
-            ret = salt_read_begin(&channel, buffer, MAX_READ_SIZE, &read_msg);
-        } while (ret == SALT_PENDING);
-
-        if (ret == SALT_SUCCESS) {
-            
-            do {
-                printf("Message %d: ", num_messages);
-                for (uint32_t i = 0; i < read_msg.read.message_size; i++) {
-                    printf("%02x", read_msg.read.p_payload[i]);
-                }
-                printf("\r\n");
-                num_messages++;
-            } while (salt_read_next(&read_msg) == SALT_SUCCESS);
-            ret = SALT_SUCCESS;
-        }
-
-        free(buffer);
-    } while (ret == SALT_SUCCESS);
-
-    printf("num_messages: %d\r\n", num_messages);
-
-    return (num_messages > 0) ? 0 : -1;
 }
 
 

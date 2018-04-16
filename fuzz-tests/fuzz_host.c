@@ -34,14 +34,18 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
     }
 
     size = read(0, read_buf, p_rchannel->size_expected);
-    if (size == 0 || size > p_rchannel->size_expected) {
+    if (size == 0) {
         return SALT_ERROR;
     }
 
-    memcpy(p_rchannel->p_data, read_buf, p_rchannel->size_expected);
-    p_rchannel->size = p_rchannel->size_expected;
+    memcpy(p_rchannel->p_data, read_buf, size);
+    p_rchannel->size += size;
 
-    return SALT_SUCCESS;
+    if (p_rchannel->size == p_rchannel->size_expected) {
+        return SALT_SUCCESS;
+    }
+
+    return SALT_PENDING;
 
 }
 

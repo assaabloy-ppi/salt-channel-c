@@ -15,6 +15,7 @@ set(SOURCES
     ../src/salt.c
     ../src/salti_handshake.c
     ../src/salti_util.c
+    util.c
     crypt_mock.c
     test_data_mock.c
 )
@@ -31,7 +32,6 @@ macro(add_fuzz arg)
     add_executable(${arg} ${arg}.c)
     if(USE_SANITIZERS)
         add_sanitizers(${arg})
-    else(USE_SANITIZERS)
     endif(USE_SANITIZERS)
     target_link_libraries(${arg} salt)
 

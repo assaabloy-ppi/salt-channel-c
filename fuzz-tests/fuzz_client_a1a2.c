@@ -5,49 +5,9 @@
 #include <string.h>
 
 #include "salt.h"
+#include "util.h"
 #include "test_data.h"
 
-#define MAX_READ_SIZE 8192
-
-static uint8_t read_buf[MAX_READ_SIZE];
-
-void randombytes(unsigned char *p_bytes, unsigned long long length)
-{
-    (void) p_bytes;
-    (void) length;
-}
-
-salt_ret_t my_write(salt_io_channel_t *p_wchannel)
-{
-    p_wchannel->size = p_wchannel->size_expected;
-    return SALT_SUCCESS;
-}
-
-salt_ret_t my_read(salt_io_channel_t *p_rchannel)
-{
-    
-    uint32_t size;
-
-    if (p_rchannel->size_expected > MAX_READ_SIZE)
-    {
-        return SALT_ERROR;
-    }
-
-    size = read(0, read_buf, p_rchannel->size_expected);
-    if (size == 0) {
-        return SALT_ERROR;
-    }
-
-    memcpy(p_rchannel->p_data, read_buf, size);
-    p_rchannel->size += size;
-
-    if (p_rchannel->size == p_rchannel->size_expected) {
-        return SALT_SUCCESS;
-    }
-
-    return SALT_PENDING;
-
-}
 int main(void) {
 
     salt_channel_t channel;
@@ -55,7 +15,8 @@ int main(void) {
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
     memset(hndsk_buffer, 0xcc, sizeof(hndsk_buffer));
 
-    salt_create(&channel, SALT_CLIENT, my_write, my_read, NULL);
+    salt_create(&channel, SALT_CLIENT, fuzz_write, fuzz_read, &mock_time);
+    salt_set_delay_threshold(&channel, 1000);
     salt_set_signature(&channel, salt_example_session_1_data.client_sk_sec);
     salt_init_session_using_key(&channel,
                                 hndsk_buffer,

@@ -77,29 +77,36 @@ int main(void) {
 
     salt_msg_t read_msg;
 
-    uint8_t *buffer = malloc(MAX_READ_SIZE);
-
-    if (buffer == NULL) {
-        return -1;
-    }
+    uint16_t num_messages = 0;
 
     do {
-        ret = salt_read_begin(&channel, buffer, MAX_READ_SIZE, &read_msg);
-    } while (ret == SALT_PENDING);
+        uint8_t *buffer = malloc(MAX_READ_SIZE);
 
-    if (ret == SALT_SUCCESS) {
-        uint16_t num_messages = 1;
+        if (buffer == NULL) {
+            return -1;
+        }
+
         do {
-            printf("Message %d: ", num_messages);
-            for (uint32_t i = 0; i < read_msg.read.message_size; i++) {
-                printf("%02x", read_msg.read.p_payload[i]);
-            }
-            num_messages++;
-        } while (salt_read_next(&read_msg) == SALT_SUCCESS);
-        ret = SALT_SUCCESS;
-    }
+            ret = salt_read_begin(&channel, buffer, MAX_READ_SIZE, &read_msg);
+        } while (ret == SALT_PENDING);
 
-    free(buffer);
+        if (ret == SALT_SUCCESS) {
+            
+            do {
+                printf("Message %d: ", num_messages);
+                for (uint32_t i = 0; i < read_msg.read.message_size; i++) {
+                    printf("%02x", read_msg.read.p_payload[i]);
+                }
+                printf("\r\n");
+                num_messages++;
+            } while (salt_read_next(&read_msg) == SALT_SUCCESS);
+            ret = SALT_SUCCESS;
+        }
 
-    return (ret == SALT_SUCCESS) ? 0 : -1;
+        free(buffer);
+    } while (ret == SALT_SUCCESS);
+
+    printf("num_messages: %d\r\n", num_messages);
+
+    return (num_messages > 0) ? 0 : -1;
 }

@@ -39,4 +39,5 @@ endmacro(add_fuzz)
 
 add_fuzz(fuzz_client)
 add_fuzz(fuzz_host)
+add_fuzz(fuzz_read_parse)
 

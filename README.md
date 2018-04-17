@@ -137,9 +137,9 @@ The TweetNaCl library is a subset of the NaCl library and the crypto API used fo
 The encryption API *crypto_box_afternm* requires the first 32 (crypto_secretbox_ZEROBYTES) bytes to be zero (0x00) padded. After encryption the first 16 (crypto_secretbox_BOXZEROBYTES) will be zero (0x00):
 ```
 --> Clear text data must be zero padded:
-    clearText[N] = { zeroPadded[32] , clearText[N-32] }
+    clearText[N] = { zeroPadded[32] || clearText[N-32] }
 --> Encrypt:
-    encryptedAndAuthenticated = { zeroPadded[16] , cipher[N-16] }
+    encryptedAndAuthenticated = { zeroPadded[16] || cipher[N-16] }
 ```
 In order to minimize send data over slow I/O channels the 16 zero padded bytes are neglected.
 
@@ -147,16 +147,136 @@ In order to minimize send data over slow I/O channels the 16 zero padded bytes a
 The decryption API *crypto_box_open_afternm* requires the first 16 bytes to be zero (0x00) padded. After decryption the first 32 bytes will be zero.
 ```
 --> Cipher data must be zero padded:
-    encryptedAndAuthenticated[N] = { zeroPadded[16] , cipher[N-16] }
+    encryptedAndAuthenticated[N] = { zeroPadded[16] || cipher[N-16] }
 --> Decrypt:
-    clearText[N-32] = { zeroPadded[32] , clearText[N-32] }
+    clearText[N-32] = { zeroPadded[32] || clearText[N-32] }
 ```
 
 Both the *crypto_box_afternm* and the *crypto_box_open_afternm* methods seems to allow "in-place" operation. I.e., there is no need for two buffer (one for cipher, one for clear text). However, if using salt-channel-c, the user must verify that the underlying cryptographic library handles this.
 
 
 **Hashing:**
-SHA512 is used for hashing and the size of a hash is 64 bytes. If the message to hash is larger than 64 bytes, the API allows for putting the hash where the original message was. I.e.: We don't need a specific storage for the hash, if we don't want to save the original message.
+SHA512 is used for hashing and the size of a hash is 64 bytes. If the message to hash is larger than 64 bytes, the API allows for putting the hash where the original message was. I.e.: We don't need a specific storage for the hash, if we don't want to save the original message. This seems to be a hidden feature, the next version should not rely on this feature. When chosing a crypto library, make sure that this feature is supported.
 
 **Signing:**
 The TweetNaCl API doesn't allow to only generate a signature (64 bytes) or verify a message with the signature separated from the message. Further, the API requires a separate buffer to put the signed and unsigned message in.
+```
+dataToSign = { data[n] }                     -> signedData = { signature[64} || data[n] }
+dataToVerify = { signature[64} || data[n] }  -> verified = { data{n] }
+```
+
+The TweetNaCl seems to allow for signing a message and putting in in the original location, i.e.:
+```
+dataToSign = { reserved[64] || data[n] }     -> signedData { signature[64] || data[n] }
+```
+
+For later update, possible only libsodium API will be supported and the usage of *crypto_sign_detached* and *crypto_verify_detached* will be used. If changing to this, there is no relying on the hidden feature mentioned above.
+
+## Message wrapping
+Due to the TweetNaCl api the wrapping is a little bit complex. Further, some headers are introduced. Assuming the wrapping of a message of size **n**. The clear text message to wrap have the following layout:
+```
+wrappedClear = { header[2] || time[4] || msg[n] }
+```
+To encrypt this, there MUST be 32 bytes of zero padding before the message.
+```
+wrappedToDecrypt = { zeroPadded[32] || wrappedClear[6 + n] }
+```
+This is then encrypted. After the encryption, the first 16 bytes will be zero padded.
+```
+encrypted = { zeroPadded[16] || cipher[16 + 6 + n] }
+```
+Hence, in order to encrypt a message of length **n**, there must be 38 bytes available in the buffer before the message. After the encryption, the message is wrapped with a header and size bytes:
+```
+wrappedEncrypted = { zeroPadded[10] || sizeBytes[4] || header[2] || cipher[16 + 6 + n] }
+```
+
+The overhead of a wrapped message is therefore 38 bytes. The zeroPadded part is not sent.
+The length of the wrapped message to send is: **wrapedToSend = 4 + 2 + 16 + 6 = 28 bytes**
+
+## Message unwrapping
+When receiving an encrypted and wrapped message, the following format is expected:
+```
+wrappedEncrypted = { header[2] || cipher[16 + 6 + n] }
+```
+In order to decrypt this, we need 16 bytes of zeros before the cipher. Therefore, when reading an encrypted message, it will be read **14** bytes into the buffer. First, the header bytes are verified, if they are OK, the message are encrypted.
+```
+wrappedEncrypted = { reservedForPadding[14] || header[2] || cipher[16 + 6 + n] }
+    -> verifyHeader(header)
+    -> header = { 0x00, 0x00 }
+wrappedEncrypted = { zeroPadded[16] || cipher[16 + 6 + n] }
+    -> decrypt(wrappedEncrypted)
+wrappedClear = { zeroPadded[32] || header[2] || time[4] || message[n] }
+```
+Hence, in order to read a clear text message of length **n**, we need a buffer that is 38 bytes larger. The clear text message is then located **38** bytes in the buffer.
+## Handshake procedure
+If looking in the code, there are a lot of magic offsets. These are due to the crypto API and in an effort to keep the required handshake buffer to a minimum. The data to sign for authentication is:
+```
+dataToSign = { sigPrefix[8] || m1Hash[64] || m2Hash[64 ] }
+```
+
+### Host handshake procedure
+1. Session initialization
+The ephemeral keypair is calculated in the beginning of the handshake buffer. These first 64 bytes are later used for the authentication (signing).
+```
+buffer = { ek_pub[32] || ek_sec[32] }
+```
+2. Read M1 to buffer[72], these will allow for creating the buffer for signing mentioned above.
+```
+buffer = { ek_pub[32] || ek_sec[32] || reservedForSigPrefix[8] || m1[42 or 74] }
+```
+M1 is then verified and the hash is calculated on the original message. We know at this point how big the size of M2 will be which we reserve in the buffer. Directly after this we copy the clients public encryption key directly after this. This one is used later for calculating the shared secret for the session.
+```
+buffer = { ek_pub[32] || ek_sec[32] || reservedForSigPrefix[8] || m1Hash[64] || reservedForM2[42] || clientEkPub[32] }
+```
+
+3. Create M2 to buffer[200]. M2 is in clear text, and the size bytes are also created into M2. When creating M2, the hash is also calculated.
+```
+buffer = { ek_pub[32] || ek_sec[32] || reservedForSigPrefix[8] || m1Hash[64] || m2Hash[64] || m2[42] }
+```
+If a **noSuchServer** condidition occured in M1, the session will be closed immidiately after M2 is sent, and the handshake method will return error.
+4. Start sending M2.
+5. Calculate the shared secret for the session:
+```
+sharedSecret = crypto_box_beforenm(ek_common, &buffer[242], &buffer[32])
+```
+*ek_common* is saved in the channel structure.
+6. Continue sending M2 if not completed.
+7. Calculate the signature for authentication.
+The public and secret encryption keys are no longer needed since we know have calculated the session key. The sig1Prefix is copied into reservedForSigPrefix.
+```
+buffer = { ek_pub[32] || ek_sec[32] || sig1Prefix[8] || m1Hash[64] || m2Hash[64] }
+sign(buffer) =>
+buffer = { signature[64} || sig1Prefix[8] || m1Hash[64] || m2Hash[64] }
+```
+Since we need 38 bytes overhead for encrypting and wrapping the M3 message, which include the public signature key of the host, and the signature will be copied to buffer[238].
+```
+buffer = { signature[64} || sig1Prefix[8] || m1Hash[64] || m2Hash[64] || reserved[38] , m3[96] }
+m3 = { hostSigPub[32] || signature[64] }
+```
+7. Wrap the M3 message.
+```
+wrap(buffer[238])
+buffer = { signature[64} || sig1Prefix[8] || m1Hash[64] || m2Hash[64] || zeroPadded[10] || m3WithSize[124] }
+m3WithSize = { m3SizeBytes[4] || header[2] || m3Cipher[118] }
+```
+8. Send M3. Since we need 14 bytes if padding to unwrap M4, we read M4 into buffer[214].
+```
+buffer = { signature[64} || sig1Prefix[8] || m1Hash[64] || m2Hash[64] || reserved[14] , header[2] , m3WrappedAndEncrypted[118] }
+    -> Verify header and unwrap
+buffer = { signature[64} || sig1Prefix[8] || m1Hash[64] || m2Hash[64] || zeroPadded[32] || header[2] || time[4] || m4Clear[96] }
+m4Clear = { clientSigPub[32] || signature[64] }
+    -> Copy clientSigPub to channel structure.
+```
+9. The signature in the M3 message is then verified. The sig2Prefix is copied into reservedForSigPrefix and the signature from M4 is copied to signature. When verifying the signature, the signed message will be copied to another location, we chose to put it directly after m2Hash (buffer[200]) since we don't need that data anymore.
+```
+buffer = { m4signature[64} || sig2Prefix[8] || m1Hash[64] || m2Hash[64] || zeroPadded[32] || header[2] || time[4] || clientSigPub[32] || signature[64] }
+    -> verify signature
+buffer = { m4signature[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] || m1Hash[64] || m2Hash[64] }
+```
+
+Hence, the smallest handshake buffer required for a host handshake procedure is **64 + 8 + 64 + 64 + 64 + 64 = 238 bytes**.
+
+10. Authentication done.
+
+### Client handshake procedure.
+Not documented yet.

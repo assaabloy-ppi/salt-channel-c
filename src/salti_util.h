@@ -36,8 +36,11 @@ extern "C" {
 #define SALT_A1_HEADER                          (8U)
 #define SALT_A2_HEADER                          (9U)
 #define SALT_LAST_FLAG                          (0x80U)
+#define SALT_WRAP_OVERHEAD_IO_SIZE              (24U)
 
 /* Encrypted message header */
+#define SALT_WRAP_OVERHEAD_SIZE                 (38U)
+#define SALT_TIME_SIZE                          (4U)
 #define SALT_ENCRYPTED_MSG_HEADER_VALUE         (0x06U)
 
 /**

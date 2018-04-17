@@ -16,9 +16,6 @@
 
 /*======= Local Macro Definitions ===========================================*/
 
-#define SALT_WRAP_OVERHEAD_SIZE                 (38U)
-#define SALT_TIME_SIZE                          (4U)
-
 /* A1 Message defines */
 #define A1_ADDRESSTYPE_ANY                      (0x00U)
 #define A1_ADDRESSTYPE_ANY_SIZE                 (0x05U)

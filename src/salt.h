@@ -33,7 +33,7 @@ extern "C" {
 
 #define SALT_READ_OVERHEAD_SIZE     (38U)       /**< Encryption buffer overhead size for read. */
 #define SALT_WRITE_OVERHEAD_SIZE    (42U)       /**< Encryption buffer overhead size for write. */
-#define SALT_HNDSHK_BUFFER_SIZE     (502)       /**< Buffer used for handshake. */
+#define SALT_HNDSHK_BUFFER_SIZE     (496U)      /**< Buffer used for handshake. */
 #define SALT_PROTOCOLS_MIN_BUF_SIZE (27U)
 
 /*======= Type Definitions and declarations ===================================*/
@@ -113,7 +113,7 @@ typedef enum salt_state_e {
     SALT_M3_INIT,
     SALT_M3_IO,
     SALT_M3_HANDLE,
-    SALT_M3_WRAP,
+    SALT_M4_WRAP,
     SALT_M4_IO,
     SALT_M4_HANDLE,
     SALT_SESSION_ESTABLISHED,

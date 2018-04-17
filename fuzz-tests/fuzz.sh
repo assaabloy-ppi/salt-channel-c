@@ -352,7 +352,7 @@ main_menu() {
 
     while true; do 
 
-        read -p "PoT-C Fuzzing tool
+        read -p "Salt-channel-c Fuzzing tool
 
     [1] Select target [$target]
     [2] Select mode [$mode]

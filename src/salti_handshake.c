@@ -528,10 +528,9 @@ salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
      */
     if (p_channel->p_protocols == NULL || p_channel->p_protocols->count == 0) {
         salt_protocols_t protocols;
-        salt_protocols_init(p_channel,
-                            &protocols,
-                            &p_channel->hdshk_buffer[64],
-                            p_channel->hdshk_buffer_size - 64);
+        salt_protocols_create(&protocols,
+                              &p_channel->hdshk_buffer[64],
+                              p_channel->hdshk_buffer_size - 64);
         salt_protocols_append(&protocols, "----------", 10);
         p_channel->write_channel.p_data = protocols.p_buffer;
         p_channel->write_channel.size = protocols.buf_used;

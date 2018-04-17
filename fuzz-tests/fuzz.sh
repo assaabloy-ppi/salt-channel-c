@@ -23,7 +23,7 @@ build_targets() {
     cmake \
         -DCMAKE_CXX_COMPILER=afl-g++ \
         -DCMAKE_C_COMPILER=afl-gcc \
-        -DCMAKE_C_FLAGS="-O9 -std=c99 -Wall -Wextra -Wpedantic -Werror -m32" .. && \
+        -DCMAKE_C_FLAGS="-O9 -std=c99 -Wall -Wextra -Wpedantic -Werror" .. && \
     make -j && \
     cd .. && \
     unset AFL_HARDEN && \
@@ -33,7 +33,7 @@ build_targets() {
     cmake \
         -DCMAKE_CXX_COMPILER=afl-g++ \
         -DCMAKE_C_COMPILER=afl-gcc \
-        -DCMAKE_C_FLAGS="-O9 -std=c99 -Wall -Wextra -Wpedantic -Werror" .. && \
+        -DCMAKE_C_FLAGS="-O9 -std=c99 -Wall -Wextra -Wpedantic -Werror -m32" .. && \
     make -j && \
     unset AFL_USE_ASAN && \
     cd .. && \

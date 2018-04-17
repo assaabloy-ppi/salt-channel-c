@@ -10,7 +10,7 @@
 
 #include "salt.h"
 #include "salt_io.h"
-
+#include "salti_util.h"
 
 static void *connection_handler(void *context);
 
@@ -123,7 +123,7 @@ static void *connection_handler(void *context)
 
     uint8_t protocol_buffer[128];
     salt_protocols_t protocols;
-
+    uint8_t version[2] = { 0x00, 0x01 };
 
     ret = salt_create(&client->channel, SALT_SERVER, my_write, my_read, &my_time);
     assert(ret == SALT_SUCCESS);
@@ -140,6 +140,8 @@ static void *connection_handler(void *context)
     assert(ret == SALT_SUCCESS);
     salt_set_delay_threshold(&client->channel, 20000);
     ret = salt_handshake(&client->channel, NULL);
+
+    uint32_t size;
 
     while (ret != SALT_SUCCESS) {
 
@@ -182,19 +184,50 @@ static void *connection_handler(void *context)
 
         ret = salt_write_begin(tx_buffer, sizeof(tx_buffer), &msg_out);
         assert(ret == SALT_SUCCESS);
-        ret = salt_write_next(&msg_out, msg_in.read.p_payload, msg_in.read.message_size);
-        assert(ret == SALT_SUCCESS);
-
-        for (uint16_t i = 0; i < msg_in.read.messages_left; i++) {
-            ret = salt_read_next(&msg_in);
-            assert(ret == SALT_SUCCESS);
-            ret = salt_write_next(&msg_out, msg_in.read.p_payload, msg_in.read.message_size);
-            assert(ret == SALT_SUCCESS);
-        }
+        bool last = false;
 
         do {
-            ret = salt_write_execute(&client->channel, &msg_out, false);
+            if (msg_in.read.message_size > 0) {
+                switch (msg_in.read.p_payload[0]) {
+                    case 0x00:
+                        ret = salt_write_next(&msg_out, version, sizeof(version));
+                        assert(ret == SALT_SUCCESS);
+                        break;
+                    case 0x01:
+                        ret = salt_write_next(&msg_out, msg_in.read.p_payload, msg_in.read.message_size);
+                        assert(ret == SALT_SUCCESS);
+                        break;
+                    case 0x02:
+                        if (msg_in.read.message_size < 6) {
+                            assert(false);
+                        }
+                        size = salti_bytes_to_u32(&msg_in.read.p_payload[1]);
+                        printf("size: %d, 0x%02x\r\n", size, msg_in.read.p_payload[5]);
+                        if (size > msg_out.write.buffer_available) {
+                            assert(false);
+                        }
+                        SALT_HEXDUMP_DEBUG(msg_out.write.p_payload, size + 1);
+                        msg_out.write.p_payload[0] = 0x02;
+                        memset(&msg_out.write.p_payload[1], msg_in.read.p_payload[5], size);
+                        SALT_HEXDUMP_DEBUG(msg_out.write.p_payload, size + 1);
+                        salt_write_commit(&msg_out, size + 1);
+                        break;
+                    case 0x03:
+                        msg_out.write.p_payload[0] = 0x03;
+                        salt_write_commit(&msg_out, 1);
+                        last = true;
+                        break;
+                }
+            }
+        } while (salt_read_next(&msg_in) == SALT_SUCCESS);
+
+        do {
+            ret = salt_write_execute(&client->channel, &msg_out, last);
         } while (ret == SALT_PENDING);
+
+        if (last) {
+            break;
+        }
 
     } while (ret == SALT_SUCCESS);
 

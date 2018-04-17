@@ -1,4 +1,4 @@
-language: C
+language: C java
 install: make cmake valgrind
 compiler:
  - gcc
@@ -8,6 +8,7 @@ script:
  - make test
  - gcov src/CMakeFiles/salt.dir/salt.c.gcno src/CMakeFiles/salt.dir/salti_handshake.c.gcno src/CMakeFiles/salt.dir/salti_util.c.gcno
  - sh valgrind.sh
+ - sh test_echo_with_java.sh
 
 after_success:
  - bash <(curl -s https://codecov.io/bash)

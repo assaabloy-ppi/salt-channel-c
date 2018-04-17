@@ -17,6 +17,7 @@
 /*======= Local Macro Definitions ===========================================*/
 
 #define SALT_WRAP_OVERHEAD_SIZE                 (38U)
+#define SALT_TIME_SIZE                          (4U)
 
 /* A1 Message defines */
 #define A1_ADDRESSTYPE_ANY                      (0x00U)
@@ -31,15 +32,17 @@
 #define SALT_M1_MAX_SIZE                        SALT_M1_SIZE_WITH_SIG
 #define SALT_M1_HEADER_VALUE                    (0x01U)
 #define SALT_M1_SIG_KEY_INCLUDED_FLAG           (0x01U)
-#define SALT_M1_TICKED_INCLUDED_FLAG            (0x20U)
-#define SALT_M1_TICKED_REQUEST_FLAG             (0x40U)
 
 /* M2 Message defines */
+#define SALT_M2_SIZE_OFFSET                     (0U)
+#define SALT_M2_HEADER0_OFFSET                  (SALT_LENGTH_SIZE)
+#define SALT_M2_HEADER1_OFFSET                  (SALT_LENGTH_SIZE + 1U)
 #define SALT_M2_SIZE                            (38U)
 #define SALT_M2_HEADER_VALUE                    (0x02U)
 #define SALT_M2_ENC_KEY_INCLUDED_FLAG           (0x10U)
 #define SALT_M2_RESUME_SUPPORTED_FLAG           (0x20U)
-#define SALT_M2_BAD_TICKET_FLAG                 (0x80U)
+#define SALT_M2_TIME_OFFSET                     (SALT_LENGTH_SIZE + 2U)
+#define SALT_M2_PUB_ENC_OFFSET                  (SALT_LENGTH_SIZE + 6U)
 
 #define SALT_M2_HOST_OFFSET                     (200U)
 #define SALT_HOST_TMP_PEER_EK_PUB_OFFSET        (242U)
@@ -49,6 +52,9 @@
 #define SALT_M3M4_CLEAR_SIZE                    (96U)
 #define SALT_M3_HEADER_VALUE                    (0x03U)
 #define SALT_M3_SIG_KEY_INCLUDED_FLAG           (0x10U)
+
+#define SALT_M3M4_MSG_TO_SIG_SIZE               (136U)
+#define SALT_M3M4_SIGNED_MSG_SIZE               (200U)
 
 #define SALT_M3_HOST_CLEAR_OFFSET               (238U)
 #define SALT_M3_HOST_WRAPPED_OFFSET             (SALT_M3_HOST_CLEAR_OFFSET - SALT_WRAP_OVERHEAD_SIZE)
@@ -61,6 +67,8 @@
 #define SALT_M4_HOST_WRAPPED_OFFSET             (200U)
 #define SALT_M4_CLIENT_CLEAR_OFFSET             (400U)
 #define SALT_M4_CLIENT_IO_WRAPPED_OFFSET        (SALT_M4_CLIENT_CLEAR_OFFSET - SALT_WRAP_OVERHEAD_SIZE)
+
+#define SALT_M3M4_SIG_VERIFY_OFFSET             (200U)
 
 #define SALT_PUB_ENC_OFFSET                     (0U)
 #define SALT_SEC_ENC_OFFSET                     (32U)
@@ -753,26 +761,26 @@ salt_state_t salti_create_m2(salt_channel_t *p_channel,
     salt_state_t next_state;
 
     /* First four bytes are reserved for size */
-    p_data[SALT_LENGTH_SIZE] = SALT_M2_HEADER_VALUE;
-    p_data[SALT_LENGTH_SIZE + 1] = 0x00U; /* Flags */
+    p_data[SALT_M2_HEADER0_OFFSET] = SALT_M2_HEADER_VALUE;
+    p_data[SALT_M2_HEADER1_OFFSET] = 0x00U; /* Flags */
 
-    memset(&p_data[SALT_LENGTH_SIZE + 2], 0x00U, 4);
+    memset(&p_data[SALT_M2_TIME_OFFSET], 0x00U, SALT_TIME_SIZE);
     if (NULL != p_channel->time_impl) {
-        p_data[SALT_LENGTH_SIZE + 2] = 0x01U;
+        p_data[SALT_M2_TIME_OFFSET] = 0x01U;
     }
 
     (*size) = SALT_M2_SIZE;
 
     if (SALT_M2_INIT_NO_SUCH_SERVER == p_channel->state) {
-        p_data[SALT_LENGTH_SIZE + 1] |= SALT_NO_SUCH_SERVER_FLAG;
-        p_data[SALT_LENGTH_SIZE + 1] |= SALT_LAST_FLAG;
-        memset(&p_data[SALT_LENGTH_SIZE + 6], 0x00,
+        p_data[SALT_M2_HEADER1_OFFSET] |= SALT_NO_SUCH_SERVER_FLAG;
+        p_data[SALT_M2_HEADER1_OFFSET] |= SALT_LAST_FLAG;
+        memset(&p_data[SALT_M2_PUB_ENC_OFFSET], 0x00,
                crypto_box_PUBLICKEYBYTES);
         next_state = SALT_M2_IO;
     }
     else {
         /* Copy ephemeral public key to M2 */
-        memcpy(&p_data[SALT_LENGTH_SIZE + 6],
+        memcpy(&p_data[SALT_M2_PUB_ENC_OFFSET],
                &p_channel->hdshk_buffer[SALT_PUB_ENC_OFFSET],
                crypto_box_PUBLICKEYBYTES);
 
@@ -780,7 +788,7 @@ salt_state_t salti_create_m2(salt_channel_t *p_channel,
         next_state = SALT_M2_IO_AND_SESSION_KEY;
     }
 
-    salti_u32_to_bytes(&p_data[0], (*size));
+    salti_u32_to_bytes(&p_data[SALT_M2_SIZE_OFFSET], (*size));
     (*size) += SALT_LENGTH_SIZE;
 
     return next_state;
@@ -909,7 +917,7 @@ void salti_create_m3m4_sig(salt_channel_t *p_channel,
     tmp = crypto_sign(p_channel->hdshk_buffer,
                       &sign_msg_size,
                       &p_channel->hdshk_buffer[64],
-                      136,
+                      SALT_M3M4_MSG_TO_SIG_SIZE,
                       p_channel->my_sk_sec);
     (void) tmp;
 
@@ -977,10 +985,10 @@ salt_ret_t salti_verify_m3m4_sig(salt_channel_t *p_channel,
     else {
         memcpy(&p_channel->hdshk_buffer[64], sig1prefix, 8);
     }
-    SALT_VERIFY(crypto_sign_open(&p_channel->hdshk_buffer[200],
+    SALT_VERIFY(crypto_sign_open(&p_channel->hdshk_buffer[SALT_M3M4_SIG_VERIFY_OFFSET],
                                  &sign_msg_size,
                                  p_channel->hdshk_buffer,
-                                 200,
+                                 SALT_M3M4_SIGNED_MSG_SIZE,
                                  p_channel->peer_sk_pub) == 0, SALT_ERR_BAD_PEER);
 
     return SALT_SUCCESS;

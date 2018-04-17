@@ -9,7 +9,7 @@ valid_targets=(`ls -Sr fuzz_*.c | cut -d'.' -f1`)
 output_dir=""
 input_dir=""
 target=${valid_targets[0]}
-mode="harden"
+mode="asan"
 num_cores=4
 fuzz_args=""
 masterFuzzer=""
@@ -21,7 +21,7 @@ build_targets() {
     mkdir -p $harden_build_dir && \
     cd $harden_build_dir && \
     cmake \
-        -DCMAKE_CXX_COMPILER=afl-gcc \
+        -DCMAKE_CXX_COMPILER=afl-g++ \
         -DCMAKE_C_COMPILER=afl-gcc \
         -DCMAKE_C_FLAGS="-O9 -std=c99 -Wall -Wextra -Wpedantic -Werror -m32" .. && \
     make -j && \
@@ -31,7 +31,7 @@ build_targets() {
     mkdir -p $asan_build_dir && \
     cd $asan_build_dir && \
     cmake \
-        -DCMAKE_CXX_COMPILER=afl-gcc \
+        -DCMAKE_CXX_COMPILER=afl-g++ \
         -DCMAKE_C_COMPILER=afl-gcc \
         -DCMAKE_C_FLAGS="-O9 -std=c99 -Wall -Wextra -Wpedantic -Werror" .. && \
     make -j && \
@@ -86,15 +86,15 @@ check_and_set_config() {
         return 1
     fi
 
+    output_dir="output/$target"
+
     if [ "$mode" = "asan" ]; then
         binary_dir=$asan_build_dir
         mode="asan"
-        output_dir="output/asan/$target"
         fuzz_args="-m none"
     elif [ "$mode" = "harden" ]; then
         binary_dir=$harden_build_dir
         mode="harden"
-        output_dir="output/harden/$target"
     else
         echo "Error: \"$mode\" not a valid method."
         print_help
@@ -120,15 +120,19 @@ check_and_set_config() {
 
 select_target() {
     while true; do
-        echo "Select target:"
+        echo "Select target:
+        "
 
-        i=0
+        i=1
         for v in "${valid_targets[@]}"; do
-            echo "   [$i] $v"
+            echo "    [$i] $v"
             ((i++))
         done
 
-        read -p "Select: " choice
+        read -p "    
+    Select: " choice
+
+        ((choice--))
 
         target=${valid_targets[choice]}
 
@@ -143,7 +147,8 @@ select_target() {
 set_num_cores() {
     while true; do
 
-        read -p "Select num cores [1-N]: " num_cores
+        read -p "    
+    Select num cores [1-N]: " num_cores
 
         if check_and_set_config; then
             return 0
@@ -156,13 +161,13 @@ select_mode() {
     while true; do
     read -p "Select mode:
 
-        [0] asan
-        [1] harden
+    [1] asan
+    [2] harden
 
-        Select: " m
+    Select: " m
     case $m in
-        [0]* ) mode="asan"; break;;
-        [1]* ) mode="harden"; break;;
+        [1]* ) mode="asan"; break;;
+        [2]* ) mode="harden"; break;;
         * ) echo "Please select harden or asan";;
     esac
     done
@@ -270,7 +275,11 @@ do_continue_fuzz() {
 
     for a in $(seq 2 $num_cores); do
         slaveFuzzer=$a"Slave$mode$target"
-        screen -dmS $slaveFuzzer afl-fuzz $fuzz_args -i- -o $output_dir -S fuzzer$a -- ./$binary_dir/$target
+        indir="-"
+        if ! [ -d $output_dir/fuzzer$a ]; then
+            indir=$input_dir
+        fi
+        screen -dmS $slaveFuzzer afl-fuzz $fuzz_args -i$indir -o $output_dir -S fuzzer$a -- ./$binary_dir/$target
     done
 
     screen -x $masterFuzzer
@@ -290,18 +299,18 @@ do_copy_output() {
 
     while true; do 
 
-        read -p "What files do you want to copy to input?
+        read -p "
+    What files do you want to copy to input?
+    Only inputs resulting in return code 0 will be copied.
 
-        [1] Output from afl-fuzz
-        [2] Output from afl-cmin
-        [3] Output from afl-tmin
-        [0] Quit
+    [1] Raw output from afl-fuzz
+    [2] Output from afl-cmin and afl-tmin
+    [0] Quit
 
-        Select: " yn
+    Select: " yn
         case $yn in
             [1]* ) source_dir=$output_dir/queue_all;;
-            [2]* ) source_dir=$output_dir/queue_cmin;;
-            [3]* ) source_dir=$output_dir/queue_tmin;;
+            [2]* ) source_dir=$output_dir/queue_tmin;;
             [0]* ) return 0;;
             * ) echo "Please answer yes or no.";;
         esac
@@ -314,7 +323,13 @@ do_copy_output() {
 
     done
 
-    cp $source_dir/* $input_dir/ > /dev/null 2>&1
+    for file in `find $source_dir -type f`; do
+        if ./$debug_build_dir/$target < $file > /dev/null ; then
+            mdname=$(md5sum $file | awk '{print $1}')
+            echo "Copying file $file to name $mdname"
+            cp -f $file $input_dir/$mdname
+        fi
+    done
 
 }
 
@@ -325,38 +340,10 @@ do_reset() {
 }
 
 do_dry_run() {
-    find $output_dir -type f -exec sh -c "cat {} | ./$debug_build_dir/$target && echo \"Return with 0: {}\"" \;
+    find $output_dir -type f -exec sh -c "cat {} | ./$debug_build_dir/$target > /dev/null && echo \"Return with 0: {}\"" \;
     lcov --base-directory $debug_build_dir --directory $debug_build_dir --capture --output-file $debug_build_dir/coverage.info
-    genhtml -o $debug_build_dir/coverage_report $debug_build_dir/coverage.info > /dev/null
+    genhtml -o $debug_build_dir/coverage_report $debug_build_dir/coverage.info
     echo "Coverage report in $(pwd)/$debug_build_dir/coverage_report/index.html"
-}
-
-print_target_menu() {
-    while true; do
-        read -p "Fuzz menu for $target
-
-        [1] Start fuzz (Press CTRL+C to break)
-        [2] cmin
-        [3] tmin
-        [4] Continue fuzz (Press CTRL+C to break)
-        [5] Copy output to input
-        [6] Reset
-        [7] Dry run with coverage
-        [0] Quit
-
-        Select: " yn
-        case $yn in
-            [1]* ) do_start_fuzz;;
-            [2]* ) do_cmin;;
-            [3]* ) do_tmin;;
-            [4]* ) do_continue_fuzz;;
-            [5]* ) do_copy_output;;
-            [6]* ) do_reset;;
-            [7]* ) do_dry_run;;
-            [0]* ) return 0;;
-            * ) echo "Please answer yes or no.";;
-        esac
-    done
 }
 
 main_menu() {
@@ -367,18 +354,28 @@ main_menu() {
 
         read -p "PoT-C Fuzzing tool
 
-        1. Select target [$target]
-        2. Select mode [$mode]
-        3. Select num cores [$num_cores]
-        4. Enter fuzz menu
-        0. Quit
+    [1] Select target [$target]
+    [2] Select mode [$mode]
+    [3] Select num cores [$num_cores]
+    [4] Start fuzz (Press CTRL+C to break)
+    [5] cmin and tmin
+    [6] Continue fuzz (Press CTRL+C to break)
+    [7] Copy output to input
+    [8] Reset
+    [9] Dry run with coverage
+    [0] Quit
 
-        Select: " yn
+    Select: " yn
         case $yn in
             [1]* ) select_target;;
             [2]* ) select_mode;;
             [3]* ) set_num_cores;;
-            [4]* ) print_target_menu;;
+            [4]* ) do_start_fuzz;;
+            [5]* ) do_cmin && do_tmin;;
+            [6]* ) do_continue_fuzz;;
+            [7]* ) do_copy_output;;
+            [8]* ) do_reset;;
+            [9]* ) do_dry_run;;
             [0]* ) return 0;;
             * ) echo "Please answer yes or no.";;
         esac

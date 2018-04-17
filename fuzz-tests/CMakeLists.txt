@@ -38,7 +38,7 @@ macro(add_fuzz arg)
 endmacro(add_fuzz)
 
 add_fuzz(fuzz_client)
-add_fuzz(fuzz_client_a1a2)
+add_fuzz(fuzz_a2_client)
 add_fuzz(fuzz_host)
 add_fuzz(fuzz_read_parse)
 

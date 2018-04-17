@@ -1,5 +1,5 @@
 language: C java
-install: make cmake valgrind
+install: make cmake
 compiler:
  - gcc
 script:
@@ -7,8 +7,6 @@ script:
  - make
  - make test
  - gcov src/CMakeFiles/salt.dir/salt.c.gcno src/CMakeFiles/salt.dir/salti_handshake.c.gcno src/CMakeFiles/salt.dir/salti_util.c.gcno
- - rm CMakeCache.txt
- - sh valgrind.sh
  - sh test_echo_with_java.sh
 
 after_success:

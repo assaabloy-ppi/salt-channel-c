@@ -233,7 +233,7 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
 
     ret = crypto_box_afternm(p_data,
                              p_data,
-                             size + 6U + crypto_secretbox_ZEROBYTES,
+                             size + SALT_WRAP_OVERHEAD_SIZE,
                              p_channel->write_nonce,
                              p_channel->ek_common);
 
@@ -244,12 +244,17 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
     
     p_data[14] = SALT_ENCRYPTED_MSG_HEADER_VALUE;
     p_data[15] = (last_msg) ? SALT_LAST_FLAG : 0x00U;
-    size += 24;
-    salti_u32_to_bytes(&p_data[10], size);
-    size += 4U;
 
+    /*
+     * size is of cleartext message, with time[4], header[2], MAC[16] and header[2] the size if 24 bytes larger.
+     */
+    salti_u32_to_bytes(&p_data[10], size + SALT_WRAP_OVERHEAD_IO_SIZE);
+
+    /*
+     * The 4 size bytes are serialized. The size to send is 4 bytes more.
+     */
     *wrapped = &p_data[10];
-    *wrapped_length = size;
+    *wrapped_length = size + SALT_WRAP_OVERHEAD_IO_SIZE + SALT_LENGTH_SIZE;
 
     return SALT_SUCCESS;
 
@@ -300,7 +305,7 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
         p_channel->state = SALT_SESSION_CLOSED;
     }
 
-    SALT_VERIFY(size >= 24U, SALT_ERR_BAD_PROTOCOL);
+    SALT_VERIFY(size >= SALT_WRAP_OVERHEAD_IO_SIZE, SALT_ERR_BAD_PROTOCOL);
 
     memset(p_data, 0x00U, crypto_secretbox_BOXZEROBYTES);
 
@@ -312,11 +317,10 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
      * bytes. After verifying these, we memset the 16 bytes before
      * the encrypted package to 0x00 which is required by the API.
      */
-    size = size + crypto_secretbox_BOXZEROBYTES - 2U;
-
+        
     int ret = crypto_box_open_afternm(p_data,
                                       p_data,
-                                      size,
+                                      size + crypto_secretbox_BOXZEROBYTES - SALT_HEADER_SIZE,
                                       p_channel->read_nonce,
                                       p_channel->ek_common);
 
@@ -356,7 +360,7 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
     /*
      * The real clear text payload is without the time and header bytes.
      */
-    (*unwrapped_length) = size - crypto_secretbox_ZEROBYTES - 2U - 4U;
+    (*unwrapped_length) = size - SALT_WRAP_OVERHEAD_IO_SIZE;
 
     return SALT_SUCCESS;
 

@@ -284,6 +284,11 @@ do_continue_fuzz() {
 
     screen -x $masterFuzzer
 
+    for a in $(seq 2 $num_cores); do
+        slaveFuzzer=$a"Slave$mode$target"
+        screen -x $slaveFuzzer -X stuff "^C"
+    done
+
     for a in $(seq 1 $num_cores); do
         if [ -d $output_dir/fuzzer$a/queue ]; then
             mkdir -p $output_dir/queue_all
@@ -352,7 +357,7 @@ main_menu() {
 
     while true; do 
 
-        read -p "Salt-channel-c Fuzzing tool
+        read -p "Fuzzing tool
 
     [1] Select target [$target]
     [2] Select mode [$mode]

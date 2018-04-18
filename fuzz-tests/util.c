@@ -47,6 +47,7 @@ salt_ret_t fuzz_write(salt_io_channel_t *p_wchannel)
     printf("fuzz_write: ");
     hexprint(p_wchannel->p_data, p_wchannel->size_expected);
     printf("\r\n");
+    memset(p_wchannel->p_data, 0x00, p_wchannel->size_expected);
     p_wchannel->size = p_wchannel->size_expected;
     return SALT_SUCCESS;
 }
@@ -58,12 +59,14 @@ salt_ret_t fuzz_read(salt_io_channel_t *p_rchannel)
     uint8_t *data = malloc(p_rchannel->size_expected);
 
     if (data == NULL) {
+        p_rchannel->err_code = SALT_ERR_CONNECTION_CLOSED;
         return SALT_ERROR;
     }
 
     uint32_t size = read(0, data, p_rchannel->size_expected);
 
     if (size == 0) {
+        p_rchannel->err_code = SALT_ERR_CONNECTION_CLOSED;
         ret = SALT_ERROR;
     }
 

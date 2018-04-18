@@ -71,7 +71,7 @@ int main(void) {
     }
     printf("num_messages: %d\r\n", num_messages);
 
-    return (num_messages > 0 && channel.err_code == SALT_ERR_NONE) ? 0 : -1;
+    return (num_messages > 0 && channel.read_channel.err_code == SALT_ERR_CONNECTION_CLOSED) ? 0 : -1;
 }
 
 

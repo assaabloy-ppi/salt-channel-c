@@ -351,7 +351,9 @@ buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1Hash[64] || m2[38] || .
 buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1Hash[64] || m2Hash[64] || ... }
 ```
 5. Perpare M4 while host is creating and sending M2 and M3.
+
 6. Here we need space for receiving M3 and verifying M3 while still holding M4. M3 clear text is 96 bytes but 38 bytes is required for unwrapping, hence, we need at least 134 bytes for that. When M3 later is verified, we need to copy the originial signed message including signature (TweetNaCL API). This we do to buffer[200]. The originial signed message is 64 + 64 + 8 = 136 bytes. Therefore, 136 + 64 = 200 bytes is reserved for receiving and verifying M3.
+
 ```
     -> Copy sig2prefix to reservedForSigPrefix
 buffer = { reservedForSignature[64] || sig2Prefix[8] || m1m2Hash[128] || ... }
@@ -361,7 +363,9 @@ buffer = { m4Signature[64] || sig2Prefix[8] || m1m2Hash[128] || ... }
 buffer = { m4Signature[64] || sig2Prefix[8] || m1m2Hash[128] || reservedForM4[200] || m4Clear[96] || ... }
 m4 = { clientSigPub[32] || signature[64] }
 ```
+
 7. Read M3 into buffer[214].
+
 ```
 buffer = {
     m4Signature[64] ||
@@ -406,5 +410,6 @@ buffer = {
 buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || unused[72] || m4WithSize[124] || ... }
 ```
 The smallest buffer required for handshaking is **64 + 8 + 128 + 72 + 124 = 496 bytes**.
+
 9. Authentication done.
 

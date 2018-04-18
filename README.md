@@ -228,12 +228,26 @@ buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1[42 or 74] || ... }
 ```
 M1 is then verified and the hash is calculated on the original message. We know at this point how big the size of M2 will be which we reserve in the buffer. Directly after this we copy the clients public encryption key directly after this. This one is used later for calculating the shared secret for the session.
 ```
-buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1Hash[64] || m2Hash[64] || reservedForM2[42] || clientEkPub[32] || ... }
+buffer = {
+    e_keyPair[64] ||
+    reservedForSigPrefix[8] ||
+    m1Hash[64] ||
+    m2Hash[64] ||
+    reservedForM2[42] ||
+    clientEkPub[32] || ...
+}
 ```
 
 3. Create M2 to buffer[200]. M2 is in clear text, and the size bytes are also created into M2. When creating M2, the hash is also calculated.
 ```
-buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1Hash[64] || m2Hash[64] || m2WithSize[42] || clientEkPub[32] || ... }
+buffer = {
+    e_keyPair[64] ||
+    reservedForSigPrefix[8] ||
+    m1Hash[64] ||
+    m2Hash[64] ||
+    m2WithSize[42] ||
+    clientEkPub[32] || ...
+}
 ```
 If a **noSuchServer** condidition occured in M1, the session will be closed immidiately after M2 is sent, and the handshake method will return error.
 

@@ -160,8 +160,8 @@ SHA512 is used for hashing and the size of a hash is 64 bytes. If the message to
 **Signing:**
 The TweetNaCl API doesn't allow to only generate a signature (64 bytes) or verify a message with the signature separated from the message. Further, the API requires a separate buffer to put the signed and unsigned message in.
 ```
-dataToSign = { data[n] }                     -> signedData = { signature[64} || data[n] }
-dataToVerify = { signature[64} || data[n] }  -> verified = { data{n] }
+dataToSign[n]        = { data[n] }                     -> signedData[n + 64] = { signature[64] || data[n] }
+dataToVerify[64 + n] = { signature[64] || data[n] }    -> verified[n+64]     = { data[n] || neededWhenVerifing[64] }
 ```
 
 The TweetNaCl seems to allow for signing a message and putting in in the original location, i.e.:
@@ -197,7 +197,7 @@ When receiving an encrypted and wrapped message, the following format is expecte
 ```
 wrappedEncrypted = { header[2] || cipher[16 + 6 + n] }
 ```
-In order to decrypt this, we need 16 bytes of zeros before the cipher. Therefore, when reading an encrypted message, it will be read **14** bytes into the buffer. First, the header bytes are verified, if they are OK, the message are encrypted.
+In order to decrypt this, we need 16 bytes of zeros before the cipher. Therefore the header of the Salt Channel message starts 14 bytes into the buffer. The header bytes are zeroed after validation and the message is decrypted.
 ```
 wrappedEncrypted = { reservedForPadding[14] || header[2] || cipher[16 + 6 + n] }
     -> verifyHeader(header)
@@ -208,7 +208,9 @@ wrappedClear = { zeroPadded[32] || header[2] || time[4] || message[n] }
 ```
 Hence, in order to read a clear text message of length **n**, we need a buffer that is 38 bytes larger. The clear text message is then located **38** bytes in the buffer.
 ## Handshake procedure
-If looking in the code, there are a lot of magic offsets. These are due to the crypto API and in an effort to keep the required handshake buffer to a minimum. The data to sign for authentication is:
+If looking in the code, there are a lot of magic offsets. For more information about message structures etc see the [Salt Channel specification](https://github.com/assaabloy-ppi/salt-channel/blob/master/files/spec/salt-channel-v2-final1.md)
+
+These are due to the crypto API and in an effort to keep the required handshake buffer to a minimum. The data to sign for authentication is:
 ```
 dataToSign = { sigPrefix[8] || m1Hash[64] || m2Hash[64 ] }
 ```
@@ -217,111 +219,117 @@ dataToSign = { sigPrefix[8] || m1Hash[64] || m2Hash[64 ] }
 1. Session initialization
 The ephemeral keypair is calculated in the beginning of the handshake buffer. These first 64 bytes are later used for the authentication (signing).
 ```
-buffer = { ek_pub[32] || ek_sec[32] }
+buffer = { e_keyPair[64] || ... }
+e_keyPair = { ek_pub[32] || ek_sec[32] }
 ```
-2. Read M1 to buffer[72], these will allow for creating the buffer for signing mentioned above.
+2. Read M1 to starting at buffer[72], these will allow for creating the buffer for signing mentioned above.
 ```
-buffer = { ek_pub[32] || ek_sec[32] || reservedForSigPrefix[8] || m1[42 or 74] }
+buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1[42 or 74] || ... }
 ```
 M1 is then verified and the hash is calculated on the original message. We know at this point how big the size of M2 will be which we reserve in the buffer. Directly after this we copy the clients public encryption key directly after this. This one is used later for calculating the shared secret for the session.
 ```
-buffer = { ek_pub[32] || ek_sec[32] || reservedForSigPrefix[8] || m1Hash[64] || reservedForM2[42] || clientEkPub[32] }
+buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1Hash[64] || m2Hash[64] || reservedForM2[42] || clientEkPub[32] || ... }
 ```
 
 3. Create M2 to buffer[200]. M2 is in clear text, and the size bytes are also created into M2. When creating M2, the hash is also calculated.
 ```
-buffer = { ek_pub[32] || ek_sec[32] || reservedForSigPrefix[8] || m1Hash[64] || m2Hash[64] || m2[42] }
+buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1Hash[64] || m2Hash[64] || m2WithSize[42] || clientEkPub[32] || ... }
 ```
 If a **noSuchServer** condidition occured in M1, the session will be closed immidiately after M2 is sent, and the handshake method will return error.
+
 4. Start sending M2.
+
 5. Calculate the shared secret for the session:
 ```
 sharedSecret = crypto_box_beforenm(ek_common, &buffer[242], &buffer[32])
 ```
 *ek_common* is saved in the channel structure.
+
 6. Continue sending M2 if not completed.
+
 7. Calculate the signature for authentication.
 The public and secret encryption keys are no longer needed since we know have calculated the session key. The sig1Prefix is copied into reservedForSigPrefix.
 ```
-buffer = { ek_pub[32] || ek_sec[32] || sig1Prefix[8] || m1Hash[64] || m2Hash[64] }
+buffer = { e_keyPair[64] || sig1Prefix[8] || m1m2Hash[128] || ... }
 sign(buffer) =>
-buffer = { signature[64] || sig1Prefix[8] || m1Hash[64] || m2Hash[64] }
+buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || ... }
 ```
 Since we need 38 bytes overhead for encrypting and wrapping the M3 message, which include the public signature key of the host, and the signature will be copied to buffer[238].
 ```
-buffer = { signature[64] || sig1Prefix[8] || m1Hash[64] || m2Hash[64] || reserved[38] , m3[96] }
+buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || reserved[38] , m3[96] || ... }
 m3 = { hostSigPub[32] || signature[64] }
 ```
-7. Wrap the M3 message.
+8. Wrap the M3 message.
 ```
 wrap(buffer[238])
-buffer = { signature[64] || sig1Prefix[8] || m1Hash[64] || m2Hash[64] || zeroPadded[10] || m3WithSize[124] }
+buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || zeroPadded[10] || m3WithSize[124] || ... }
 m3WithSize = { m3SizeBytes[4] || header[2] || m3Cipher[118] }
 ```
-8. Send M3. Since we need 14 bytes if padding to unwrap M4, we read M4 into buffer[214].
+9. Send M3. Since we need 14 bytes if padding to unwrap M4, we read M4 into buffer[214].
 ```
-buffer = { signature[64] || sig1Prefix[8] || m1Hash[64] || m2Hash[64] || reserved[14] , header[2] , m4WrappedAndEncrypted[118] }
+buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || reserved[14] , header[2] , m4WrappedAndEncrypted[118] || ... }
     -> Verify header and unwrap
-buffer = { signature[64] || sig1Prefix[8] || m1Hash[64] || m2Hash[64] || zeroPadded[32] || header[2] || time[4] || m4Clear[96] }
+buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || zeroPadded[32] || header[2] || time[4] || m4Clear[96] || ... }
 m4Clear = { clientSigPub[32] || signature[64] }
     -> Copy clientSigPub to channel structure.
 ```
-9. The signature in the M3 message is then verified. The sig2Prefix is copied into reservedForSigPrefix and the signature from M4 is copied to signature. When verifying the signature, the signed message will be copied to another location, we chose to put it directly after m2Hash (buffer[200]) since we don't need that data anymore.
+10. The signature in the M3 message is then verified. The sig2Prefix is copied into reservedForSigPrefix and the signature from M4 is copied to signature. When verifying the signature, the signed message will be copied to another location, we chose to put it directly after m2Hash (buffer[200]) since we don't need that data anymore.
 ```
-buffer = { m4signature[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] || zeroPadded[32] || header[2] || time[4] || clientSigPub[32] || signature[64] }
+buffer = { m4signature[64] || sig2Prefix[8] || m1m2Hash[128] || zeroPadded[32] || header[2] || time[4] || clientSigPub[32] || signature[64] || ... }
     -> verify signature
-buffer = { m4signature[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] }
+buffer = { m4signature[64] || sig2Prefix[8] || m1m2Hash[128] || sig2Prefix[8] || m1m2Hash[128] || neededWhenVerifing[64] || ... }
 ```
 
 Hence, the smallest handshake buffer required for a host handshake procedure is **64 + 8 + 64 + 64 + 8 + 64 + 64 = 336 bytes**.
 
-10. Authentication done.
+11. Authentication done.
 
 ### Client handshake procedure.
 1. Session initialization
 The ephemeral keypair is calculated in the beginning of the handshake buffer. These first 64 bytes are later used for the authentication (signing).
 ```
-buffer = { ek_pub[32] || ek_sec[32] }
+buffer = { e_keyPair[64] || ... }
+e_keyPair = { ek_pub[32] || ek_sec[32] }
 ```
 2. Reserve space for M1 hash, signature and sigPrefix and create M1 where M2 hash will be placed.
 ```
-buffer = { ek_pub[32] || ek_sec[32] || sig1Prefix[8] || m1Hash[64] || m1[42 or 74] }
+buffer = { e_keyPair[64] || sig1Prefix[8] || m1Hash[64] || m1WithSize[46 or 78] || ... }
 ```
 3. Write M1
 4. Read M2, verify, calculate shred key and hash
 ```
-buffer = { ek_pub[32] || ek_sec[32] || reservedForSigPrefix[8] || m1Hash[64] || m2[38] }
+buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1Hash[64] || m2[38] || ... }
     -> Verify m2
     -> Calculate shared key from m2 and ek_sec. Place into channel structure.
     -> Calculate hash
-buffer = { ek_pub[32] || ek_sec[32] || reservedForSigPrefix[8] || m1Hash[64] || m2Hash[64] }
+buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1Hash[64] || m2Hash[64] || ... }
 ```
 5. Perpare M4 while host is creating and sending M2 and M3.
 6. Here we need space for receiving M3 and verifying M3 while still holding M4. M3 clear text is 96 bytes but 38 bytes is required for unwrapping, hence, we need at least 134 bytes for that. When M3 later is verified, we need to copy the originial signed message including signature (TweetNaCL API). This we do to buffer[200]. The originial signed message is 64 + 64 + 8 = 136 bytes. Therefore, 136 + 64 = 200 bytes is reserved for receiving and verifying M3.
 ```
     -> Copy sig2prefix to reservedForSigPrefix
-buffer = { reservedForSignature[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] }
-    -> signed = sign(&buffer[64]} = signedData[200] = { m4Signature[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] }
-buffer = { m4Signature[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] }
+buffer = { reservedForSignature[64] || sig2Prefix[8] || m1m2Hash[128] || ... }
+    -> signed = sign(&buffer[64]} = signedData[200] = { m4Signature[64] || sig2Prefix[8] || m1m2Hash[128] }
+buffer = { m4Signature[64] || sig2Prefix[8] || m1m2Hash[128] || ... }
     -> Create M4 in buffer[400]
-buffer = { m4Signature[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] || reservedForM4[200] || m4Clear[96] }
+buffer = { m4Signature[64] || sig2Prefix[8] || m1m2Hash[128] || reservedForM4[200] || m4Clear[96] || ... }
 m4 = { clientSigPub[32] || signature[64] }
 ```
 7. Read M3 into buffer[214].
 ```
-buffer = { m4Signature[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] || zeroPadded[14] || header[2] , m3WrappedAndEncrypted[118] }
+buffer = { m4Signature[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] || zeroPadded[14] || header[2] , m3WrappedAndEncrypted[118] || ... }
     -> Verify header and unwrap
-buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || zeroPadded[38] || m3Clear[96] || unused[64] || m4Clear[96]  }
+buffer = { m4Signature[64] || sig1Prefix[8] || m1m2Hash[128] || zeroPadded[38] || m3Clear[96] || neededWhenVerifing[64] || m4Clear[96] || ... }
 m3Clear = { hostSigPub[32] || m3Signature[64] }
     -> Copy m3Signature[64] from m3Clear to signature[64]
     -> Update to sig2Prefix
     -> Copy hostSigPub[32] to channel structure
     -> verify signature
-buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || sig1Prefix[8] || m1m2Hash[128] || zeroPadded[64] || m4Clear[96]  }
+buffer = { m4Signature[64] || sig1Prefix[8] || m1m2Hash[128] || sig1Prefix[8] || m1m2Hash[128] || neededWhenVerifing[64] || m4Clear[96] || ...  }
 ```
 8. Wrap m4
 ```
-buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || unused[72] || m4WithSize[124]  }
+buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || unused[72] || m4WithSize[124] || ... }
 ```
 The smallest buffer required for handshaking is **64 + 8 + 128 + 72 + 124 = 496 bytes**.
 9. Authentication done.

@@ -204,7 +204,11 @@ do_start_fuzz() {
     for a in $(seq 1 $num_cores); do
         if [ -d $output_dir/fuzzer$a/queue ]; then
             mkdir -p $output_dir/queue_all
+            mkdir -p $output_dir/crashes_all
+            mkdir -p $output_dir/hangs_all
             cp $output_dir/fuzzer$a/queue/* $output_dir/queue_all/ > /dev/null 2>&1
+            cp $output_dir/fuzzer$a/crashes/* $output_dir/crashes_all/ > /dev/null 2>&1
+            cp $output_dir/fuzzer$a/hangs/* $output_dir/hangs_all/ > /dev/null 2>&1
         fi
     done
 
@@ -292,7 +296,11 @@ do_continue_fuzz() {
     for a in $(seq 1 $num_cores); do
         if [ -d $output_dir/fuzzer$a/queue ]; then
             mkdir -p $output_dir/queue_all
+            mkdir -p $output_dir/crashes_all
+            mkdir -p $output_dir/hangs_all
             cp $output_dir/fuzzer$a/queue/* $output_dir/queue_all/ > /dev/null 2>&1
+            cp $output_dir/fuzzer$a/crashes/* $output_dir/crashes_all/ > /dev/null 2>&1
+            cp $output_dir/fuzzer$a/hangs/* $output_dir/hangs_all/ > /dev/null 2>&1
         fi
     done
 

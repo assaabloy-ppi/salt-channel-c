@@ -251,7 +251,9 @@ sharedSecret = crypto_box_beforenm(ek_common, &buffer[242], &buffer[32])
 The public and secret encryption keys are no longer needed since we know have calculated the session key. The sig1Prefix is copied into reservedForSigPrefix.
 ```
 buffer = { e_keyPair[64] || sig1Prefix[8] || m1m2Hash[128] || ... }
+
 sign(buffer) =>
+
 buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || ... }
 ```
 Since we need 38 bytes overhead for encrypting and wrapping the M3 message, which include the public signature key of the host, and the signature will be copied to buffer[238].
@@ -262,22 +264,66 @@ m3Clear = { hostSigPub[32] || signature[64] }
 8. Wrap the M3 message.
 ```
 wrap(buffer[238])
-buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || zeroPadded[10] || m3WithSize[124] || ... }
+
+buffer = {
+    signature[64] ||
+    sig1Prefix[8] ||
+    m1m2Hash[128] ||
+    zeroPadded[10] ||
+    m3WithSize[124] || ...
+}
+
 m3WithSize = { m3SizeBytes[4] || header[2] || m3Cipher[118] }
 ```
 9. Send M3. Since we need 14 bytes if padding to unwrap M4, we read M4 into buffer[214].
 ```
-buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || reserved[14] , header[2] , m4WrappedAndEncrypted[118] || ... }
+buffer = {
+    signature[64] ||
+    sig1Prefix[8] ||
+    m1m2Hash[128] ||
+    reserved[14]  ||
+    header[2] ||
+    m4WrappedAndEncrypted[118] || ... 
+}
+
     -> Verify header and unwrap
-buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || zeroPadded[32] || header[2] || time[4] || m4Clear[96] || ... }
+
+buffer = {
+    signature[64] ||
+    sig1Prefix[8] ||
+    m1m2Hash[128] ||
+    zeroPadded[32] ||
+    header[2] ||
+    time[4] ||
+    m4Clear[96] || ... 
+}
+
 m4Clear = { clientSigPub[32] || signature[64] }
     -> Copy clientSigPub to channel structure.
 ```
 10. The signature in the M3 message is then verified. The sig2Prefix is copied into reservedForSigPrefix and the signature from M4 is copied to signature. When verifying the signature, the signed message will be copied to another location, we chose to put it directly after m2Hash (buffer[200]) since we don't need that data anymore.
 ```
-buffer = { m4signature[64] || sig2Prefix[8] || m1m2Hash[128] || zeroPadded[32] || header[2] || time[4] || clientSigPub[32] || signature[64] || ... }
+buffer = {
+    m4signature[64] ||
+    sig2Prefix[8] ||
+    m1m2Hash[128] ||
+    zeroPadded[32] ||
+    header[2] ||
+    time[4] ||
+    clientSigPub[32] ||
+    signature[64] || ...
+}
+
     -> verify signature
-buffer = { m4signature[64] || sig2Prefix[8] || m1m2Hash[128] || sig2Prefix[8] || m1m2Hash[128] || neededWhenVerifing[64] || ... }
+
+buffer = {
+    m4signature[64] ||
+    sig2Prefix[8] ||
+    m1m2Hash[128] ||
+    sig2Prefix[8] ||
+    m1m2Hash[128] ||
+    neededWhenVerifing[64] || ... 
+}
 ```
 
 Hence, the smallest handshake buffer required for a host handshake procedure is **64 + 8 + 64 + 64 + 8 + 64 + 64 + 64 = 400 bytes**.
@@ -317,15 +363,43 @@ m4 = { clientSigPub[32] || signature[64] }
 ```
 7. Read M3 into buffer[214].
 ```
-buffer = { m4Signature[64] || sig2Prefix[8] || m1Hash[64] || m2Hash[64] || zeroPadded[14] || header[2] , m3WrappedAndEncrypted[118] || ... }
+buffer = {
+    m4Signature[64] ||
+    sig2Prefix[8] ||
+    m1Hash[64] ||
+    m2Hash[64] ||
+    zeroPadded[14] ||
+    header[2] ||
+    m3WrappedAndEncrypted[118] || ...
+}
+
     -> Verify header and unwrap
-buffer = { m4Signature[64] || sig1Prefix[8] || m1m2Hash[128] || zeroPadded[38] || m3Clear[96] || neededWhenVerifing[64] || m4Clear[96] || ... }
+
+buffer = {
+    m4Signature[64] ||
+    sig1Prefix[8] ||
+    m1m2Hash[128] ||
+    zeroPadded[38] ||
+    m3Clear[96] ||
+    neededWhenVerifing[64] ||
+    m4Clear[96] || ...
+}
 m3Clear = { hostSigPub[32] || m3Signature[64] }
+
     -> Copy m3Signature[64] from m3Clear to signature[64]
     -> Update to sig2Prefix
     -> Copy hostSigPub[32] to channel structure
     -> verify signature
-buffer = { m4Signature[64] || sig1Prefix[8] || m1m2Hash[128] || sig1Prefix[8] || m1m2Hash[128] || neededWhenVerifing[64] || m4Clear[96] || ...  }
+
+buffer = {
+    m4Signature[64] ||
+    sig1Prefix[8] ||
+    m1m2Hash[128] ||
+    sig1Prefix[8] ||
+    m1m2Hash[128] ||
+    neededWhenVerifing[64] ||
+    m4Clear[96] || ...
+}
 ```
 8. Wrap m4
 ```

@@ -280,7 +280,7 @@ buffer = { m4signature[64] || sig2Prefix[8] || m1m2Hash[128] || zeroPadded[32] |
 buffer = { m4signature[64] || sig2Prefix[8] || m1m2Hash[128] || sig2Prefix[8] || m1m2Hash[128] || neededWhenVerifing[64] || ... }
 ```
 
-Hence, the smallest handshake buffer required for a host handshake procedure is **64 + 8 + 64 + 64 + 8 + 64 + 64 = 336 bytes**.
+Hence, the smallest handshake buffer required for a host handshake procedure is **64 + 8 + 64 + 64 + 8 + 64 + 64 + 64 = 400 bytes**.
 
 11. Authentication done.
 

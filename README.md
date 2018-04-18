@@ -256,8 +256,8 @@ buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || ... }
 ```
 Since we need 38 bytes overhead for encrypting and wrapping the M3 message, which include the public signature key of the host, and the signature will be copied to buffer[238].
 ```
-buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || reserved[38] , m3[96] || ... }
-m3 = { hostSigPub[32] || signature[64] }
+buffer = { signature[64] || sig1Prefix[8] || m1m2Hash[128] || reserved[38] , m3Clear[96] || ... }
+m3Clear = { hostSigPub[32] || signature[64] }
 ```
 8. Wrap the M3 message.
 ```

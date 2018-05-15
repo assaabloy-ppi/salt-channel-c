@@ -216,12 +216,12 @@ typedef struct salt_channel_s {
     salt_err_t      err_code;                           /**< Latest error code. */
 
     /* Encryption and signature stuff */
-    uint8_t     ek_common[crypto_box_BEFORENMBYTES];    /**< Symmetric session encryption key. */
-    uint8_t     peer_sk_pub[crypto_sign_PUBLICKEYBYTES];/**< Peer public signature key. */
-    uint8_t     my_sk_sec[crypto_sign_SECRETKEYBYTES];  /**< My secret signature key. */
+    uint8_t     ek_common[api_crypto_box_BEFORENMBYTES];    /**< Symmetric session encryption key. */
+    uint8_t     peer_sk_pub[api_crypto_sign_PUBLICKEYBYTES];/**< Peer public signature key. */
+    uint8_t     my_sk_sec[api_crypto_sign_SECRETKEYBYTES];  /**< My secret signature key. */
     uint8_t     *my_sk_pub;                             /**< My public signature key, points to &my_sk_sec[32]. */
-    uint8_t     write_nonce[crypto_box_NONCEBYTES];     /**< Write nonce. */
-    uint8_t     read_nonce[crypto_box_NONCEBYTES];      /**< Read nonce. */
+    uint8_t     write_nonce[api_crypto_box_NONCEBYTES];     /**< Write nonce. */
+    uint8_t     read_nonce[api_crypto_box_NONCEBYTES];      /**< Read nonce. */
 
     /* Time checking stuff */
     uint32_t    my_epoch;

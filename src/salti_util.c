@@ -166,36 +166,36 @@ salt_ret_t salti_io_write(salt_channel_t *p_channel,
  * of the clear text data:
  *
  * toDecrypt = {
- *      zeroPadded[crypto_secretbox_ZEROBYTES] ,
+ *      zeroPadded[api_crypto_box_ZEROBYTES] ,
  *      wrappedClear[n + 6]
  * }
  *
  * Which will give the output:
  *
  * encrypted = {
- *      zeroPadded[crypto_secretbox_BOXZEROBYTES] ,
- *      cipher[n + 6 + crypto_secretbox_BOXZEROBYTES]
+ *      zeroPadded[api_crypto_box_BOXZEROBYTES] ,
+ *      cipher[n + 6 + api_crypto_box_BOXZEROBYTES]
  * }
  *
  * This requires the clear text data input to this function to start at index
- * crypto_secretbox_ZEROBYTES + 6U.
+ * api_crypto_box_ZEROBYTES + 6U.
  *
  * After the encryption, the message is padded with the size bytes:
  *
  * wrappedAndEncrypted = {
- *      zeroPadded[crypto_secretbox_ZEROBYTES - 6U] ,
+ *      zeroPadded[api_crypto_box_ZEROBYTES - 6U] ,
  *      sizeBytes[4] ,
  *      header[2] ,
- *      cipher[n + 6 + crypto_secretbox_BOXZEROBYTES]
+ *      cipher[n + 6 + api_crypto_box_BOXZEROBYTES]
  * }
  *
  * Hence, the actual message to send to the received after this procedure
  * begins at p_data[12] with the length of:
- *  toSend = n + 4 + 2 + 6 + crypto_secretbox_BOXZEROBYTES = n + 28
+ *  toSend = n + 4 + 2 + 6 + api_crypto_box_BOXZEROBYTES = n + 28
  *
  * I.e., the usage will be:
  *  uint8_t data[100];
- *  snprintf(&data[crypto_secretbox_ZEROBYTES + 6U], "hejsan", 6);
+ *  snprintf(&data[api_crypto_box_ZEROBYTES + 6U], "hejsan", 6);
  *  uint8_t *data_to_send;
  *  uint32_t len_to_send;
  *  salti_wrap(&channel, data, 6, SALT_APP_PKG_MSG_HEADER_VALUE, &data_to_send, &len_to_send);
@@ -221,7 +221,7 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
 {
 
     int ret;
-    memset(p_data, 0x00, crypto_secretbox_ZEROBYTES);
+    memset(p_data, 0x00, api_crypto_box_ZEROBYTES);
 
     p_data[32] = header;
     p_data[33] = 0x00;
@@ -231,7 +231,7 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
     time -= p_channel->my_epoch;
     salti_u32_to_bytes(&p_data[34], time);
 
-    ret = crypto_box_afternm(p_data,
+    ret = api_crypto_box_afternm(p_data,
                              p_data,
                              size + SALT_WRAP_OVERHEAD_SIZE,
                              p_channel->write_nonce,
@@ -270,10 +270,10 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
  * When this is decrypted the following format will be given:
  *
  * wrappedAndDecrypt = {
- *      zero[crypto_secretbox_ZEROBYTES] ,
+ *      zero[api_crypto_box_ZEROBYTES] ,
  *      header[2] ,
  *      time[4] ,
- *      clear[n - 2 - 2 - 4 - crypto_secretbox_BOXZEROBYTES]
+ *      clear[n - 2 - 2 - 4 - api_crypto_box_BOXZEROBYTES]
  * }
  *
  * The time is then evaluated and information about the message is return using the in
@@ -307,10 +307,10 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
     SALT_VERIFY(size >= SALT_WRAP_OVERHEAD_IO_SIZE, SALT_ERR_BAD_PROTOCOL);
 
-    memset(p_data, 0x00U, crypto_secretbox_BOXZEROBYTES);
+    memset(p_data, 0x00U, api_crypto_box_BOXZEROBYTES);
 
     /*
-     * crypto_box_open_afternm requires 16 bytes of 0x00 before the
+     * api_crypto_box_open_afternm requires 16 bytes of 0x00 before the
      * encrypted package. Also, two bytes header where sent in the
      * wrapped message. The I/O started reading the enrypted package
      * 14 bytes into the buffer. The first as these two are the header
@@ -318,9 +318,9 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
      * the encrypted package to 0x00 which is required by the API.
      */
         
-    int ret = crypto_box_open_afternm(p_data,
+    int ret = api_crypto_box_open_afternm(p_data,
                                       p_data,
-                                      size + crypto_secretbox_BOXZEROBYTES - SALT_HEADER_SIZE,
+                                      size + api_crypto_box_BOXZEROBYTES - SALT_HEADER_SIZE,
                                       p_channel->read_nonce,
                                       p_channel->ek_common);
 
@@ -372,7 +372,7 @@ salt_ret_t salti_increase_nonce(uint8_t *p_nonce)
     uint_fast16_t c = SALT_NONCE_INCR; /* (2U) */
     uint8_t i;
 
-    for (i = 0U; i < crypto_box_NONCEBYTES; i++) {
+    for (i = 0U; i < api_crypto_box_NONCEBYTES; i++) {
         c += (uint_fast16_t) p_nonce[i];
         p_nonce[i] = (uint8_t) c;
         c >>= 8U;

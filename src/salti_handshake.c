@@ -242,7 +242,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
                      * }
                      *
                      */
-                    int tmp = crypto_box_beforenm(p_channel->ek_common,
+                    int tmp = api_crypto_box_beforenm(p_channel->ek_common,
                                                   &p_channel->hdshk_buffer[SALT_HOST_TMP_PEER_EK_PUB_OFFSET],
                                                   &p_channel->hdshk_buffer[SALT_SEC_ENC_OFFSET]);
 
@@ -847,9 +847,9 @@ void salti_create_m1(salt_channel_t *p_channel,
 
     memcpy(&p_data[SALT_LENGTH_SIZE + 10],
            &p_channel->hdshk_buffer[SALT_PUB_ENC_OFFSET],
-           crypto_box_PUBLICKEYBYTES);
+           api_crypto_box_PUBLICKEYBYTES);
 
-    crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
+    api_crypto_hash_sha512(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
     salti_u32_to_bytes(p_data, (*size));
 
     (*size) += SALT_LENGTH_SIZE;
@@ -914,17 +914,17 @@ salt_state_t salti_handle_m1(salt_channel_t *p_channel,
          * Due to this, we does not need to store the client ephemeral public encryption
          * key.
          */
-        if (memcmp(&p_data[42], p_channel->my_sk_pub, crypto_sign_PUBLICKEYBYTES) != 0) {
+        if (memcmp(&p_data[42], p_channel->my_sk_pub, api_crypto_sign_PUBLICKEYBYTES) != 0) {
             p_channel->err_code = SALT_ERR_NO_SUCH_SERVER;
             return SALT_M2_INIT_NO_SUCH_SERVER;
         }
     }
 
     /* Copy the clients public ephemeral encryption key. */
-    memcpy(&p_channel->hdshk_buffer[SALT_HOST_TMP_PEER_EK_PUB_OFFSET], &p_data[10], crypto_box_PUBLICKEYBYTES);
+    memcpy(&p_channel->hdshk_buffer[SALT_HOST_TMP_PEER_EK_PUB_OFFSET], &p_data[10], api_crypto_box_PUBLICKEYBYTES);
 
     /* Save the hash of M1 */
-    crypto_hash(p_hash, p_data, size);
+    api_crypto_hash_sha512(p_hash, p_data, size);
 
     return SALT_M2_INIT;
 
@@ -980,16 +980,16 @@ salt_state_t salti_create_m2(salt_channel_t *p_channel,
         p_data[SALT_M2_HEADER1_OFFSET] |= SALT_NO_SUCH_SERVER_FLAG;
         p_data[SALT_M2_HEADER1_OFFSET] |= SALT_LAST_FLAG;
         memset(&p_data[SALT_M2_PUB_ENC_OFFSET], 0x00,
-               crypto_box_PUBLICKEYBYTES);
+               api_crypto_box_PUBLICKEYBYTES);
         next_state = SALT_M2_IO;
     }
     else {
         /* Copy ephemeral public key to M2 */
         memcpy(&p_data[SALT_M2_PUB_ENC_OFFSET],
                &p_channel->hdshk_buffer[SALT_PUB_ENC_OFFSET],
-               crypto_box_PUBLICKEYBYTES);
+               api_crypto_box_PUBLICKEYBYTES);
 
-        crypto_hash(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
+        api_crypto_hash_sha512(p_hash, &p_data[SALT_LENGTH_SIZE], (*size));
         next_state = SALT_M2_IO_AND_SESSION_KEY;
     }
 
@@ -1057,8 +1057,8 @@ salt_state_t salti_handle_m2(salt_channel_t *p_channel,
         return SALT_ERROR_STATE;
     }
 
-    /* crypto_box_beforenm always returns 0 */
-    int tmp = crypto_box_beforenm(p_channel->ek_common,
+    /* api_crypto_box_beforenm always returns 0 */
+    int tmp = api_crypto_box_beforenm(p_channel->ek_common,
                                   &p_data[6],
                                   &p_channel->hdshk_buffer[SALT_SEC_ENC_OFFSET]);
     if (0 != tmp) {
@@ -1066,7 +1066,7 @@ salt_state_t salti_handle_m2(salt_channel_t *p_channel,
         return SALT_ERROR_STATE;
     }
 
-    crypto_hash(p_hash, p_data, size);
+    api_crypto_hash_sha512(p_hash, p_data, size);
 
     return SALT_M3_INIT;
 }
@@ -1115,11 +1115,11 @@ void salti_create_m3m4_sig(salt_channel_t *p_channel,
     }
 
     /*
-     * crypto_sign will sign a message { m[n] } into a signed message
-     * { sign[64] , m[n] }. crypto_sign always returns 0.
+     * api_crypto_sign will sign a message { m[n] } into a signed message
+     * { sign[64] , m[n] }. api_crypto_sign always returns 0.
      *
      */
-    tmp = crypto_sign(p_channel->hdshk_buffer,
+    tmp = api_crypto_sign(p_channel->hdshk_buffer,
                       &sign_msg_size,
                       &p_channel->hdshk_buffer[64],
                       SALT_M3M4_MSG_TO_SIG_SIZE,
@@ -1190,7 +1190,7 @@ salt_ret_t salti_verify_m3m4_sig(salt_channel_t *p_channel,
     else {
         memcpy(&p_channel->hdshk_buffer[64], sig1prefix, 8);
     }
-    SALT_VERIFY(crypto_sign_open(&p_channel->hdshk_buffer[SALT_M3M4_SIG_VERIFY_OFFSET],
+    SALT_VERIFY(api_crypto_sign_open(&p_channel->hdshk_buffer[SALT_M3M4_SIG_VERIFY_OFFSET],
                                  &sign_msg_size,
                                  p_channel->hdshk_buffer,
                                  SALT_M3M4_SIGNED_MSG_SIZE,

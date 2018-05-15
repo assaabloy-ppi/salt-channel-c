@@ -61,16 +61,6 @@ static uint8_t sk_pub[32] = { /* 5529ce8ccf68c0b8ac19d437ab0f5b32723782608e93c62
     0x4f, 0x18, 0x4b, 0xa1, 0x52, 0xc2, 0x35, 0x7b
 };
 
-static uint8_t sk_sec[64] = {
-    0x55, 0xf4, 0xd1, 0xd1, 0x98, 0x09, 0x3c, 0x84,
-    0xde, 0x9e, 0xe9, 0xa6, 0x29, 0x9e, 0x0f, 0x68,
-    0x91, 0xc2, 0xe1, 0xd0, 0xb3, 0x69, 0xef, 0xb5,
-    0x92, 0xa9, 0xe3, 0xf1, 0x69, 0xfb, 0x0f, 0x79,
-    0x55, 0x29, 0xce, 0x8c, 0xcf, 0x68, 0xc0, 0xb8,
-    0xac, 0x19, 0xd4, 0x37, 0xab, 0x0f, 0x5b, 0x32,
-    0x72, 0x37, 0x82, 0x60, 0x8e, 0x93, 0xc6, 0x26,
-    0x4f, 0x18, 0x4b, 0xa1, 0x52, 0xc2, 0x35, 0x7b
-};
 
 static void test_sign_open(void **state)
 {
@@ -78,7 +68,7 @@ static void test_sign_open(void **state)
     uint8_t signed_msg[sizeof(signed_data)];
     memcpy(signed_msg, signed_data, sizeof(signed_data));
     uint8_t tmp[512];
-    assert_int_equal(crypto_sign_open(
+    assert_int_equal(api_crypto_sign_open(
                          tmp,
                          &unsigned_msg_len,
                          signed_msg,
@@ -87,7 +77,7 @@ static void test_sign_open(void **state)
 
     signed_msg[64] = ~signed_msg[64];
 
-    assert_int_not_equal(crypto_sign_open(
+    assert_int_not_equal(api_crypto_sign_open(
                              tmp,
                              &unsigned_msg_len,
                              signed_msg,
@@ -100,13 +90,13 @@ static void test_hash_state(void **state)
 {
 
     uint8_t tweet_hash[64];
-    crypto_hash(tweet_hash, signed_data, sizeof(signed_data));
+    api_crypto_hash_sha512(tweet_hash, signed_data, sizeof(signed_data));
 
     uint8_t sodium_hash[64];
-    crypto_hash_sha512_state hash_state;
-    assert_int_equal(crypto_hash_sha512_init(&hash_state), 0);
-    assert_int_equal(crypto_hash_sha512_update(&hash_state, signed_data, sizeof(signed_data)), 0);
-    assert_int_equal(crypto_hash_sha512_final(&hash_state, sodium_hash), 0);
+    uint8_t hash_state[208];
+    assert_int_equal(api_crypto_hash_sha512_init(hash_state, sizeof(hash_state)), 0);
+    assert_int_equal(api_crypto_hash_sha512_update(hash_state, signed_data, sizeof(signed_data)), 0);
+    assert_int_equal(api_crypto_hash_sha512_final(hash_state, sodium_hash), 0);
 
     assert_memory_equal(tweet_hash, sodium_hash, 64);
 }
@@ -116,7 +106,7 @@ static void test_sign_open_detached(void **state)
 {
     uint8_t signed_msg[sizeof(signed_data)];
     memcpy(signed_msg, signed_data, sizeof(signed_data));
-    assert_int_equal(crypto_sign_verify_detached(signed_msg,
+    assert_int_equal(api_crypto_sign_verify_detached(signed_msg,
                      &signed_msg[64],
                      sizeof(signed_msg) - 64,
                      sk_pub), 0);
@@ -124,7 +114,7 @@ static void test_sign_open_detached(void **state)
     /* Modify one byte of message. */
     signed_msg[64] = ~signed_msg[64];
 
-    assert_int_not_equal(crypto_sign_verify_detached(signed_msg,
+    assert_int_not_equal(api_crypto_sign_verify_detached(signed_msg,
                          &signed_msg[64],
                          sizeof(signed_msg) - 64,
                          sk_pub), 0);
@@ -161,7 +151,7 @@ static void open_and_detached(void **state) {
 
     unsigned long long unsigned_msg_len;
 
-    assert_int_equal(crypto_sign_open(
+    assert_int_equal(api_crypto_sign_open(
                          data,
                          &unsigned_msg_len,
                          signature_and_data,
@@ -171,17 +161,29 @@ static void open_and_detached(void **state) {
     assert_memory_equal(tmp_msg, signature_and_data, sizeof(signature_and_data));
     assert_memory_equal(tmp_pub, pub, sizeof(pub));
 
-    assert_int_equal(crypto_sign_verify_detached(signature_and_data,
+    assert_int_equal(api_crypto_sign_verify_detached(signature_and_data,
                      &signature_and_data[64],
                      sizeof(signature_and_data) - 64,
                      pub), 0);
 }
 
+#if 0
 static void sign_detached(void **state)
 {
+
+    uint8_t sk_sec[64] = {
+        0x55, 0xf4, 0xd1, 0xd1, 0x98, 0x09, 0x3c, 0x84,
+        0xde, 0x9e, 0xe9, 0xa6, 0x29, 0x9e, 0x0f, 0x68,
+        0x91, 0xc2, 0xe1, 0xd0, 0xb3, 0x69, 0xef, 0xb5,
+        0x92, 0xa9, 0xe3, 0xf1, 0x69, 0xfb, 0x0f, 0x79,
+        0x55, 0x29, 0xce, 0x8c, 0xcf, 0x68, 0xc0, 0xb8,
+        0xac, 0x19, 0xd4, 0x37, 0xab, 0x0f, 0x5b, 0x32,
+        0x72, 0x37, 0x82, 0x60, 0x8e, 0x93, 0xc6, 0x26,
+        0x4f, 0x18, 0x4b, 0xa1, 0x52, 0xc2, 0x35, 0x7b
+    };
     uint8_t sig[64];
     unsigned long long siglen;
-    assert_int_equal(crypto_sign_detached(sig,
+    assert_int_equal(api_crypto_sign_detached(sig,
         &siglen, &signed_data[64], sizeof(signed_data)-64, sk_sec), 0);
 
     assert_memory_equal(sig, signed_data, sizeof(sig));
@@ -196,14 +198,14 @@ static void sign_detached(void **state)
 
     for (uint8_t i = 0; i < 100; i++)
     {
-        crypto_sign_keypair(pub, sec);
+        api_crypto_sign_keypair(pub, sec);
         memset(data, i, sizeof(data));
         siglen = 128;
         unsigned long long siglen_;
-        assert_int_equal(crypto_sign(data_and_signature, 
+        assert_int_equal(api_crypto_sign(data_and_signature, 
             &siglen_, data, sizeof(data), sec), 0);
 
-        assert_int_equal(crypto_sign_detached(signature,
+        assert_int_equal(api_crypto_sign_detached(signature,
             &siglen, data, sizeof(data), sec), 0);
 
         assert_memory_equal(signature, data_and_signature, sizeof(signature));
@@ -211,6 +213,7 @@ static void sign_detached(void **state)
     }
 
 }
+#endif
 
 int main(void) {
     const struct CMUnitTest tests[] = {
@@ -218,7 +221,7 @@ int main(void) {
         cmocka_unit_test(test_hash_state),
         cmocka_unit_test(test_sign_open_detached),
         cmocka_unit_test(open_and_detached),
-        cmocka_unit_test(sign_detached)
+        //cmocka_unit_test(sign_detached)
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

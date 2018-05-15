@@ -277,7 +277,7 @@ salt_ret_t salt_set_signature(salt_channel_t *p_channel,
 
     SALT_VERIFY_NOT_NULL(p_signature);
 
-    memcpy(p_channel->my_sk_sec, p_signature, crypto_sign_SECRETKEYBYTES);
+    memcpy(p_channel->my_sk_sec, p_signature, api_crypto_sign_SECRETKEYBYTES);
     p_channel->state = SALT_SIGNATURE_SET;
 
     return SALT_SUCCESS;
@@ -291,7 +291,7 @@ salt_ret_t salt_create_signature(salt_channel_t *p_channel)
         return SALT_ERROR;
     }
 
-    crypto_sign_keypair(p_channel->my_sk_pub, p_channel->my_sk_sec);
+    api_crypto_sign_keypair(p_channel->my_sk_pub, p_channel->my_sk_sec);
     p_channel->state = SALT_SIGNATURE_SET;
     return SALT_SUCCESS;
 }
@@ -358,7 +358,7 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
          * The ephemeral keypair is kept where the signature later will be
          * until the common key is calculated.
          */
-        crypto_box_keypair(hdshk_buffer, &hdshk_buffer[32]);
+        api_crypto_box_keypair(hdshk_buffer, &hdshk_buffer[32]);
     }
     else {
         memcpy(hdshk_buffer, ek_pub, 32);

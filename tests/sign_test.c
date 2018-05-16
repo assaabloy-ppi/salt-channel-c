@@ -64,13 +64,12 @@ static uint8_t sk_pub[32] = { /* 5529ce8ccf68c0b8ac19d437ab0f5b32723782608e93c62
 
 static void test_sign_open(void **state)
 {
-    unsigned long long unsigned_msg_len;
     uint8_t signed_msg[sizeof(signed_data)];
     memcpy(signed_msg, signed_data, sizeof(signed_data));
     uint8_t tmp[512];
     assert_int_equal(api_crypto_sign_open(
                          tmp,
-                         &unsigned_msg_len,
+                         NULL,
                          signed_msg,
                          sizeof(signed_msg),
                          sk_pub), 0);
@@ -79,7 +78,7 @@ static void test_sign_open(void **state)
 
     assert_int_not_equal(api_crypto_sign_open(
                              tmp,
-                             &unsigned_msg_len,
+                             NULL,
                              signed_msg,
                              sizeof(signed_msg),
                              sk_pub), 0);
@@ -149,11 +148,9 @@ static void open_and_detached(void **state) {
     uint8_t tmp_msg[sizeof(signature_and_data)];
     memcpy(tmp_msg, signature_and_data, sizeof(signature_and_data));
 
-    unsigned long long unsigned_msg_len;
-
     assert_int_equal(api_crypto_sign_open(
                          data,
-                         &unsigned_msg_len,
+                         NULL,
                          signature_and_data,
                          sizeof(signature_and_data),
                          pub), 0);

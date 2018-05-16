@@ -1102,7 +1102,6 @@ void salti_create_m3m4_sig(salt_channel_t *p_channel,
                            uint8_t *p_data,
                            uint32_t *size)
 {
-    unsigned long long sign_msg_size;
     int tmp;
 
     memcpy(p_data, p_channel->my_sk_pub, 32);
@@ -1120,11 +1119,12 @@ void salti_create_m3m4_sig(salt_channel_t *p_channel,
      *
      */
     tmp = api_crypto_sign(p_channel->hdshk_buffer,
-                      &sign_msg_size,
+                      NULL,
                       &p_channel->hdshk_buffer[64],
                       SALT_M3M4_MSG_TO_SIG_SIZE,
                       p_channel->my_sk_sec);
-    (void) tmp;
+
+    (void) tmp; /* TODO: What if api_crypto_sign returns != 0? */
 
     memcpy(&p_data[32], p_channel->hdshk_buffer, 64);
 
@@ -1177,7 +1177,6 @@ salt_ret_t salti_verify_m3m4_sig(salt_channel_t *p_channel,
                                  uint8_t *p_data,
                                  uint32_t size)
 {
-    unsigned long long sign_msg_size;
 
     SALT_VERIFY(size == SALT_M3M4_CLEAR_SIZE, SALT_ERR_BAD_PROTOCOL);
 
@@ -1191,7 +1190,7 @@ salt_ret_t salti_verify_m3m4_sig(salt_channel_t *p_channel,
         memcpy(&p_channel->hdshk_buffer[64], sig1prefix, 8);
     }
     SALT_VERIFY(api_crypto_sign_open(&p_channel->hdshk_buffer[SALT_M3M4_SIG_VERIFY_OFFSET],
-                                 &sign_msg_size,
+                                 NULL,
                                  p_channel->hdshk_buffer,
                                  SALT_M3M4_SIGNED_MSG_SIZE,
                                  p_channel->peer_sk_pub) == 0, SALT_ERR_BAD_PEER);

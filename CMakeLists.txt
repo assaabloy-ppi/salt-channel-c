@@ -7,7 +7,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 find_package(Sanitizers)
 
 
-option(USE_SODIUM "Use TweetNaCl as crypto native" OFF)
+option(USE_SODIUM "Use Libsodium as crypto native" OFF)
 
 if(USE_SODIUM)
 	include(src/external/libsodium/Findsodium.cmake)

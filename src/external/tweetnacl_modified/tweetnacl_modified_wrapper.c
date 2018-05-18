@@ -247,7 +247,7 @@ int api_crypto_sign(uint8_t *signed_message,
                           message_length,
                           secret_key);
     if (signed_length != NULL) {
-        *signed_length = smlen;
+        *signed_length = (uint64_t) smlen;
     }
     return ret;
 }
@@ -292,7 +292,7 @@ int api_crypto_sign_open(uint8_t *message,
                                signed_message_length,
                                public_key);
     if (message_length != NULL) {
-        *message_length = mlen;
+        *message_length = (uint64_t) mlen;
     }
     return ret;
 }

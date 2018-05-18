@@ -45,6 +45,7 @@ int salt_crypto_wrapper_test(void);
  * @return != 0 Test failed
  */
 int test_api_crypto_box_beforenm(void);
+int test_api_crypto_box_afternm(void);
 
 #ifdef __cplusplus
 }

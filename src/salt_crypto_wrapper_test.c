@@ -83,6 +83,7 @@ static const uint8_t ek_common[api_crypto_box_BEFORENMBYTES] = {
 int salt_crypto_wrapper_test(void)
 {
     VERIFY(test_api_crypto_box_beforenm() == 0);
+    VERIFY(test_api_crypto_box_afternm() == 0);
 
     (void) bob_sk_sec;
     (void) alice_sk_sec;
@@ -111,7 +112,7 @@ int test_api_crypto_box_beforenm(void)
 
     uint8_t host_ek_pub[api_crypto_box_PUBLICKEYBYTES];
     uint8_t host_ek_sec[api_crypto_box_SECRETKEYBYTES];
-    
+
     uint8_t client_ek_pub[api_crypto_box_PUBLICKEYBYTES];
     uint8_t client_ek_sec[api_crypto_box_SECRETKEYBYTES];
 
@@ -123,6 +124,118 @@ int test_api_crypto_box_beforenm(void)
     VERIFY(api_crypto_box_beforenm(common1, host_ek_pub, client_ek_sec) == 0);
     VERIFY(api_crypto_box_beforenm(common2, client_ek_pub, host_ek_sec) == 0);
     VERIFY(memcmp(common1, common2, api_crypto_box_BEFORENMBYTES) == 0);
+
+    return 0;
+}
+
+#if 0
+#include <stdio.h>
+void hexdump(uint8_t *ptr, uint32_t size)
+{
+    printf("0x");
+    for (uint32_t i = 0; i < size; i++)
+    {
+        printf("%02x", ptr[i]);
+    } printf("\r\n");
+}
+
+#define HEXDUMP(data) \
+    do {    \
+        printf("%s: ", #data);      \
+        hexdump(data, sizeof(data));    \
+    } while(0)
+#endif
+
+int test_api_crypto_box_afternm(void)
+{
+    int ret;
+
+    uint8_t clear_text[42] = {
+        /* Zero padded (32 bytes) message with
+         * { 0xdd, 0xdd, 0xdd, 0xdd, 0xdd, 0xdd, 0xdd, 0xdd, 0xdd, 0xdd }
+         */
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0xdd, 0xdd, 0xdd, 0xdd, 0xdd, 0xdd, 0xdd, 0xdd,
+        0xdd, 0xdd
+    };
+
+    uint8_t expected_cipher[42] = {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x63, 0x62, 0xde, 0x1a, 0xd9, 0xf8, 0xe1, 0xa1,
+        0x78, 0x09, 0x76, 0x8b, 0x75, 0xb5, 0xd0, 0xdf,
+        0xdb, 0x0d, 0xff, 0xba, 0xb5, 0x1e, 0xc3, 0x19,
+        0xf4, 0xe1
+    };
+
+    uint8_t calculated_cipher[42];
+
+    uint8_t nonce[24] = { 0x00 };
+
+    /* Tests with separated buffers for cipher and clear text */
+    ret = api_crypto_box_afternm(calculated_cipher,
+                                 clear_text,
+                                 sizeof(clear_text),
+                                 nonce,
+                                 ek_common);
+
+    VERIFY(0 == ret);
+
+    VERIFY(memcmp(calculated_cipher, expected_cipher, 42) == 0);
+
+    uint8_t calculated_clear_text[42];
+    memset(calculated_clear_text, 0x00, api_crypto_box_BOXZEROBYTES);
+
+    ret = api_crypto_box_open_afternm(calculated_clear_text,
+                                      calculated_cipher,
+                                      sizeof(clear_text),
+                                      nonce,
+                                      ek_common);
+
+    VERIFY(0 == ret);
+    VERIFY(memcmp(calculated_clear_text, clear_text, 42) == 0);
+
+    nonce[0] = ~nonce[0];
+    ret = api_crypto_box_open_afternm(calculated_clear_text,
+                                      calculated_cipher,
+                                      sizeof(clear_text),
+                                      nonce,
+                                      ek_common);
+
+    VERIFY(0 != ret);
+    nonce[0] = ~nonce[0];
+    calculated_cipher[16] = ~calculated_cipher[16];
+    ret = api_crypto_box_open_afternm(calculated_clear_text,
+                                      calculated_cipher,
+                                      sizeof(clear_text),
+                                      nonce,
+                                      ek_common);
+
+    VERIFY(0 != ret);
+    calculated_cipher[16] = ~calculated_cipher[16];
+
+
+    /* Test in-place functionality decryption */
+    ret = api_crypto_box_open_afternm(calculated_cipher,
+                                      calculated_cipher,
+                                      sizeof(clear_text),
+                                      nonce,
+                                      ek_common);
+
+    VERIFY(0 == ret);
+    VERIFY(memcmp(calculated_cipher, clear_text, 42) == 0);
+
+    ret = api_crypto_box_afternm(clear_text,
+                                 clear_text,
+                                 sizeof(clear_text),
+                                 nonce,
+                                 ek_common);
+
+    VERIFY(0 == ret);
+    VERIFY(memcmp(clear_text, expected_cipher, 42) == 0);
 
     return 0;
 }

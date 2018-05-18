@@ -161,7 +161,7 @@ int api_crypto_box_beforenm(uint8_t *symmetric_key,
  *                      Note: The first api_crypto_box_ZEROBYTES bytes must be zero padded
  *                      prior to the call.
  *                      
- * @param length        Length of clear text message, exluding api_crypto_box_ZEROBYTES
+ * @param length        Length of clear text message, including api_crypto_box_ZEROBYTES
  *                      bytes zero padding.
  *                      
  * @param nonce         Nonce, api_crypto_box_NONCEBYTES bytes long.
@@ -212,7 +212,7 @@ int api_crypto_box_afternm(uint8_t *cipher,
  * @param cipher        Pointer to authenticated cipher text. The first api_crypto_box_BOXZEROBYTES
  *                      bytes MUST be zero padded.
  *                      
- * @param length        Length of cipher message, excluding api_crypto_box_BOXZEROBYTES
+ * @param length        Length of cipher message, including api_crypto_box_BOXZEROBYTES
  *                      bytes zero padding.
  *                      
  * @param nonce         Nonce, api_crypto_box_NONCEBYTES bytes long.

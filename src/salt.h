@@ -74,7 +74,8 @@ typedef enum salt_err_e {
     SALT_ERR_DELAY_DETECTED,        /**< Error if a delayed packet was detected. */
     SALT_ERR_BAD_PEER,              /**< If expected peer didn't match or signature verification faild. */
     SALT_ERR_CONNECTION_CLOSED,     /**< If the session was closed, internally or by peer. */
-    SALT_ERR_NONCE_WRAPPED          /**< If nonce wrapped. */
+    SALT_ERR_NONCE_WRAPPED,         /**< If nonce wrapped. */
+    SALT_ERR_CRYPTO_API,            /**< Some crypto API error occured. */
 } salt_err_t;
 
 
@@ -528,6 +529,16 @@ salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel,
  *
  */
 salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with);
+
+/**
+ * @brief See \ref salt_handshake
+ */
+salt_ret_t salt_handshake_server(salt_channel_t *p_channel, uint8_t *p_with);
+
+/**
+ * @brief See \ref salt_handshake
+ */
+salt_ret_t salt_handshake_client(salt_channel_t *p_channel, uint8_t *p_with);
 
 /**
  * @brief Reads one or multiple encrypted message.

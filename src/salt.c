@@ -358,7 +358,8 @@ salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
          * The ephemeral keypair is kept where the signature later will be
          * until the common key is calculated.
          */
-        api_crypto_box_keypair(hdshk_buffer, &hdshk_buffer[32]);
+        int ret = api_crypto_box_keypair(hdshk_buffer, &hdshk_buffer[32]);
+        SALT_VERIFY(0 == ret, SALT_ERR_CRYPTO_API);
     }
     else {
         memcpy(hdshk_buffer, ek_pub, 32);
@@ -396,9 +397,63 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with)
     if (SALT_SERVER == p_channel->mode) {
         ret = salti_handshake_server(p_channel, p_with);
     }
-    else {
+
+    else if (SALT_CLIENT == p_channel->mode) {
         ret = salti_handshake_client(p_channel, p_with);
     }
+
+    else {
+        p_channel->err_code = SALT_ERR_INVALID_STATE;
+        ret = SALT_ERROR;
+    }
+
+    if (SALT_PENDING != ret) {
+        /* If handshake succeeded or failed, clear the handshake buffer. */
+        memset(p_channel->hdshk_buffer, 0x00U, p_channel->hdshk_buffer_size);
+    }
+
+    return ret;
+
+}
+
+/**
+ * @brief See \ref salt_handshake
+ */
+salt_ret_t salt_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
+{
+    salt_ret_t ret;
+
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
+    SALT_VERIFY(SALT_SERVER == p_channel->mode, SALT_ERR_INVALID_STATE);
+
+    ret = salti_handshake_server(p_channel, p_with);
+
+    if (SALT_PENDING != ret) {
+        /* If handshake succeeded or failed, clear the handshake buffer. */
+        memset(p_channel->hdshk_buffer, 0x00U, p_channel->hdshk_buffer_size);
+    }
+
+    return ret;
+
+}
+
+/**
+ * @brief See \ref salt_handshake
+ */
+salt_ret_t salt_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
+{
+    salt_ret_t ret;
+
+    if (NULL == p_channel) {
+        return SALT_ERROR;
+    }
+
+    SALT_VERIFY(SALT_CLIENT == p_channel->mode, SALT_ERR_INVALID_STATE);
+
+    ret = salti_handshake_client(p_channel, p_with);
 
     if (SALT_PENDING != ret) {
         /* If handshake succeeded or failed, clear the handshake buffer. */

@@ -22,12 +22,34 @@ SCAN_OPT="-enable-checker alpha.core.BoolAssignment \
 -enable-checker nullability.NullableDereferenced \
 -enable-checker optin.performance.Padding \
 -enable-checker security.insecureAPI.rand \
--enable-checker security.insecureAPI.strcpy \
---analyzer-target=arm-none-eabi"
+-enable-checker security.insecureAPI.strcpy"
 
-rm -rf Debug
-mkdir Debug
+# \
+# --analyzer-target=arm-none-eabi"
+
+# find / -name 'scan-build'
+# /usr/share/clang/scan-build-6.0/share/scan-build
+# /usr/share/clang/scan-build-6.0/bin/scan-build
+# /usr/share/clang/scan-build-py-6.0/bin/scan-build
+# /usr/lib/llvm-6.0/share/scan-build
+# /usr/lib/llvm-6.0/bin/scan-build
+
+# find / -name 'ccc-analyzer'
+# /usr/share/clang/scan-build-6.0/libexec/ccc-analyzer
+# /usr/lib/llvm-6.0/libexec/ccc-analyzer
+
+# find / -name 'c++-analyzer'
+# /usr/share/clang/scan-build-6.0/libexec/c++-analyzer
+# /usr/lib/llvm-6.0/libexec/c++-analyzer
+
+SCAN_BUILD="/usr/share/clang/scan-build-6.0/bin/scan-build"
+CCC_ANALYZER="/usr/lib/llvm-6.0/libexec/ccc-analyzer"
+CXX_ANALYZER="/usr/lib/llvm-6.0/libexec/c++-analyzer"
+
+mkdir -p Debug
 cd Debug
-/path/to/scan-build -v -o $REPORT_DIR $SCAN_OPT cmake -DCMAKE_CXX_COMPILER=/path/to/c++-analyzer -DCMAKE_C_COMPILER=/path/to/ccc-analyzer ..
-make cmocka
-/path/to/scan-build -v -o $REPORT_DIR $SCAN_OPT make
+$SCAN_BUILD -v -o $REPORT_DIR $SCAN_OPT cmake -DCMAKE_CXX_COMPILER=$CXX_ANALYZER -DCMAKE_C_COMPILER=$CCC_ANALYZER ..
+make -j cmocka
+make clean
+make tweetnacl_modified
+$SCAN_BUILD -v -o $REPORT_DIR $SCAN_OPT make -j

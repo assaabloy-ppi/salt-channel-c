@@ -232,10 +232,10 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
     salti_u32_to_bytes(&p_data[34], time);
 
     ret = api_crypto_box_afternm(p_data,
-                             p_data,
-                             size + SALT_WRAP_OVERHEAD_SIZE,
-                             p_channel->write_nonce,
-                             p_channel->ek_common);
+                                 p_data,
+                                 size + SALT_WRAP_OVERHEAD_SIZE,
+                                 p_channel->write_nonce,
+                                 p_channel->ek_common);
 
     SALT_VERIFY(0 == ret, SALT_ERR_ENCRYPTION);
 
@@ -319,10 +319,10 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
      */
         
     int ret = api_crypto_box_open_afternm(p_data,
-                                      p_data,
-                                      size + api_crypto_box_BOXZEROBYTES - SALT_HEADER_SIZE,
-                                      p_channel->read_nonce,
-                                      p_channel->ek_common);
+                                          p_data,
+                                          size + api_crypto_box_BOXZEROBYTES - SALT_HEADER_SIZE,
+                                          p_channel->read_nonce,
+                                          p_channel->ek_common);
 
     SALT_VERIFY(0 == ret, SALT_ERR_DECRYPTION);
 

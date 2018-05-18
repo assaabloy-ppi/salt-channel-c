@@ -291,7 +291,9 @@ salt_ret_t salt_create_signature(salt_channel_t *p_channel)
         return SALT_ERROR;
     }
 
-    api_crypto_sign_keypair(p_channel->my_sk_pub, p_channel->my_sk_sec);
+    int ret = api_crypto_sign_keypair(p_channel->my_sk_pub, p_channel->my_sk_sec);
+    SALT_VERIFY(0 == ret, SALT_ERR_CRYPTO_API);
+
     p_channel->state = SALT_SIGNATURE_SET;
     return SALT_SUCCESS;
 }

@@ -429,7 +429,8 @@ int api_crypto_hash_sha512_update(uint8_t *hash_state,
  * @param hash_state    Pointer to hash state.
  * @param out           Pointer to hash destination.
  * 
- * @return [description]
+ * @return 0    The final hash was successfully calculated.
+ * @return != 0 The final hash could not be calculated.
  */
 int api_crypto_hash_sha512_final(uint8_t *hash_state,
                                  uint8_t *out);

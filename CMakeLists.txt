@@ -22,7 +22,7 @@ else(USE_SODIUM)
 	include_directories ("${PROJECT_SOURCE_DIR}/src")
 	set(EXTRA_LIBS ${EXTRA_LIBS} tweetnacl_modified)
 	set_source_files_properties(src/external/tweetnacl_modified/tweetnacl_modified.c PROPERTIES COMPILE_FLAGS -Wno-sign-compare)
-	add_library(tweetnacl_modified src/external/tweetnacl_modified/tweetnacl_modified.c src/external/tweetnacl_modified/tweetnacl_modified_wrapper.c)
+	add_library(tweetnacl_modified src/external/tweetnacl_modified/tweetnacl_modified.c examples/randombytes_linux.c src/external/tweetnacl_modified/tweetnacl_modified_wrapper.c)
 	add_sanitizers(tweetnacl_modified)
 endif(USE_SODIUM)
 

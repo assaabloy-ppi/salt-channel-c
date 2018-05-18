@@ -6,10 +6,13 @@ extern "C" {
 #endif
 
 /**
- * @file salt_crypto_wrapper_test.h.h
+ * @file salt_crypto_wrapper_test.h
  *
- * Description
- *
+ * Test suite for salt crypto wrapper.
+ * 
+ * TODO:
+ *  - Add tests for all functions.
+ *  - Add performance tests (target specific measurements must be provided)
  */
 
 /*======= Includes ==========================================================*/
@@ -21,7 +24,26 @@ extern "C" {
 /*======= Public variable declarations ======================================*/
 /*======= Public function declarations ======================================*/
 
+/**
+ * @brief Tests all crypto API functions.
+ *
+ * Runs all test cases as defined below.
+ *
+ * @return 0    Tests passed
+ * @return != 0 Tests failed
+ */
 int salt_crypto_wrapper_test(void);
+
+/**
+ * @brief Tests key agreement functionality.
+ * 
+ * Tests the functionality based on predefined key pairs and
+ * also by generating key kairs for two peers and verifying that
+ * the common calculated key does not differ.
+ * 
+ * @return 0    Test passed
+ * @return != 0 Test failed
+ */
 int test_api_crypto_box_beforenm(void);
 
 #ifdef __cplusplus

@@ -46,6 +46,8 @@ int salt_crypto_wrapper_test(void);
  */
 int test_api_crypto_box_beforenm(void);
 int test_api_crypto_box_afternm(void);
+int test_api_crypto_sign(void);
+int test_api_crypto_hash(void);
 
 #ifdef __cplusplus
 }

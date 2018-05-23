@@ -74,7 +74,8 @@ typedef enum salt_err_e {
     SALT_ERR_DELAY_DETECTED,        /**< Error if a delayed packet was detected. */
     SALT_ERR_BAD_PEER,              /**< If expected peer didn't match or signature verification faild. */
     SALT_ERR_CONNECTION_CLOSED,     /**< If the session was closed, internally or by peer. */
-    SALT_ERR_NONCE_WRAPPED          /**< If nonce wrapped. */
+    SALT_ERR_NONCE_WRAPPED,         /**< If nonce wrapped. */
+    SALT_ERR_CRYPTO_API,            /**< Some crypto API error occured. */
 } salt_err_t;
 
 
@@ -216,12 +217,12 @@ typedef struct salt_channel_s {
     salt_err_t      err_code;                           /**< Latest error code. */
 
     /* Encryption and signature stuff */
-    uint8_t     ek_common[crypto_box_BEFORENMBYTES];    /**< Symmetric session encryption key. */
-    uint8_t     peer_sk_pub[crypto_sign_PUBLICKEYBYTES];/**< Peer public signature key. */
-    uint8_t     my_sk_sec[crypto_sign_SECRETKEYBYTES];  /**< My secret signature key. */
+    uint8_t     ek_common[api_crypto_box_BEFORENMBYTES];    /**< Symmetric session encryption key. */
+    uint8_t     peer_sk_pub[api_crypto_sign_PUBLICKEYBYTES];/**< Peer public signature key. */
+    uint8_t     my_sk_sec[api_crypto_sign_SECRETKEYBYTES];  /**< My secret signature key. */
     uint8_t     *my_sk_pub;                             /**< My public signature key, points to &my_sk_sec[32]. */
-    uint8_t     write_nonce[crypto_box_NONCEBYTES];     /**< Write nonce. */
-    uint8_t     read_nonce[crypto_box_NONCEBYTES];      /**< Read nonce. */
+    uint8_t     write_nonce[api_crypto_box_NONCEBYTES];     /**< Write nonce. */
+    uint8_t     read_nonce[api_crypto_box_NONCEBYTES];      /**< Read nonce. */
 
     /* Time checking stuff */
     uint32_t    my_epoch;
@@ -528,6 +529,16 @@ salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel,
  *
  */
 salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with);
+
+/**
+ * @brief See \ref salt_handshake
+ */
+salt_ret_t salt_handshake_server(salt_channel_t *p_channel, uint8_t *p_with);
+
+/**
+ * @brief See \ref salt_handshake
+ */
+salt_ret_t salt_handshake_client(salt_channel_t *p_channel, uint8_t *p_with);
 
 /**
  * @brief Reads one or multiple encrypted message.

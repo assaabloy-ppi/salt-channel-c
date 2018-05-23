@@ -1,14 +1,14 @@
 /**
  * @file salt_crypto_wrapper.c
  *
- * Salt crypto wrapper for modified version of TweetNaCl.
+ * Salt crypto wrapper for modified version of libsodium.
  *
  */
 
 /*======= Includes ==========================================================*/
 
-#include <stddef.h>
 #include "salt_crypto_wrapper.h"
+#include <sodium.h>
 
 /*======= Local Macro Definitions ===========================================*/
 /*======= Type Definitions ==================================================*/
@@ -34,9 +34,7 @@
 int api_crypto_box_keypair(uint8_t *public_key,
                            uint8_t *secret_key)
 {
-    (void) public_key;
-    (void) secret_key;
-    return 0;
+    return crypto_box_keypair(public_key, secret_key);
 }
 
 /**
@@ -66,10 +64,7 @@ int api_crypto_box_beforenm(uint8_t *symmetric_key,
                             const uint8_t *public_key,
                             const uint8_t *secret_key)
 {
-    (void) symmetric_key;
-    (void) public_key;
-    (void) secret_key;
-    return 0;
+    return crypto_box_beforenm(symmetric_key, public_key, secret_key);
 }
 
 /**
@@ -128,12 +123,7 @@ int api_crypto_box_afternm(uint8_t *cipher,
                            const uint8_t *nonce,
                            const uint8_t *symmetric_key)
 {
-    (void) cipher;
-    (void) clear_text;
-    (void) length;
-    (void) nonce;
-    (void) symmetric_key;
-    return 0;
+    return crypto_box_afternm(cipher, clear_text, length, nonce, symmetric_key);
 }
 /**
  * @brief Decrypts and verifies an authenticated encrypted message.
@@ -187,12 +177,7 @@ int api_crypto_box_open_afternm(uint8_t *clear_text,
                             const uint8_t *nonce,
                             const uint8_t *key)
 {
-    (void) clear_text;
-    (void) cipher;
-    (void) length;
-    (void) nonce;
-    (void) key;
-    return 0;
+    return crypto_box_open_afternm(clear_text, cipher, length, nonce, key);
 }
 
 /**
@@ -212,9 +197,7 @@ int api_crypto_box_open_afternm(uint8_t *clear_text,
 int api_crypto_sign_keypair(uint8_t *public_key,
                             uint8_t *secret_key)
 {
-    (void) public_key;
-    (void) secret_key;
-    return 0;
+    return crypto_sign_keypair(public_key, secret_key);
 }
 
 /**
@@ -256,12 +239,16 @@ int api_crypto_sign(uint8_t *signed_message,
                     uint64_t message_length,
                     const uint8_t *secret_key)
 {
-    (void) signed_message;
-    (void) signed_length;
-    (void) message;
-    (void) message_length;
-    (void) secret_key;
-    return 0;
+    unsigned long long smlen;
+    int ret = crypto_sign(signed_message,
+                          &smlen,
+                          message,
+                          message_length,
+                          secret_key);
+    if (signed_length != NULL) {
+        *signed_length = smlen;
+    }
+    return ret;
 }
 
 /**
@@ -297,12 +284,16 @@ int api_crypto_sign_open(uint8_t *message,
                          uint64_t signed_message_length,
                          const uint8_t *public_key)
 {
-    (void) message;
-    (void) message_length;
-    (void) signed_message;
-    (void) signed_message_length;
-    (void) public_key;
-    return 0;
+    unsigned long long mlen;
+    int ret = crypto_sign_open(message,
+                               &mlen,
+                               signed_message,
+                               signed_message_length,
+                               public_key);
+    if (message_length != NULL) {
+        *message_length = mlen;
+    }
+    return ret;
 }
 
 /**
@@ -330,11 +321,10 @@ int api_crypto_sign_verify_detached(const uint8_t *signature,
                                     uint64_t message_length,
                                     const uint8_t *public_key)
 {
-    (void) signature;
-    (void) message;
-    (void) message_length;
-    (void) public_key;
-    return 0;
+    return crypto_sign_verify_detached(signature,
+                                       message,
+                                       message_length,
+                                       public_key);
 }
 
 /**
@@ -356,10 +346,7 @@ int api_crypto_hash_sha512(uint8_t *hash,
                            const uint8_t *message,
                            uint64_t length)
 {
-    (void) hash;
-    (void) message;
-    (void) length;
-    return 0;
+    return crypto_hash_sha512(hash, message, length);
 }
 
 
@@ -391,9 +378,10 @@ int api_crypto_hash_sha512(uint8_t *hash,
 int api_crypto_hash_sha512_init(uint8_t *hash_state,
                                 uint8_t hash_state_size)
 {
-    (void) hash_state;
-    (void) hash_state_size;
-    return 0;
+    if (hash_state_size < sizeof(crypto_hash_sha512_state)) {
+        return -1;
+    }
+    return crypto_hash_sha512_init((crypto_hash_sha512_state *) hash_state);
 }
 
 /**
@@ -413,10 +401,9 @@ int api_crypto_hash_sha512_update(uint8_t *hash_state,
                                   const uint8_t *in,
                                   uint64_t inlen)
 {
-    (void) hash_state;
-    (void) in;
-    (void) inlen;
-    return 0;
+    return crypto_hash_sha512_update((crypto_hash_sha512_state *) hash_state,
+                                     in,
+                                     inlen);
 }
 
 /**
@@ -445,9 +432,8 @@ int api_crypto_hash_sha512_update(uint8_t *hash_state,
 int api_crypto_hash_sha512_final(uint8_t *hash_state,
                                  uint8_t *out)
 {
-    (void) hash_state;
-    (void) out;
-    return 0;
+    return crypto_hash_sha512_final((crypto_hash_sha512_state *) hash_state,
+                                    out);
 }
 
 

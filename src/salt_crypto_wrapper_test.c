@@ -54,7 +54,7 @@ static const uint8_t alice_sk_sec[api_crypto_sign_SECRETKEYBYTES] = {
     0x07, 0xe2, 0x8d, 0x4e, 0xe3, 0x2b, 0xfd, 0xc4,
     0xb0, 0x7d, 0x41, 0xc9, 0x21, 0x93, 0xc0, 0xc2,
     0x5e, 0xe6, 0xb3, 0x09, 0x4c, 0x62, 0x96, 0xf3,
-    0x73, 0x41, 0x3b, 0x37, 0x3d, 0x36, 0x16, 0x8b 
+    0x73, 0x41, 0x3b, 0x37, 0x3d, 0x36, 0x16, 0x8b
 };
 
 static const uint8_t *alice_sk_pub = &alice_sk_sec[32];
@@ -224,24 +224,6 @@ int test_api_crypto_box_afternm(void)
 
     return 0;
 }
-
-#if 1
-#include <stdio.h>
-void hexdump(const uint8_t *ptr, uint32_t size)
-{
-    printf("0x");
-    for (uint32_t i = 0; i < size; i++)
-    {
-        printf("%02x", ptr[i]);
-    } printf("\r\n");
-}
-
-#define HEXDUMP(data) \
-    do {    \
-        printf("%s: ", #data);      \
-        hexdump(data, sizeof(data));    \
-    } while(0)
-#endif
 
 int test_api_crypto_sign(void)
 {
@@ -433,7 +415,7 @@ int test_api_crypto_hash(void)
     ret = api_crypto_hash_sha512_final(hash_state, calculated_hash);
     VERIFY(0 == ret);
     VERIFY(memcmp(calculated_hash, expected_hash, api_crypto_hash_sha512_BYTES) == 0);
-    
+
     return 0;
 }
 

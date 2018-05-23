@@ -399,7 +399,7 @@ int api_crypto_hash_sha512_init(uint8_t *hash_state,
  *
  * @return Required allocated size.
  */
-int api_crypto_hash_sha512_state_size(void);
+int api_crypto_hash_sha512_get_state_size(void);
 
 /**
  * @brief Update the hash state with part of a message.

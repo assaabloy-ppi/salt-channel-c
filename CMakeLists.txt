@@ -10,7 +10,6 @@ find_package(Sanitizers)
 option(USE_SODIUM "Use Libsodium as crypto native" OFF)
 
 if(USE_SODIUM)
-	include(src/external/libsodium/Findsodium.cmake)
 	include_directories ("${PROJECT_SOURCE_DIR}/src")
 	add_library(sodium_wrapper src/external/libsodium/libsodium_wrapper.c)
 	target_link_libraries(sodium_wrapper sodium)

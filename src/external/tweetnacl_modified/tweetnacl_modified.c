@@ -695,6 +695,57 @@ int crypto_sign(u8 *sm,u64 *smlen,const u8 *m,u64 n,const u8 *sk)
   return 0;
 }
 
+int crypto_sign_detached(unsigned char *sig,
+                         unsigned long long *siglen_p,
+                         const unsigned char *m,
+                         unsigned long long mlen,
+                         const unsigned char *sk)
+{
+
+  u8 d[64],h[64],r[64];
+  i64 j,x[64];
+  u64 i;
+  gf p[4];
+  crypto_hash_sha512_state hash_state;
+
+  crypto_hash_sha512_init(&hash_state);
+  crypto_hash_sha512_update(&hash_state, sk, 32);
+  crypto_hash_sha512_final(&hash_state, d);
+  d[0] &= 248;
+  d[31] &= 127;
+  d[31] |= 64;
+
+  FOR(i,32) sig[32 + i] = d[32 + i];
+
+  crypto_hash_sha512_init(&hash_state);
+  crypto_hash_sha512_update(&hash_state, d + 32, 32);
+  crypto_hash_sha512_update(&hash_state, m, mlen);
+  crypto_hash_sha512_final(&hash_state, r);
+
+  reduce(r);
+  scalarbase(p,r);
+  pack(sig,p);
+
+  FOR(i,32) sig[i+32] = sk[i+32];
+  crypto_hash_sha512_init(&hash_state);
+  crypto_hash_sha512_update(&hash_state, sig, 64);
+  crypto_hash_sha512_update(&hash_state, m, mlen);
+  crypto_hash_sha512_final(&hash_state, h);
+  reduce(h);
+
+  FOR(i,64) x[i] = 0;
+  FOR(i,32) x[i] = (u64) r[i];
+  FOR(i,32) FOR(j,32) x[i+j] += h[i] * (u64) d[j];
+  modL(sig + 32,x);
+
+  if (siglen_p != NULL)
+  {
+    *siglen_p = 64;
+  }
+
+  return 0;
+}
+
 static int unpackneg(gf r[4],const u8 p[32])
 {
   gf t, chk, num, den, den2, den4, den6;

@@ -41,6 +41,16 @@ static void client_handshake(void **state)
                                 salt_example_session_1_data.client_ek_pub,
                                 salt_example_session_1_data.client_ek_sec);
 
+    ret = salt_handshake_server(&channel, NULL);
+    assert_true(ret == SALT_ERROR);
+
+    ret = salt_init_session_using_key(&channel,
+                                hndsk_buffer,
+                                SALT_HNDSHK_BUFFER_SIZE,
+                                salt_example_session_1_data.client_ek_pub,
+                                salt_example_session_1_data.client_ek_sec);
+    assert_true(ret == SALT_SUCCESS);
+
     salt_set_context(&channel, mock->io->expected_write, mock->io->next_read);
 
     salt_io_mock_set_next_read(mock->io, salt_example_session_1_data.m2, sizeof(salt_example_session_1_data.m2), false);
@@ -51,7 +61,7 @@ static void client_handshake(void **state)
     salt_io_mock_expect_next_write(mock->io, salt_example_session_1_data.m4, sizeof(salt_example_session_1_data.m4), false);
     salt_io_mock_expect_next_write(mock->io, salt_example_session_1_data.msg1, sizeof(salt_example_session_1_data.msg1), false);
 
-    ret = salt_handshake(&channel, NULL);
+    ret = salt_handshake_client(&channel, NULL);
     assert_true(ret == SALT_SUCCESS);
 
 }
@@ -83,7 +93,7 @@ static void client_handshake_single_echo(void **state)
     salt_io_mock_expect_next_write(mock->io, salt_example_session_1_data.m4, sizeof(salt_example_session_1_data.m4), false);
     salt_io_mock_expect_next_write(mock->io, salt_example_session_1_data.msg1, sizeof(salt_example_session_1_data.msg1), false);
 
-    ret = salt_handshake(&channel, NULL);
+    ret = salt_handshake_client(&channel, NULL);
     assert_true(ret == SALT_SUCCESS);
 
     /* Check that we did not overflow handshake buffer */
@@ -147,7 +157,7 @@ static void client_handshake_multi_echo(void **state)
     ret = salt_set_delay_threshold(&channel, 100);
     assert_true(ret == SALT_SUCCESS);
 
-    ret = salt_handshake(&channel, NULL);
+    ret = salt_handshake_client(&channel, NULL);
     assert_true(ret == SALT_SUCCESS);
 
     /* Check that we did not overflow handshake buffer */

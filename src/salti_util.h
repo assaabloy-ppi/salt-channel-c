@@ -8,7 +8,8 @@ extern "C" {
 /**
  * @file salti_util.h
  *
- * Description
+ * Internal routines used by salt-channel. Not intended to use directly.
+ * Due to this, these routines does not check for NULL pointers etc.
  *
  */
 
@@ -35,10 +36,19 @@ extern "C" {
 #define SALT_A1_HEADER                          (8U)
 #define SALT_A2_HEADER                          (9U)
 #define SALT_LAST_FLAG                          (0x80U)
+#define SALT_WRAP_OVERHEAD_IO_SIZE              (24U)
 
 /* Encrypted message header */
+#define SALT_WRAP_OVERHEAD_SIZE                 (38U)
+#define SALT_TIME_SIZE                          (4U)
 #define SALT_ENCRYPTED_MSG_HEADER_VALUE         (0x06U)
 
+/**
+ * SALT_VERIFY is only and MUST only used internal by the implementation.
+ * x is a condition, if it is not true SALT_ERROR will be returned
+ * by the function using the macro. The pointer to the channel structure,
+ * p_channel must have exactly the name p_channel.
+ */
 #ifdef SALT_DEBUG
 #include <stdio.h>
 #define SALT_VERIFY(x, error_code)                                          \
@@ -67,9 +77,7 @@ extern "C" {
 #define SALT_VERIFY_NOT_NULL(x)                                             \
     SALT_VERIFY(((x) != NULL), SALT_ERR_NULL_PTR)
 
-#define SALT_VERIFY_VALID_CHANNEL(x) if ((x) == NULL) return SALT_ERROR
-#define SALT_TRIGGER_ERROR                      (0x00U)
-#define SALT_ERROR(err_code) SALT_VERIFY(SALT_TRIGGER_ERROR, err_code)
+#define SALT_TRIGGER_ERROR(err_code) SALT_VERIFY(0x00, err_code)
 #define MEMSET_ZERO(x) memset((x), 0, sizeof((x)))
 
 
@@ -116,7 +124,7 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
                         uint8_t **unwrapped,
                         uint32_t *unwrapped_length);
 
-void salti_increase_nonce(uint8_t *p_nonce, uint8_t increment);
+salt_ret_t salti_increase_nonce(uint8_t *p_nonce);
 
 void salti_u16_to_bytes(uint8_t *dest, uint16_t size);
 

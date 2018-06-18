@@ -1,7 +1,7 @@
 language: C java
 before_install:
  - sudo apt-get update
- - sudo apt-get install libsodium -y
+ - sudo apt-get install libsodium-dev -y
 install: make cmake
 cache:
     apt: true

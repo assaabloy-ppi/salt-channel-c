@@ -11,7 +11,7 @@ cache:
 compiler:
  - gcc
 script:
- - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug -D-DCMAKE_C_FLAGS="-I$HOME/libsodium" .
+ - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-I$HOME/libsodium" .
  - make VERBOSE=1
  - make test
  - sh test_echo_with_java.sh

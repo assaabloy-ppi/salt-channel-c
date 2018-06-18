@@ -2,6 +2,9 @@ language: C java
 before_install:
  - sudo apt-get install libsodium-dev -y
 install: make cmake
+language: C
+cache:
+    apt: true
 compiler:
  - gcc
 script:

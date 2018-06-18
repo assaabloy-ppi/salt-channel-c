@@ -1,16 +1,13 @@
 language: C java
 before_install:
- - sudo apt-get install libsodium-dev -y
+ - sudo apt-get install libsodium -y
 install: make cmake
-language: C
 cache:
     apt: true
 compiler:
  - gcc
 script:
- - mkdir -p build_tweetnacl
- - cd build_tweetnacl
- - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug ..
+ - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug .
  - make
  - make test
  - sh test_echo_with_java.sh

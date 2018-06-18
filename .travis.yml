@@ -11,7 +11,8 @@ cache:
 compiler:
  - gcc
 script:
- - ls $HOME/libsodium
+ - ls $HOME/libsodium/lib
+ - echo $LD_LIBRARY_PATH
  - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-I$HOME/libsodium/include" .
  - make VERBOSE=1
  - make test

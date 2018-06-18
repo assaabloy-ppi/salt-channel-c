@@ -4,7 +4,6 @@ install:
  - export PKG_CONFIG_PATH=$HOME/libsodium/lib/pkgconfig:$PKG_CONFIG_PATH
  - export LD_LIBRARY_PATH=$HOME/libsodium/lib:$LD_LIBRARY_PATH
  - export LIBRARY_PATH=$HOME/libsodium:$LIBRARY_PATH
- - export CFLAGS=-I$HOME/libsodium
 cache:
     apt: true
     directories:
@@ -12,8 +11,8 @@ cache:
 compiler:
  - gcc
 script:
- - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug .
- - make
+ - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug -D-DCMAKE_C_FLAGS="-I$HOME/libsodium" .
+ - make VERBOSE=1
  - make test
  - sh test_echo_with_java.sh
  - gcov src/CMakeFiles/salt.dir/salt.c.gcno src/CMakeFiles/salt.dir/salti_handshake.c.gcno src/CMakeFiles/salt.dir/salti_util.c.gcno

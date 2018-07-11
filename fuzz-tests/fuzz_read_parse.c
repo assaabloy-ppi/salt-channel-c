@@ -11,7 +11,7 @@
 
 static uint8_t read_buf[MAX_READ_SIZE];
 
-int main(void)
+static int _main(void)
 {
 
     salt_msg_t msg;
@@ -52,3 +52,16 @@ int main(void)
 
 }
 
+int main(void)
+{
+    #ifdef __AFL_LOOP
+        while (__AFL_LOOP(1000))
+        {
+            _main();
+        }
+    #else
+        return _main();
+    #endif
+
+    return 0;
+}

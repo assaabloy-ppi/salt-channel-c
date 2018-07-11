@@ -25,3 +25,5 @@ Make sure afl-gcc is installed to path, or if not, edit the fuzz.sh script to se
 
  Any input that causes crashes will end up in *output/target/crashes*.
  Any input that causes hangs will end up in *output/target/hangs*.
+
+Depending on configuration one might want to use other than afl-gcc, for instance afl-clang or afl-clang-fast. If changing this, just edit fuzz.sh to work with your configuration.

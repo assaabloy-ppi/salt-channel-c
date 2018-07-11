@@ -10,7 +10,7 @@
 
 #define MAX_READ_SIZE 8192
 
-int main(void) {
+static int _main(void) {
 
     salt_channel_t channel;
     salt_ret_t ret;
@@ -77,4 +77,18 @@ int main(void) {
     printf("num_messages: %d\r\n", num_messages);
 
     return (num_messages > 0 && channel.read_channel.err_code == SALT_ERR_CONNECTION_CLOSED) ? 0 : -1;
+}
+
+int main(void)
+{
+    #ifdef __AFL_LOOP
+        while (__AFL_LOOP(1000))
+        {
+            _main();
+        }
+    #else
+        return _main();
+    #endif
+
+    return 0;
 }

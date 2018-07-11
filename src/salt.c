@@ -108,6 +108,10 @@ salt_ret_t salt_protocols_create(salt_protocols_t *p_protocols,
                                  uint8_t *p_buffer,
                                  uint32_t size)
 {
+
+    if (NULL == p_protocols) {
+        return SALT_ERROR;
+    }
     /*
      * At least one protocol must fit. Seralization of this will result in:
      * { size[4] , header[2] , count[1] , p1[10], p2[10] }

@@ -760,6 +760,10 @@ salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
      */
     if (p_channel->p_protocols == NULL || p_channel->p_protocols->count == 0) {
         salt_protocols_t protocols;
+        /*
+         * No need to check return code from salt_protocols_*
+         * since we know the handshake buffer is big enough.
+         */
         salt_protocols_create(&protocols,
                               &p_channel->hdshk_buffer[64],
                               p_channel->hdshk_buffer_size - 64);

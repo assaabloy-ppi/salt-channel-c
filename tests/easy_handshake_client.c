@@ -128,8 +128,8 @@ static uint8_t msg2[34] = {
 
 static salt_ret_t client_io_write(salt_io_channel_t *p_wchannel)
 {
-    uint8_t *expected;
-    uint32_t expected_size;
+    uint8_t *expected = NULL;
+    uint32_t expected_size = 0;
 
     static uint8_t i = 0;
 
@@ -146,7 +146,8 @@ static salt_ret_t client_io_write(salt_io_channel_t *p_wchannel)
             expected = msg1;
             expected_size = sizeof(msg1);
             break;
-
+        default:
+            return SALT_ERROR;
     }
 
     i++;

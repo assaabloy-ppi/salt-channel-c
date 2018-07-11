@@ -692,7 +692,6 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
             case SALT_ERROR_STATE:
             default:
                 return SALT_ERROR;
-                break;
         }
     }
 

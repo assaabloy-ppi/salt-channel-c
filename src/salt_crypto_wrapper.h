@@ -294,7 +294,9 @@ int api_crypto_sign(uint8_t *signed_message,
  *  uint64_t smlen = n;
  *  const uint8_t message[n];
  *  const uint8_t mlen;
- *  api_crypto_sign_open(message, &mlen, message, smlen, public_key);
+ *  if (api_crypto_sign_open(message, &mlen, message, smlen, public_key) != 0) {
+ *    // Invalid signature
+ *  }
  *
  *  Note: The size of message must be at least the size of signed_message. In place operation
  *        is not supported.
@@ -329,7 +331,9 @@ int api_crypto_sign_open(uint8_t *message,
  * const uint8_t signature[api_crypto_sign_BYTES];
  * const uint8_t message[n];
  * const uint8_t public_key[crypto_sign_PUBLICKEYBYTES];
- * api_crypto_sign_verify_detached(signature, message, n, public_key);
+ * if (api_crypto_sign_verify_detached(signature, message, n, public_key) != 0) {
+ *  // Invalid signature
+ * }
  *
  * @param signature         Pointer to signature, must be api_crypto_sign_BYTES bytes long.
  * @param message           Pointer to message to verify.

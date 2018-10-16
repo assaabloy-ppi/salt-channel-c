@@ -4,8 +4,7 @@ include(ExternalProject)
 
 ExternalProject_Add (
   cmocka
-  GIT_REPOSITORY "git://git.cryptomilk.org/projects/cmocka.git"
-  GIT_TAG "cmocka-1.1.2"
+  URL "${CMAKE_CURRENT_SOURCE_DIR}/cmocka-1.1.2.zip"
   UPDATE_COMMAND ""
   INSTALL_COMMAND ""
   DOWNLOAD_DIR ""

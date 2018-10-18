@@ -1,36 +1,19 @@
 project(salt-channel-c)
+find_path(CMOCKA_INCLUDE_DIR
+    NAMES cmocka.h
+    PATHS ${CMOCKA_ROOT_DIR}/include)
 
-include(ExternalProject)
+find_library(CMOCKA_LIBRARY
+    NAMES cmocka
+    PATHS ${CMOCKA_ROOT_DIR}/lib)
 
-ExternalProject_Add (
-  cmocka
-  URL "${CMAKE_CURRENT_SOURCE_DIR}/cmocka-1.1.2.zip"
-  UPDATE_COMMAND ""
-  INSTALL_COMMAND ""
-  DOWNLOAD_DIR ""
-  CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/external/cmocka"
-  INSTALL_DIR ${CMAKE_BINARY_DIR}/external/cmocka
-  INSTALL_COMMAND
-  "cmake"
-  --build .
-  --target install
-)
+if(CMOCKA_LIBRARY)
+    set(CMOCKA_LIBRARIES
+        ${CMOCKA_LIBRARIES}
+        ${CMOCKA_LIBRARY})
+endif(CMOCKA_LIBRARY)
 
-add_library(cmocka_lib SHARED IMPORTED)
-
-include_directories(${CMAKE_BINARY_DIR}/external/cmocka/include)
-
-set_target_properties(
-  cmocka_lib
-  PROPERTIES
-  IMPORTED_LOCATION
-  "${CMAKE_BINARY_DIR}/external/cmocka/lib/${CMAKE_SHARED_LIBRARY_PREFIX}cmocka${CMAKE_SHARED_LIBRARY_SUFFIX}"
-  INSTALL_RPATH
-	"${CMAKE_BINARY_DIR}/external/cmocka/lib"
-)
-
-add_dependencies(cmocka_lib cmocka)
-
+include_directories("${CMOCKA_INCLUDE_DIR}")
 
 macro(do_test arg)
     add_definitions(-std=c99 -Wno-unused-parameter)
@@ -38,7 +21,7 @@ macro(do_test arg)
     add_sanitizers(${arg})
     add_dependencies(${arg} ${arg} ${ARGN})
     add_test(${arg} ${arg})
-    target_link_libraries(${arg} ${ARGN} cmocka_lib ${EXTRA_LIBS})
+    target_link_libraries(${arg} ${ARGN} ${CMOCKA_LIBRARIES} ${EXTRA_LIBS})
 endmacro(do_test)
 
 include_directories (../src)
@@ -49,7 +32,6 @@ add_sanitizers(cfifo)
 add_library(test_data test_data.c)
 add_sanitizers(test_data)
 add_library(salt_mock salt_mock.c)
-add_dependencies(salt_mock cmocka)
 add_sanitizers(salt_mock)
 
 # Test runners

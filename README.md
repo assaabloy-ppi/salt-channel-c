@@ -22,7 +22,7 @@ The salt-channel-c is mainly developed using the following tools:
 ### To test the implementation or contribute with development:
 1. Install tools
 ```
-$ apt-get install cmake lcov
+$ apt-get install cmake lcov libsodium-dev libcmocka-dev
 ```
 2. Build
 ```

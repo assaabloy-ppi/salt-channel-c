@@ -1,11 +1,18 @@
 language: C java
+sudo: required
+cache:
+  directories:
+    - cmocka-1.1.1
+    - libsodium-1.0.11
+before_install:
+  - bash install-libraries.sh
 install: make cmake
 compiler:
  - gcc
 script:
  - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug .
- - make
- - make test
+ - make -j
+ - ctest
  - sh test_echo_with_java.sh
  - gcov src/CMakeFiles/salt.dir/salt.c.gcno src/CMakeFiles/salt.dir/salti_handshake.c.gcno src/CMakeFiles/salt.dir/salti_util.c.gcno
 

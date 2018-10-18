@@ -1,5 +1,6 @@
 language: C java
 before_install:
+  - sudo apt-get update
   - sudo apt-get install -y libcmocka-dev
 install: make cmake
 compiler:

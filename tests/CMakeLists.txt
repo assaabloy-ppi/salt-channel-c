@@ -9,7 +9,7 @@ find_library(CMOCKA_LIBRARY
     NAMES cmocka
     PATHS ${CMOCKA_ROOT_DIR}/lib)
 
-if (CMOCKA_LIBRARY)
+if(CMOCKA_LIBRARY)
     set(CMOCKA_LIBRARIES
         ${CMOCKA_LIBRARIES}
         ${CMOCKA_LIBRARY})

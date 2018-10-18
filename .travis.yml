@@ -1,4 +1,5 @@
 language: C java
+sudo: required
 cache:
   directories:
     - cmocka-1.1.1

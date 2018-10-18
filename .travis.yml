@@ -1,5 +1,5 @@
 language: C java
-install: make cmake
+install: make cmake libcmocka-dev
 compiler:
  - gcc
 script:

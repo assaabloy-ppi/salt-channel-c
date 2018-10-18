@@ -1,10 +1,20 @@
 language: C java
-install: make cmake
+install:
+ - ./travis-install-libsodium.sh
+ - export PKG_CONFIG_PATH=$HOME/libsodium/lib/pkgconfig:$PKG_CONFIG_PATH
+ - export LD_LIBRARY_PATH=$HOME/libsodium/lib:$LD_LIBRARY_PATH
+ - export LIBRARY_PATH=$HOME/libsodium:$LIBRARY_PATH
+cache:
+    apt: true
+    directories:
+      - $HOME/libsodium
 compiler:
  - gcc
 script:
- - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug .
- - make
+ - ls $HOME/libsodium/lib
+ - echo $LD_LIBRARY_PATH
+ - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-I$HOME/libsodium/include -L $HOME/libsodium/lib" .
+ - make VERBOSE=1
  - make test
  - sh test_echo_with_java.sh
  - gcov src/CMakeFiles/salt.dir/salt.c.gcno src/CMakeFiles/salt.dir/salti_handshake.c.gcno src/CMakeFiles/salt.dir/salti_util.c.gcno

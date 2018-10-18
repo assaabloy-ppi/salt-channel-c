@@ -7,7 +7,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 find_package(Sanitizers)
 
 
-option(USE_SODIUM "Use Libsodium as crypto native" OFF)
+option(USE_SODIUM "Use Libsodium as crypto native" ON)
 
 if(USE_SODIUM)
 	include_directories ("${PROJECT_SOURCE_DIR}/src")

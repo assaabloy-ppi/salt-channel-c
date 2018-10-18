@@ -1,7 +1,10 @@
 language: C java
+cache:
+  directories:
+    - cmocka-1.1.1
+    - libsodium-1.0.11
 before_install:
-  - sudo apt-get update
-  - sudo apt-get install -y libcmocka-dev
+  - bash install-libraries.sh
 install: make cmake
 compiler:
  - gcc

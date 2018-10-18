@@ -3,6 +3,8 @@ find_path(CMOCKA_INCLUDE_DIR
     NAMES cmocka.h
     PATHS ${CMOCKA_ROOT_DIR}/include)
 
+message("CMOCKA_INCLUDE_DIR: ${CMOCKA_INCLUDE_DIR}")
+
 find_library(CMOCKA_LIBRARY
     NAMES cmocka
     PATHS ${CMOCKA_ROOT_DIR}/lib)

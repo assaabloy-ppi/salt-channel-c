@@ -1,5 +1,7 @@
 language: C java
-install: make cmake libcmocka-dev
+before_install:
+  - sudo apt-get install -y libcmocka-dev libsodium-dev
+install: make cmake
 compiler:
  - gcc
 script:

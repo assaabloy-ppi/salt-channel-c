@@ -36,6 +36,12 @@ extern "C" {
 #define SALT_HNDSHK_BUFFER_SIZE     (496U)       /**< Buffer used for handshake. */
 #define SALT_PROTOCOLS_MIN_BUF_SIZE (27U)
 
+#define SALT_WRITE_STATE_INITIALIZED            (0U)
+#define SALT_WRITE_STATE_SINGLE_MSG             (1U)
+#define SALT_WRITE_STATE_MULTI_MSG              (2U)
+#define SALT_WRITE_STATE_ERROR                  (3U)
+#define SALT_WRITE_STATE_WRAPPED                (4U)
+
 /*======= Type Definitions and declarations ===================================*/
 
 /* Forward type declarations */
@@ -256,7 +262,7 @@ typedef union salt_msg_u {
         uint32_t    buffer_size;        /**< Message buffer size. */
         uint32_t    buffer_used;        /**< Index of how many bytes have been processed. */
         uint16_t    messages_left;      /**< Number of messages left to read. */
-        uint16_t    message_size;       /**< Current message size. */
+        uint32_t    message_size;       /**< Current message size. */
     } read;
     struct {
         uint8_t     *p_buffer;          /**< Message buffer. */
@@ -264,7 +270,7 @@ typedef union salt_msg_u {
         uint32_t    buffer_size;        /**< Message buffer size. */
         uint32_t    buffer_available;   /**< How much of the buffer is used. */
         uint16_t    message_count;      /**< Number of messages left to read. */
-        uint16_t    state;              /**< Current message type. */
+        uint32_t    state;              /**< Current message type. */
     } write;
 } salt_msg_t;
 
@@ -643,7 +649,7 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
  */
 salt_ret_t salt_write_next(salt_msg_t *p_msg,
                            void *p_buffer,
-                           uint16_t size);
+                           uint32_t size);
 
 /**
  * @brief Add a clear text message to be encrypted to next encrypted package.
@@ -661,7 +667,7 @@ salt_ret_t salt_write_next(salt_msg_t *p_msg,
  * @return SALT_SUCCESS A message was successfully appended to the state structure.
  * @return SALT_ERROR   The message was to large to fit in the state structure.
  */
-salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint16_t size);
+salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint32_t size);
 
 /**
  * @brief Encrypts and send the messages prepared in \ref salt_write_begin and \ref salt_write_next

@@ -78,9 +78,13 @@ salt_time_t *salt_time_mock_create(void)
     assert_non_null(mock);
     cfifo_t *time_queue = malloc(sizeof(cfifo_t));
     assert_non_null(time_queue);
-    void *time_queue_data = malloc(sizeof(uint32_t) * 10);
+    void *time_queue_data = malloc(sizeof(uint32_t) * 16);
     assert_non_null(time_queue_data);
-    cfifo_init(time_queue, (uint8_t *) time_queue_data, 10, sizeof(uint32_t));
+    cfifo_init(time_queue,
+        (uint8_t *) time_queue_data,
+        16,
+        sizeof(uint32_t),
+        (sizeof(uint32_t) * 16));
     mock->get_time = salt_mock_get_time;
     mock->p_context = time_queue;
     return mock;
@@ -112,13 +116,13 @@ salt_io_mock_t *salt_io_mock_create(void)
     mock->next_read = malloc(sizeof(cfifo_t));
     assert_non_null(mock->next_read );
 
-    void *expected_write = malloc(sizeof(test_data_t) * 10);
+    void *expected_write = malloc(sizeof(test_data_t) * 16);
     assert_non_null(expected_write);
-    void *next_read = malloc(sizeof(test_data_t) * 10);
+    void *next_read = malloc(sizeof(test_data_t) * 16);
     assert_non_null(next_read);
 
-    cfifo_init(mock->expected_write, (uint8_t *) expected_write, 10, sizeof(test_data_t));
-    cfifo_init(mock->next_read, (uint8_t *) next_read, 10, sizeof(test_data_t));
+    cfifo_init(mock->expected_write, (uint8_t *) expected_write, 16, sizeof(test_data_t), (sizeof(test_data_t) * 16));
+    cfifo_init(mock->next_read, (uint8_t *) next_read, 16, sizeof(test_data_t), (sizeof(test_data_t) * 16));
 
     return mock;
 }
@@ -220,13 +224,13 @@ void salt_channels_create(salt_mock_t *mock)
     assert_non_null(mock->host_to_client);
     uint8_t *host_to_client_data = malloc(2048);
     assert_non_null(host_to_client_data);
-    cfifo_init(mock->host_to_client, host_to_client_data, 2048, sizeof(uint8_t));
+    cfifo_init(mock->host_to_client, host_to_client_data, 2048, sizeof(uint8_t), 2048);
 
     mock->client_to_host = malloc(sizeof(cfifo_t));
     assert_non_null(mock->client_to_host);
     uint8_t *client_to_host_data = malloc(2048);
     assert_non_null(client_to_host_data);
-    cfifo_init(mock->client_to_host, client_to_host_data, 2048, sizeof(uint8_t));
+    cfifo_init(mock->client_to_host, client_to_host_data, 2048, sizeof(uint8_t), 2048);
 
     salt_create(mock->client_channel,
                 SALT_CLIENT,
@@ -282,7 +286,7 @@ void salt_io_mock_time_impl(uint32_t *p_time)
 static salt_ret_t salt_channel_read(salt_io_channel_t *p_rchannel)
 {
     cfifo_t *read_queue = (cfifo_t*) p_rchannel->p_context;
-    uint32_t size = p_rchannel->size_expected - p_rchannel->size;
+    size_t size = p_rchannel->size_expected - p_rchannel->size;
 
     cfifo_read(read_queue, &p_rchannel->p_data[p_rchannel->size],
                &size);
@@ -300,7 +304,7 @@ static salt_ret_t salt_channel_read(salt_io_channel_t *p_rchannel)
 static salt_ret_t salt_channel_write(salt_io_channel_t *p_wchannel)
 {
     cfifo_t *write_queue = (cfifo_t*) p_wchannel->p_context;
-    uint32_t size = p_wchannel->size_expected - p_wchannel->size;
+    size_t size = p_wchannel->size_expected - p_wchannel->size;
     cfifo_write(write_queue, &p_wchannel->p_data[p_wchannel->size], &size);
     p_wchannel->size += size;
     if (p_wchannel->size == p_wchannel->size_expected) {

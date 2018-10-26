@@ -507,7 +507,7 @@ salt_err_t salt_read_init(uint8_t type,
              * Initiate first message.
              */
             p_msg->read.buffer_used = 2;
-            p_msg->read.message_size = salti_bytes_to_u16(&p_msg->read.p_buffer[p_msg->read.buffer_used]);
+            p_msg->read.message_size = (uint32_t) salti_bytes_to_u16(&p_msg->read.p_buffer[p_msg->read.buffer_used]);
             p_msg->read.buffer_used += 2;
             p_msg->read.p_payload = &p_msg->read.p_buffer[p_msg->read.buffer_used];
             p_msg->read.messages_left--;
@@ -524,6 +524,44 @@ salt_err_t salt_read_init(uint8_t type,
 }
 
 /**
+ * @brief Used internally to see if the application can write the message.
+ * 
+ * If a single application message is sent, the size might be longer than UINT16_MAX.
+ * However, if such a package was written, no more messages are allower.
+ * 
+ * @param p_msg         Pointer to message structure.
+ * @param size          Size of message to try to write.
+ * 
+ * @return SALT_SUCCESS This message can be written.
+ * @return SALT_ERROR   This message cannot be written.
+ */
+salt_ret_t salt_may_write(salt_msg_t *p_msg, uint32_t size)
+{
+    /* We need size + 2 bytes available. */
+    if ((p_msg->write.buffer_available < (size + 2U)) ||
+        (SALT_WRITE_STATE_ERROR == p_msg->write.state)) {
+        /* TODO: Make sure (size +2U) does not overflow. */
+        return SALT_ERROR;
+    }
+
+    if (size > UINT16_MAX) {
+        if (p_msg->write.message_count > 0) {
+            p_msg->write.state = SALT_WRITE_STATE_ERROR;
+            return SALT_ERROR;
+        }
+        p_msg->write.state = SALT_WRITE_STATE_SINGLE_MSG;
+    }
+
+    if ((p_msg->write.message_count > 0) &&
+        (SALT_WRITE_STATE_SINGLE_MSG == p_msg->write.state)) {
+        p_msg->write.state = SALT_WRITE_STATE_ERROR;
+        return SALT_ERROR;
+    }
+
+    return SALT_SUCCESS;
+}
+
+/**
  * @brief Used internally by \ref salt_write_execute. Declared public for testability.
  *
  * Creates the final serialized clear text data after \ref salt_write_begin and
@@ -536,8 +574,6 @@ salt_err_t salt_read_init(uint8_t type,
  */
 uint8_t salt_write_create(salt_msg_t *p_msg)
 {
-
-    p_msg->write.state = 1;
 
     if (1 == p_msg->write.message_count) {
         p_msg->write.p_buffer = &p_msg->write.p_buffer[4];

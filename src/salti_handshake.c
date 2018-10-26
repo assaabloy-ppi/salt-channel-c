@@ -89,7 +89,7 @@ static uint8_t sig2prefix[8] = { 0x53, 0x43, 0x2d, 0x53, 0x49, 0x47, 0x30, 0x32 
 /*======= Global function implementations ===================================*/
 /*======= Local function implementations ====================================*/
 
-salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
+salt_ret_t salti_handshake_server(salt_channel_t *p_channel, const uint8_t *p_with)
 {
 
     uint32_t size = 0;
@@ -417,7 +417,7 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
     return ret_code;
 }
 
-salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
+salt_ret_t salti_handshake_client(salt_channel_t *p_channel, const uint8_t *p_with)
 {
     uint32_t size = 0;
     salt_ret_t ret_code = SALT_ERROR;
@@ -819,7 +819,7 @@ salt_ret_t salti_create_m1(salt_channel_t *p_channel,
                            uint8_t *p_data,
                            uint32_t *size,
                            uint8_t *p_hash,
-                           uint8_t *p_with)
+                           const uint8_t *p_with)
 {
     /* First 4 bytes is reserved for size. */
 

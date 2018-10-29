@@ -11,4 +11,5 @@ set(SOURCES
     host_handshake_benchmark.c)
 
 add_executable(benchmark_test ${SOURCES})
+add_sanitizers(benchmark_test)
 target_link_libraries(benchmark_test salt ${EXTRA_LIBS})

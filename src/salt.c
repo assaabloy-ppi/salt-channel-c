@@ -535,16 +535,16 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg)
     /*
      * First message, p_msg->read.message_size will be 0. Otherwise it will be
      * the length of last message.
-     * 
+     *
      * First:
      * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
      * buffer_used ----------->
-     * 
+     *
      * Otherwise:
      * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
      * buffer_used ----------------------->
      *                           message_size = n1
-     * 
+     *
      */
     p_msg->read.buffer_used += p_msg->read.message_size;
     buffer_left = p_msg->read.buffer_size - p_msg->read.buffer_used;
@@ -638,7 +638,7 @@ salt_ret_t salt_write_next(salt_msg_t *p_msg, void *p_buffer, uint32_t size)
 salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint32_t size)
 {
 
-    if (salt_may_write(p_msg, size) != SALT_SUCCESS) {
+    if (salti_may_write(p_msg, size) != SALT_SUCCESS) {
         return SALT_ERROR;
     }
 
@@ -659,7 +659,7 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
     if (NULL == p_channel) {
         return SALT_ERROR;
     }
-    
+
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
     SALT_VERIFY_NOT_NULL(p_msg);

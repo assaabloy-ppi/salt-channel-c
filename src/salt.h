@@ -14,8 +14,8 @@ extern "C" {
  * Current state is:
  *      - Resume is not supported.
  *      - Virtual hosting is not supported.
- *      
- *      
+ *
+ *
  * Implementation details:
  *  No functionality is thread safe, if using in a milti threaded environment the user
  *  must make sure to handle thread safety.
@@ -35,12 +35,6 @@ extern "C" {
 #define SALT_WRITE_OVERHEAD_SIZE    (42U)       /**< Encryption buffer overhead size for write. */
 #define SALT_HNDSHK_BUFFER_SIZE     (496U)       /**< Buffer used for handshake. */
 #define SALT_PROTOCOLS_MIN_BUF_SIZE (27U)
-
-#define SALT_WRITE_STATE_INITIALIZED            (0U)
-#define SALT_WRITE_STATE_SINGLE_MSG             (1U)
-#define SALT_WRITE_STATE_MULTI_MSG              (2U)
-#define SALT_WRITE_STATE_ERROR                  (3U)
-#define SALT_WRITE_STATE_WRAPPED                (4U)
 
 /*======= Type Definitions and declarations ===================================*/
 
@@ -357,8 +351,8 @@ salt_ret_t salt_protocols_init(salt_channel_t *p_channel,
 
 /**
  * @brief Same as salt_protocols_init but does not initiate it to a channel.
- * 
- * 
+ *
+ *
  * @param p_protocols   Pointer to protocol structure.
  * @param p_buffer      Pointer to buffer.
  * @param size          Size of protocol buffer. size >= 3 + n_protocols * 20

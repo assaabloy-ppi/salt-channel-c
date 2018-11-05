@@ -241,7 +241,7 @@ salt_ret_t salti_wrap(salt_channel_t *p_channel,
 
     SALT_VERIFY(salti_increase_nonce(p_channel->write_nonce) == SALT_SUCCESS,
         SALT_ERR_NONCE_WRAPPED);
-    
+
     p_data[14] = SALT_ENCRYPTED_MSG_HEADER_VALUE;
     p_data[15] = (last_msg) ? SALT_LAST_FLAG : 0x00U;
 
@@ -317,7 +317,7 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
      * bytes. After verifying these, we memset the 16 bytes before
      * the encrypted package to 0x00 which is required by the API.
      */
-        
+
     int ret = api_crypto_box_open_afternm(p_data,
                                           p_data,
                                           size + api_crypto_box_BOXZEROBYTES - SALT_HEADER_SIZE,
@@ -345,7 +345,7 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
         /* If our time is broken, do not continue the session. */
         SALT_VERIFY(SALT_SUCCESS == time_ret, SALT_ERR_INVALID_STATE);
-        
+
         /* Verify that the package is not delayed. */
         bool valid_time = time_check(p_channel->peer_epoch,
                                      t_arrival,
@@ -476,7 +476,7 @@ salt_err_t salt_read_init(uint8_t type,
             /*
              * p_buffer structure:
              * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
-             * 
+             *
              * count = num messages. We verify here that the payload is valid and that the format
              * is followed. Zero length messages is OK. Num message >= 1.
              *
@@ -525,17 +525,17 @@ salt_err_t salt_read_init(uint8_t type,
 
 /**
  * @brief Used internally to see if the application can write the message.
- * 
+ *
  * If a single application message is sent, the size might be longer than UINT16_MAX.
  * However, if such a package was written, no more messages are allower.
- * 
+ *
  * @param p_msg         Pointer to message structure.
  * @param size          Size of message to try to write.
- * 
+ *
  * @return SALT_SUCCESS This message can be written.
  * @return SALT_ERROR   This message cannot be written.
  */
-salt_ret_t salt_may_write(salt_msg_t *p_msg, uint32_t size)
+salt_ret_t salti_may_write(salt_msg_t *p_msg, uint32_t size)
 {
     /* We need size + 2 bytes available. */
     if ((p_msg->write.buffer_available < (size + 2U)) ||

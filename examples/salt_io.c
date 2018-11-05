@@ -27,10 +27,6 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
 
     printf("p_rchannel->p_data: 0x%p\r\n", (void *) p_wchannel->p_data);
 
-    if (to_write > 20) {
-        to_write = 20;
-    }
-
     int n = write(sock,
                   &p_wchannel->p_data[p_wchannel->size],
                   to_write);
@@ -54,10 +50,6 @@ salt_ret_t my_read(salt_io_channel_t *p_rchannel)
 
     if (sock <= 0) {
         return SALT_ERROR;
-    }
-
-    if (to_read > 20) {
-        to_read = 20;
     }
 
     int n = read(sock,

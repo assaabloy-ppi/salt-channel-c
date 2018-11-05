@@ -36,6 +36,7 @@ add_definitions(-O0 -g -ggdb -DSALT_DEBUG=1 -Wall -Werror -Wpedantic -Wshadow -s
 
 add_subdirectory(src)
 add_subdirectory(examples)
+add_subdirectory(benchmark)
 
 option(BUILD_TESTS "Build tests" ON)
 

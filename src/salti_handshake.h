@@ -26,15 +26,15 @@ extern "C" {
 /*======= Type Definitions and declarations =================================*/
 /*======= Public function declarations ======================================*/
 
-salt_ret_t salti_handshake_server(salt_channel_t *p_channel, uint8_t *p_with);
+salt_ret_t salti_handshake_server(salt_channel_t *p_channel, const uint8_t *p_with);
 
-salt_ret_t salti_handshake_client(salt_channel_t *p_channel, uint8_t *p_with);
+salt_ret_t salti_handshake_client(salt_channel_t *p_channel, const uint8_t *p_with);
 
 salt_ret_t salti_create_m1(salt_channel_t *p_channel,
                            uint8_t *p_data,
                            uint32_t *size,
                            uint8_t *p_hash,
-                           uint8_t *p_with);
+                           const uint8_t *p_with);
 
 salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
                                      uint8_t *p_data,

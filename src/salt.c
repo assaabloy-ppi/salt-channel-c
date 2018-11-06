@@ -316,8 +316,8 @@ salt_ret_t salt_init_session(salt_channel_t *p_channel,
 salt_ret_t salt_init_session_using_key(salt_channel_t *p_channel,
                                        uint8_t *hdshk_buffer,
                                        uint32_t hdshk_buffer_size,
-                                       uint8_t *ek_pub,
-                                       uint8_t *ek_sec)
+                                       const uint8_t *ek_pub,
+                                       const uint8_t *ek_sec)
 {
 
     if (NULL == p_channel) {
@@ -392,7 +392,7 @@ salt_ret_t salt_set_delay_threshold(salt_channel_t *p_channel, uint32_t delay_th
     return SALT_SUCCESS;
 }
 
-salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with)
+salt_ret_t salt_handshake(salt_channel_t *p_channel, const uint8_t *p_with)
 {
     salt_ret_t ret;
 
@@ -425,7 +425,7 @@ salt_ret_t salt_handshake(salt_channel_t *p_channel, uint8_t *p_with)
 /**
  * @brief See \ref salt_handshake
  */
-salt_ret_t salt_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
+salt_ret_t salt_handshake_server(salt_channel_t *p_channel, const uint8_t *p_with)
 {
     salt_ret_t ret;
 
@@ -449,7 +449,7 @@ salt_ret_t salt_handshake_server(salt_channel_t *p_channel, uint8_t *p_with)
 /**
  * @brief See \ref salt_handshake
  */
-salt_ret_t salt_handshake_client(salt_channel_t *p_channel, uint8_t *p_with)
+salt_ret_t salt_handshake_client(salt_channel_t *p_channel, const uint8_t *p_with)
 {
     salt_ret_t ret;
 

@@ -521,7 +521,7 @@ salt_ret_t salt_read_begin(salt_channel_t *p_channel,
 salt_ret_t salt_read_next(salt_msg_t *p_msg)
 {
 
-    uint16_t payload_size;
+    uint32_t payload_size;
     uint32_t buffer_left;
 
     if (NULL == p_msg) {
@@ -535,16 +535,16 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg)
     /*
      * First message, p_msg->read.message_size will be 0. Otherwise it will be
      * the length of last message.
-     * 
+     *
      * First:
      * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
      * buffer_used ----------->
-     * 
+     *
      * Otherwise:
      * p_buffer = { count[2] , length1[2], payload1[n1] , ... , lengthN[2], patloadN[nN] }
      * buffer_used ----------------------->
      *                           message_size = n1
-     * 
+     *
      */
     p_msg->read.buffer_used += p_msg->read.message_size;
     buffer_left = p_msg->read.buffer_size - p_msg->read.buffer_used;
@@ -554,7 +554,7 @@ salt_ret_t salt_read_next(salt_msg_t *p_msg)
         return SALT_ERROR;
     }
 
-    payload_size = salti_bytes_to_u16(&p_msg->read.p_buffer[p_msg->read.buffer_used]);
+    payload_size = (uint32_t) salti_bytes_to_u16(&p_msg->read.p_buffer[p_msg->read.buffer_used]);
 
     /*
      * After size is read, two more bytes are used. Therefore, we have 2 bytes
@@ -604,7 +604,7 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
      *
      */
 
-    p_msg->write.state = 0;
+    p_msg->write.state = SALT_WRITE_STATE_INITIALIZED;
     p_msg->write.p_buffer = p_buffer;
     p_msg->write.buffer_size = size;
     p_msg->write.p_payload = &p_buffer[SALT_OVERHEAD_SIZE] + 4U;
@@ -614,28 +614,31 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
     return SALT_SUCCESS;
 }
 
-salt_ret_t salt_write_next(salt_msg_t *p_msg, void *p_buffer, uint16_t size)
+salt_ret_t salt_write_next(salt_msg_t *p_msg, void *p_buffer, uint32_t size)
 {
 
-    /* We need size + 2 bytes available. */
-    if (p_msg->write.buffer_available < (size + 2U)) {
+    /*
+     * salt_write_commit will increase the payload pointer
+     * in the message structure. However, the logic required
+     * here is the same as in salt_write_commit. Therefore,
+     * we use that function but we need to keep track of
+     * where to copy the message.
+     */
+    uint8_t *payload_orig = p_msg->write.p_payload;
+
+    if (salt_write_commit(p_msg, size) != SALT_SUCCESS) {
         return SALT_ERROR;
     }
 
-    salti_u16_to_bytes(p_msg->write.p_payload - 2U, size);
-
-    memcpy(p_msg->write.p_payload, p_buffer, size);
-    p_msg->write.p_payload += size + 2U;
-    p_msg->write.buffer_available -= (size + 2U);
-    p_msg->write.message_count++;
+    memcpy(payload_orig, p_buffer, size);
 
     return SALT_SUCCESS;
 }
 
-salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint16_t size)
+salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint32_t size)
 {
-    /* We need size + 2 bytes available. */
-    if (p_msg->write.buffer_available < (size + 2U)) {
+
+    if (salti_may_write(p_msg, size) != SALT_SUCCESS) {
         return SALT_ERROR;
     }
 
@@ -656,14 +659,17 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
     if (NULL == p_channel) {
         return SALT_ERROR;
     }
-    
+
     SALT_VERIFY(SALT_SESSION_ESTABLISHED == p_channel->state,
                 SALT_ERR_INVALID_STATE);
     SALT_VERIFY_NOT_NULL(p_msg);
 
-    if (0 == p_msg->write.state) {
-        uint8_t type = salt_write_create(p_msg);
+    SALT_VERIFY(p_msg->write.state != SALT_WRITE_STATE_ERROR,
+                SALT_ERR_INVALID_STATE);
 
+    if (p_msg->write.state < SALT_WRITE_STATE_ERROR) {
+        uint8_t type = salt_write_create(p_msg);
+        p_msg->write.state = SALT_WRITE_STATE_ERROR;
         ret = salti_wrap(p_channel,
                          p_msg->write.p_buffer,
                          p_msg->write.buffer_size,
@@ -672,6 +678,10 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
                          &p_msg->write.buffer_size,
                          last_msg);
         SALT_VERIFY(SALT_SUCCESS == ret, p_channel->err_code);
+        p_msg->write.state = SALT_WRITE_STATE_WRAPPED;
+    }
+    else if (SALT_WRITE_STATE_ERROR == p_msg->write.state) {
+        return SALT_ERROR;
     }
 
     ret = salti_io_write(p_channel,

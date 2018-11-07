@@ -25,6 +25,12 @@ extern "C" {
 #define SALT_MULTI_APP_PKG_MSG_HEADER_VALUE     (0x0BU)
 #define SALT_OVERHEAD_SIZE                      (38U)
 
+#define SALT_WRITE_STATE_INITIALIZED            (0U)
+#define SALT_WRITE_STATE_SINGLE_MSG             (1U)
+#define SALT_WRITE_STATE_MULTI_MSG              (2U)
+#define SALT_WRITE_STATE_ERROR                  (3U)
+#define SALT_WRITE_STATE_WRAPPED                (4U)
+
 /* Various defines */
 #define SALT_CLEAR                              (0U)
 #define SALT_ENCRYPTED                          (1U)
@@ -140,6 +146,8 @@ salt_err_t salt_read_init(uint8_t type,
                           uint8_t *p_buffer,
                           uint32_t buffer_size,
                           salt_msg_t *p_msg);
+
+salt_ret_t salti_may_write(salt_msg_t *p_msg, uint32_t size);
 
 uint8_t salt_write_create(salt_msg_t *p_msg);
 

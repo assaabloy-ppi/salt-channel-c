@@ -15,11 +15,15 @@
 
 /*======= Public macro definitions ==========================================*/
 
-#define CFIFO_CREATE(p_cfifo, item_size, num_items)                         \
+#define CFIFO_CREATE_STATIC(p_cfifo, item_size, num_items)                  \
     do {                                                                    \
         static cfifo_t cfifo;                                               \
         static uint8_t cfifo_buf[(item_size)*(num_items)];                  \
-        cfifo_init(&cfifo, cfifo_buf, (num_items), (item_size));            \
+        cfifo_init(&cfifo,                                                  \
+                   cfifo_buf,                                               \
+                   (num_items),                                             \
+                   (item_size),                                             \
+                   (item_size)*(num_items));                                \
         p_cfifo = &cfifo;                                                   \
     } while(0)
 
@@ -27,17 +31,19 @@
 
 typedef struct cfifo_s {
     uint8_t             *p_buf;
-    uint32_t            buf_size;
-    uint32_t            item_size;
-    volatile uint32_t   read_pos;
-    volatile uint32_t   write_pos;
+    size_t              num_items_mask;
+    size_t              item_size;
+    volatile size_t     read_pos;
+    volatile size_t     write_pos;
 } cfifo_t;
 
 typedef enum cfifo_ret_e {
     CFIFO_SUCCESS,
     CFIFO_ERR_NULL,
     CFIFO_ERR_EMPTY,
-    CFIFO_ERR_FULL
+    CFIFO_ERR_FULL,
+    CFIFO_ERR_BAD_SIZE,
+    CFIFO_ERR_INVALID_STATE
 } cfifo_ret_t;
 
 /*======= Public function declarations ======================================*/
@@ -57,8 +63,9 @@ typedef enum cfifo_ret_e {
  */
 cfifo_ret_t cfifo_init(cfifo_t *p_cfifo,
                        uint8_t *p_buf,
-                       uint32_t buf_size,
-                       uint32_t item_size);
+                       size_t num_items,
+                       size_t item_size,
+                       size_t buf_size);
 
 /**
  * @brief TODO: Brief description.
@@ -72,7 +79,7 @@ cfifo_ret_t cfifo_init(cfifo_t *p_cfifo,
  *
  */
 cfifo_ret_t cfifo_put(cfifo_t *p_cfifo,
-                      const void *p_item);
+                      const void * const p_item);
 
 /**
  * @brief TODO: Brief description.
@@ -87,8 +94,8 @@ cfifo_ret_t cfifo_put(cfifo_t *p_cfifo,
  *
  */
 cfifo_ret_t cfifo_write(cfifo_t *p_cfifo,
-                        const void *p_items,
-                        uint32_t *p_num_items);
+                        const void * const p_items,
+                        size_t * const p_num_items);
 
 /**
  * @brief TODO: Brief description.
@@ -118,7 +125,7 @@ cfifo_ret_t cfifo_get(cfifo_t *p_cfifo,
  */
 cfifo_ret_t cfifo_read(cfifo_t *p_cfifo,
                        void *p_items,
-                       uint32_t *p_num_items);
+                       size_t *p_num_items);
 
 /**
  * @brief TODO: Brief description.
@@ -135,6 +142,18 @@ cfifo_ret_t cfifo_peek(cfifo_t *p_cfifo,
                        void *p_item);
 
 /**
+ * @brief [brief description]
+ * @details [long description]
+ * 
+ * @param p_cfifo [description]
+ * @param p_item [description]
+ * 
+ * @return
+ */
+size_t cfifo_contains(cfifo_t *p_cfifo,
+                        void *p_item);
+
+/**
  * @brief TODO: Brief description.
  *
  * TODO: Write description.
@@ -145,7 +164,21 @@ cfifo_ret_t cfifo_peek(cfifo_t *p_cfifo,
  * @return  CFIFO_SUCCESS
  *
  */
-uint32_t cfifo_size(cfifo_t *p_cfifo);
+size_t cfifo_size(cfifo_t *p_cfifo);
+
+/**
+ * @brief TODO: Brief description.
+ *
+ * TODO: Write description.
+ *
+ * @param   p_cfifo
+ * @param   p_num_items
+ *
+ * @return  CFIFO_SUCCESS
+ *
+ */
+size_t cfifo_available(cfifo_t *p_cfifo);
+
 
 /**
  * @brief TODO: Brief description.

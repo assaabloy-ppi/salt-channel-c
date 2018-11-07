@@ -357,6 +357,94 @@ static void bad_pkg_multi_app(void **state)
 
 }
 
+static void really_long_message(void **state)
+{
+    (void) state;
+    salt_ret_t ret;
+    uint8_t buffer[UINT16_MAX * 4];
+    memset(buffer, 0x00, sizeof(buffer));
+    salt_msg_t message;
+
+    salt_write_begin(buffer, sizeof(buffer), &message);
+
+    memset(message.write.p_payload, 0xCC, UINT16_MAX + 10);
+    ret = salt_write_commit(&message, UINT16_MAX + 10);
+    assert_int_equal(ret, SALT_SUCCESS);
+
+    uint8_t type = salt_write_create(&message);
+    assert_int_equal(type, SALT_APP_PKG_MSG_HEADER_VALUE);
+    assert_int_equal(ret, SALT_SUCCESS);
+
+    assert_int_equal(
+        salt_read_init(type, message.write.p_payload, message.write.buffer_size, &message),
+        SALT_ERR_NONE);
+
+    assert_int_equal(message.read.message_size, UINT16_MAX + 10);
+
+    for (uint32_t i = 0; i < message.read.message_size; i++) {
+        assert_int_equal(0xCC, message.read.p_payload[i]);
+    }
+
+    assert_int_equal(SALT_ERROR, salt_read_next(&message));
+
+
+    /*
+     * 4 bytes length is OK if it is single message, otherwise
+     * 2 bytes lengt is maximum. I.e., if the length of the first
+     * message was longer than UINT16_MAX no more can be added.
+     */
+    salt_write_begin(buffer, sizeof(buffer), &message);
+    memset(message.write.p_payload, 0xDD, UINT16_MAX + 10);
+    ret = salt_write_commit(&message, UINT16_MAX + 10);
+    assert_int_equal(ret, SALT_SUCCESS);
+    ret = salt_write_next(&message, (uint8_t *) "12345", 5);
+    assert_int_equal(ret, SALT_ERROR);
+
+    salt_write_begin(buffer, sizeof(buffer), &message);
+    memset(message.write.p_payload, 0xDD, UINT16_MAX + 10);
+    ret = salt_write_commit(&message, UINT16_MAX + 10);
+    assert_int_equal(ret, SALT_SUCCESS);
+    ret = salt_write_commit(&message, 5);
+    assert_int_equal(ret, SALT_ERROR);
+
+    salt_write_begin(buffer, sizeof(buffer), &message);
+    memset(message.write.p_payload, 0xAA, UINT16_MAX);
+    ret = salt_write_commit(&message, UINT16_MAX);
+    assert_int_equal(ret, SALT_SUCCESS);
+    memset(message.write.p_payload, 0xBB, UINT16_MAX);
+    ret = salt_write_commit(&message, UINT16_MAX);
+    assert_int_equal(ret, SALT_SUCCESS);
+    memset(message.write.p_payload, 0xCC, UINT16_MAX);
+    ret = salt_write_commit(&message, UINT16_MAX);
+    assert_int_equal(ret, SALT_SUCCESS);
+    type = salt_write_create(&message);
+    assert_int_equal(type, SALT_MULTI_APP_PKG_MSG_HEADER_VALUE);
+
+    assert_int_equal(
+        salt_read_init(type, message.write.p_payload, message.write.buffer_size, &message),
+        SALT_ERR_NONE);
+
+
+    assert_int_equal(message.read.message_size, UINT16_MAX);
+    for (uint32_t i = 0; i < message.read.message_size; i++) {
+        assert_int_equal(0xAA, message.read.p_payload[i]);
+    }
+    assert_int_equal(SALT_SUCCESS, salt_read_next(&message));
+
+    assert_int_equal(message.read.message_size, UINT16_MAX);
+    for (uint32_t i = 0; i < message.read.message_size; i++) {
+        assert_int_equal(0xBB, message.read.p_payload[i]);
+    }
+    assert_int_equal(SALT_SUCCESS, salt_read_next(&message));
+
+    assert_int_equal(message.read.message_size, UINT16_MAX);
+    for (uint32_t i = 0; i < message.read.message_size; i++) {
+        assert_int_equal(0xCC, message.read.p_payload[i]);
+    }
+    assert_int_equal(SALT_ERROR, salt_read_next(&message));
+
+}
+
 int main(void)
 {
     const struct CMUnitTest tests[] = {
@@ -365,7 +453,8 @@ int main(void)
         cmocka_unit_test(crash_from_fuzz1),
         cmocka_unit_test(crash_from_fuzz2),
         cmocka_unit_test(crash_from_fuzz3),
-        cmocka_unit_test(bad_pkg_multi_app)
+        cmocka_unit_test(bad_pkg_multi_app),
+        cmocka_unit_test(really_long_message)
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

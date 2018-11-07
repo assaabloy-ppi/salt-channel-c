@@ -14,8 +14,8 @@ extern "C" {
  * Current state is:
  *      - Resume is not supported.
  *      - Virtual hosting is not supported.
- *      
- *      
+ *
+ *
  * Implementation details:
  *  No functionality is thread safe, if using in a milti threaded environment the user
  *  must make sure to handle thread safety.
@@ -256,7 +256,7 @@ typedef union salt_msg_u {
         uint32_t    buffer_size;        /**< Message buffer size. */
         uint32_t    buffer_used;        /**< Index of how many bytes have been processed. */
         uint16_t    messages_left;      /**< Number of messages left to read. */
-        uint16_t    message_size;       /**< Current message size. */
+        uint32_t    message_size;       /**< Current message size. */
     } read;
     struct {
         uint8_t     *p_buffer;          /**< Message buffer. */
@@ -264,7 +264,7 @@ typedef union salt_msg_u {
         uint32_t    buffer_size;        /**< Message buffer size. */
         uint32_t    buffer_available;   /**< How much of the buffer is used. */
         uint16_t    message_count;      /**< Number of messages left to read. */
-        uint16_t    state;              /**< Current message type. */
+        uint32_t    state;              /**< Current message type. */
     } write;
 } salt_msg_t;
 
@@ -351,8 +351,8 @@ salt_ret_t salt_protocols_init(salt_channel_t *p_channel,
 
 /**
  * @brief Same as salt_protocols_init but does not initiate it to a channel.
- * 
- * 
+ *
+ *
  * @param p_protocols   Pointer to protocol structure.
  * @param p_buffer      Pointer to buffer.
  * @param size          Size of protocol buffer. size >= 3 + n_protocols * 20
@@ -643,7 +643,7 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
  */
 salt_ret_t salt_write_next(salt_msg_t *p_msg,
                            void *p_buffer,
-                           uint16_t size);
+                           uint32_t size);
 
 /**
  * @brief Add a clear text message to be encrypted to next encrypted package.
@@ -661,7 +661,7 @@ salt_ret_t salt_write_next(salt_msg_t *p_msg,
  * @return SALT_SUCCESS A message was successfully appended to the state structure.
  * @return SALT_ERROR   The message was to large to fit in the state structure.
  */
-salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint16_t size);
+salt_ret_t salt_write_commit(salt_msg_t *p_msg, uint32_t size);
 
 /**
  * @brief Encrypts and send the messages prepared in \ref salt_write_begin and \ref salt_write_next

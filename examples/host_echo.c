@@ -116,9 +116,9 @@ static void *connection_handler(void *context)
     salt_ret_t ret;
 
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
-    uint8_t rx_buffer[1024];
+    uint8_t rx_buffer[UINT16_MAX * 4];
     salt_msg_t msg_in;
-    uint8_t tx_buffer[1024];
+    uint8_t tx_buffer[UINT16_MAX * 4];
     salt_msg_t msg_out;
 
     uint8_t protocol_buffer[128];

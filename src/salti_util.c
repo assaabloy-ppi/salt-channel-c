@@ -408,7 +408,7 @@ uint32_t salti_bytes_to_u32(uint8_t *src)
                (src[0] & 0x000000FFU) |
                ((src[1] << 8U) & 0x0000FF00U) |
                ((src[2] << 16U) & 0x00FF0000U) |
-               ((src[3] << 24U) & 0xFFU)
+               ((src[3] << 24U) & 0xFF000000U)
            );
 }
 

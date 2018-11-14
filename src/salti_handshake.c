@@ -168,24 +168,24 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, const uint8_t *p_wi
                  * will set p_channel->err_code = SALT_ERR_NO_SUCH_SERVER.
                  * Then we will create M2 with that flag and last flag.
                  * After this the session is considered closed.
-                 * 
+                 *
                  * The hash of M1 is calculated on the same location where M1 is located.
                  * buffer = { e_keyPair[64] || reservedForSigPrefix[8] || m1[42 or 74] || ... }
-                 * 
+                 *
                  * We also now know that we need 42 bytes for m2 (38 + 4 size bytes).
                  * handle_m1 copies the clients public key to &buffer[242]
-                 * 
+                 *
                  * After handle m1:
-                 * 
-                 * buffer = { 
-                 *  e_keyPair[64] || 
-                 *  reservedForSigPrefix[8] || 
-                 *  m1Hash[64] || 
-                 *  m2Hash[64] || 
-                 *  reservedForm2WithSize[42] || 
-                 *  clientEkPub[32] || ... 
+                 *
+                 * buffer = {
+                 *  e_keyPair[64] ||
+                 *  reservedForSigPrefix[8] ||
+                 *  m1Hash[64] ||
+                 *  m2Hash[64] ||
+                 *  reservedForm2WithSize[42] ||
+                 *  clientEkPub[32] || ...
                  * }
-                 * 
+                 *
                  */
 
                 p_channel->state = salti_handle_m1(p_channel,
@@ -197,14 +197,14 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, const uint8_t *p_wi
             case SALT_M2_INIT_NO_SUCH_SERVER:
             case SALT_M2_INIT:
                 /*
-                 * 
-                 * buffer = { 
-                 *  e_keyPair[64] || 
-                 *  reservedForSigPrefix[8] || 
-                 *  m1Hash[64] || 
-                 *  m2Hash[64] || 
-                 *  m2WithSize[42] || 
-                 *  clientEkPub[32] || ... 
+                 *
+                 * buffer = {
+                 *  e_keyPair[64] ||
+                 *  reservedForSigPrefix[8] ||
+                 *  m1Hash[64] ||
+                 *  m2Hash[64] ||
+                 *  m2WithSize[42] ||
+                 *  clientEkPub[32] || ...
                  * }
                  *
                  */
@@ -231,14 +231,14 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, const uint8_t *p_wi
                 if (SALT_ERROR != ret_code) {
 
                     /*
-                     * 
-                     * buffer = { 
-                     *  e_keyPair[64] || 
-                     *  reservedForSigPrefix[8] || 
-                     *  m1Hash[64] || 
-                     *  m2Hash[64] || 
-                     *  m2WithSize[42] || 
-                     *  clientEkPub[32] || ... 
+                     *
+                     * buffer = {
+                     *  e_keyPair[64] ||
+                     *  reservedForSigPrefix[8] ||
+                     *  m1Hash[64] ||
+                     *  m2Hash[64] ||
+                     *  m2WithSize[42] ||
+                     *  clientEkPub[32] || ...
                      * }
                      *
                      */
@@ -276,14 +276,14 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, const uint8_t *p_wi
                                                  &size);
                 SALT_VERIFY(SALT_SUCCESS == ret_code, p_channel->err_code);
                 /*
-                 * 
-                 * buffer = { 
-                 *  m3Signature[64] || 
-                 *  sig1Prefix[8] || 
-                 *  m1Hash[64] || 
-                 *  m2Hash[64] || 
-                 *  reservedForWrapping[38] || 
-                 *  m3Clear[96] || ... 
+                 *
+                 * buffer = {
+                 *  m3Signature[64] ||
+                 *  sig1Prefix[8] ||
+                 *  m1Hash[64] ||
+                 *  m2Hash[64] ||
+                 *  reservedForWrapping[38] ||
+                 *  m3Clear[96] || ...
                  * }
                  *
                  */
@@ -296,14 +296,14 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, const uint8_t *p_wi
                                       &p_channel->write_channel.size, false);
 
                 /*
-                 * 
-                 * buffer = { 
-                 *  m3Signature[64] || 
-                 *  sig1Prefix[8] || 
-                 *  m1Hash[64] || 
-                 *  m2Hash[64] || 
-                 *  zeroPadded[10] || 
-                 *  m3EncryptedAndWrappedWithSize[124] || ... 
+                 *
+                 * buffer = {
+                 *  m3Signature[64] ||
+                 *  sig1Prefix[8] ||
+                 *  m1Hash[64] ||
+                 *  m2Hash[64] ||
+                 *  zeroPadded[10] ||
+                 *  m3EncryptedAndWrappedWithSize[124] || ...
                  * }
                  *
                  */
@@ -331,14 +331,14 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, const uint8_t *p_wi
                                          &size);
 
                 /*
-                 * 
-                 * buffer = { 
-                 *  m3Signature[64] || 
-                 *  sig1Prefix[8] || 
-                 *  m1Hash[64] || 
-                 *  m2Hash[64] || 
-                 *  reservedForUnwrapping[14] || 
-                 *  m4EncryptedAndWrappedWithoutSize[120] || ... 
+                 *
+                 * buffer = {
+                 *  m3Signature[64] ||
+                 *  sig1Prefix[8] ||
+                 *  m1Hash[64] ||
+                 *  m2Hash[64] ||
+                 *  reservedForUnwrapping[14] ||
+                 *  m4EncryptedAndWrappedWithoutSize[120] || ...
                  * }
                  *
                  */
@@ -361,16 +361,16 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, const uint8_t *p_wi
                                         &p_channel->write_channel.p_data,
                                         &p_channel->write_channel.size);
                 /*
-                 * 
-                 * buffer = { 
-                 *  m3Signature[64] || 
-                 *  sig1Prefix[8] || 
-                 *  m1Hash[64] || 
-                 *  m2Hash[64] || 
+                 *
+                 * buffer = {
+                 *  m3Signature[64] ||
+                 *  sig1Prefix[8] ||
+                 *  m1Hash[64] ||
+                 *  m2Hash[64] ||
                  *  zeroPadded[32] ||
                  *  header[2] ||
                  *  time[4] ||
-                 *  m4Clear[96] || ... 
+                 *  m4Clear[96] || ...
                  * }
                  *
                  */
@@ -383,12 +383,12 @@ salt_ret_t salti_handshake_server(salt_channel_t *p_channel, const uint8_t *p_wi
                                                  p_channel->write_channel.size);
 
                  /*
-                 * buffer = { 
-                 *  m4Signature[64] || 
-                 *  sig2Prefix[8] || 
-                 *  m1Hash[64] || 
-                 *  m2Hash[64] || 
-                 *  m1Hash[64] || 
+                 * buffer = {
+                 *  m4Signature[64] ||
+                 *  sig2Prefix[8] ||
+                 *  m1Hash[64] ||
+                 *  m2Hash[64] ||
+                 *  m1Hash[64] ||
                  *  m2Hash[64] ||
                  *  neededWhenVerifying[64] ||
                  * }
@@ -433,9 +433,9 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, const uint8_t *p_wi
                  * can verify that the message M1 was not modified by a MITM. No
                  * support for virtual server yet, so the size of M1 is always 42
                  * bytes.
-                 * 
+                 *
                  * buffer = { ek_pub[32] || ek_sec[32] }
-                 * 
+                 *
                  */
 
                 ret_code = salti_create_m1(p_channel,
@@ -572,17 +572,17 @@ salt_ret_t salti_handshake_client(salt_channel_t *p_channel, const uint8_t *p_wi
                 if (SALT_SUCCESS == ret_code) {
 
                     /*
-                     * 
-                     * buffer = { 
-                     *  m3Signature[64] || 
-                     *  sig1Prefix[8] || 
-                     *  m1Hash[64] || 
-                     *  m2Hash[64] || 
-                     *  reservedForUnwrapping[14] || 
+                     *
+                     * buffer = {
+                     *  m3Signature[64] ||
+                     *  sig1Prefix[8] ||
+                     *  m1Hash[64] ||
+                     *  m2Hash[64] ||
+                     *  reservedForUnwrapping[14] ||
                      *  m3EncryptedAndWrappedWithoutSize[120] ||
                      *  notUsed[66] ||
                      *  m4Clear[96] || ...
-                     *  
+                     *
                      * }
                      *
                      */
@@ -764,10 +764,12 @@ salt_ret_t salti_handle_a1_create_a2(salt_channel_t *p_channel,
          * No need to check return code from salt_protocols_*
          * since we know the handshake buffer is big enough.
          */
-        salt_protocols_create(&protocols,
-                              &p_channel->hdshk_buffer[64],
-                              p_channel->hdshk_buffer_size - 64);
-        salt_protocols_append(&protocols, "----------", 10);
+        SALT_VERIFY(salt_protocols_create(&protocols,
+                    &p_channel->hdshk_buffer[64],
+                    p_channel->hdshk_buffer_size - 64) == SALT_SUCCESS,
+                    SALT_ERR_INVALID_STATE);
+        SALT_VERIFY(salt_protocols_append(&protocols, "----------", 10)  == SALT_SUCCESS,
+                    SALT_ERR_INVALID_STATE);
         p_channel->write_channel.p_data = protocols.p_buffer;
         p_channel->write_channel.size = protocols.buf_used;
     }

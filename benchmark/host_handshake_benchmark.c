@@ -29,7 +29,7 @@ static const uint8_t host_sk_sec[64] = {
     0x07, 0xe2, 0x8d, 0x4e, 0xe3, 0x2b, 0xfd, 0xc4,
     0xb0, 0x7d, 0x41, 0xc9, 0x21, 0x93, 0xc0, 0xc2,
     0x5e, 0xe6, 0xb3, 0x09, 0x4c, 0x62, 0x96, 0xf3,
-    0x73, 0x41, 0x3b, 0x37, 0x3d, 0x36, 0x16, 0x8b 
+    0x73, 0x41, 0x3b, 0x37, 0x3d, 0x36, 0x16, 0x8b
 };
 static const uint8_t host_ek_sec[32] = {
     0x5d, 0xab, 0x08, 0x7e, 0x62, 0x4a, 0x8a, 0x4b,
@@ -165,8 +165,8 @@ bool run_host_handshake_benchmark(time_stamps_t *stamps) {
     salt_channel_t channel;
     salt_ret_t ret;
     uint8_t hndsk_buffer[SALT_HNDSHK_BUFFER_SIZE];
-    ret = salt_create(&channel, SALT_SERVER, host_io_write, host_io_read, NULL);
-    ret = salt_set_signature(&channel, host_sk_sec);
+    salt_create(&channel, SALT_SERVER, host_io_write, host_io_read, NULL);
+    salt_set_signature(&channel, host_sk_sec);
 
     STAMP_BEGIN(stamps, "salt_handshake_server");
     for (uint16_t i = 0; i < NUM_ITERATIONS; i++) {
@@ -174,11 +174,11 @@ bool run_host_handshake_benchmark(time_stamps_t *stamps) {
         write_counter = 0;
         read_counter = 0;
 
-        ret = salt_init_session_using_key(&channel,
-                                          hndsk_buffer,
-                                          SALT_HNDSHK_BUFFER_SIZE,
-                                          host_ek_pub,
-                                          host_ek_sec);
+        salt_init_session_using_key(&channel,
+                                    hndsk_buffer,
+                                    SALT_HNDSHK_BUFFER_SIZE,
+                                    host_ek_pub,
+                                    host_ek_sec);
 
         ret = salt_handshake_server(&channel, &client_sk_sec[32]);
 

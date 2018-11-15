@@ -35,8 +35,16 @@ set(CMAKE_C_FLAGS_DEBUG "-fprofile-arcs -ftest-coverage -std=c99 ${CMAKE_CXX_FLA
 add_definitions(-O0 -g -ggdb -Wall -Werror -Wpedantic -Wshadow -std=c99)
 
 add_subdirectory(src)
-add_subdirectory(examples)
-add_subdirectory(benchmark)
+
+OPTION(BUILD_EXAMPLES "Build examples" ON)
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif(BUILD_EXAMPLES)
+
+OPTION(BUILD_BENCHMARK "Build benchmark" ON)
+if(BUILD_BENCHMARK)
+    add_subdirectory(benchmark)
+endif(BUILD_BENCHMARK)
 
 option(BUILD_TESTS "Build tests" ON)
 

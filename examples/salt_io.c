@@ -25,8 +25,6 @@ salt_ret_t my_write(salt_io_channel_t *p_wchannel)
         return SALT_ERROR;
     }
 
-    printf("p_rchannel->p_data: 0x%p\r\n", (void *) p_wchannel->p_data);
-
     int n = write(sock,
                   &p_wchannel->p_data[p_wchannel->size],
                   to_write);

@@ -642,8 +642,8 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
  *
  */
 salt_ret_t salt_write_next(salt_msg_t *p_msg,
-                           void *p_buffer,
-                           uint32_t size);
+                           const void *p_buffer,
+                           const uint32_t size);
 
 /**
  * @brief Add a clear text message to be encrypted to next encrypted package.

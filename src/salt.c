@@ -614,7 +614,7 @@ salt_ret_t salt_write_begin(uint8_t *p_buffer,
     return SALT_SUCCESS;
 }
 
-salt_ret_t salt_write_next(salt_msg_t *p_msg, void *p_buffer, uint32_t size)
+salt_ret_t salt_write_next(salt_msg_t *p_msg, const void *p_buffer, const uint32_t size)
 {
 
     /*

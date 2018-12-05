@@ -32,7 +32,7 @@ static bool crypto_box_benchmark(time_stamps_t *stamps);
 
 bool run_crypto_benchmark(time_stamps_t *stamps)
 {
-    
+
     if (!crypto_hash_benchmark(stamps)) {
         return false;
     }
@@ -210,7 +210,7 @@ static bool crypto_box_benchmark(time_stamps_t *stamps)
         }
     }
     STAMP_END(stamps, NUM_ITERATIONS);
-    
+
 
     /* Encrypt 20 bytes long message */
     uint8_t clear1[20 + api_crypto_box_ZEROBYTES];

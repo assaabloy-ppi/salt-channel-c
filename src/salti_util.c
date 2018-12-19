@@ -382,43 +382,43 @@ salt_ret_t salti_increase_nonce(uint8_t *p_nonce)
 
 }
 
-#define RSHIFT_16(a,b) ((uint16_t)(((uint16_t)(a)) >> ((uint16_t) b)))
+#define RSHIFT_U16(a,b) ((uint16_t)(((uint16_t)(a)) >> ((uint16_t) b)))
 
 void salti_u16_to_bytes(uint8_t *dest, uint16_t size)
 {
-    dest[0] = RSHIFT_16(size, 0) & 0xFFU;
-    dest[1] = RSHIFT_16(size, 8) & 0xFFU;
+    dest[0] = RSHIFT_U16(size, 0) & 0xFFU;
+    dest[1] = RSHIFT_U16(size, 8) & 0xFFU;
 }
 
-#define LSHIFT_16(a,b) ((uint16_t)(((uint16_t)(a)) << ((uint16_t)(b))))
+#define LSHIFT_U16(a,b) ((uint16_t)(((uint16_t)(a)) << ((uint16_t)(b))))
 
 uint16_t salti_bytes_to_u16(uint8_t *src)
 {
     return (
-        (LSHIFT_16(src[0], 0) & 0x00FFU) |
-        (LSHIFT_16(src[1], 8) & 0xFF00U)
+        (LSHIFT_U16(src[0], 0) & 0x00FFU) |
+        (LSHIFT_U16(src[1], 8) & 0xFF00U)
     );
 }
 
-#define RSHIFT_32(a, b) ((uint32_t)(((uint32_t)(a)) >> ((uint32_t) b)))
+#define RSHIFT_U32(a, b) ((uint32_t)(((uint32_t)(a)) >> ((uint32_t) b)))
 
 void salti_u32_to_bytes(uint8_t *dest, uint32_t size)
 {
-    dest[0] = RSHIFT_32(size, 0)  & 0xFFU;
-    dest[1] = RSHIFT_32(size, 8)  & 0xFFU;
-    dest[2] = RSHIFT_32(size, 16) & 0xFFU;
-    dest[3] = RSHIFT_32(size, 24) & 0xFFU;
+    dest[0] = RSHIFT_U32(size, 0)  & 0xFFU;
+    dest[1] = RSHIFT_U32(size, 8)  & 0xFFU;
+    dest[2] = RSHIFT_U32(size, 16) & 0xFFU;
+    dest[3] = RSHIFT_U32(size, 24) & 0xFFU;
 }
 
-#define LSHIFT_32(a,b) ((uint32_t)(((uint32_t)(a)) << ((uint32_t)(b))))
+#define LSHIFT_U32(a,b) ((uint32_t)(((uint32_t)(a)) << ((uint32_t)(b))))
 
 uint32_t salti_bytes_to_u32(uint8_t *src)
 {
     return (
-        (LSHIFT_32(src[0], 0)  & 0x000000FFU) |
-        (LSHIFT_32(src[1], 8)  & 0x0000FF00U) |
-        (LSHIFT_32(src[2], 16) & 0x00FF0000U) |
-        (LSHIFT_32(src[3], 24) & 0xFF000000U)
+        (LSHIFT_U32(src[0], 0)  & 0x000000FFU) |
+        (LSHIFT_U32(src[1], 8)  & 0x0000FF00U) |
+        (LSHIFT_U32(src[2], 16) & 0x00FF0000U) |
+        (LSHIFT_U32(src[3], 24) & 0xFF000000U)
     );
 }
 

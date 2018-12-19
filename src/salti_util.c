@@ -331,7 +331,7 @@ salt_ret_t salti_unwrap(salt_channel_t *p_channel,
 
     (*header) = &p_data[32];
 
-    if ((p_channel->time_supported) && (p_channel->delay_threshold > 0)) {
+    if ((p_channel->time_supported > 0U) && (p_channel->delay_threshold > 0U)) {
 
         /* Package time sent by the peer. */
         uint32_t t_package = salti_bytes_to_u32(&p_data[34]);
@@ -382,34 +382,44 @@ salt_ret_t salti_increase_nonce(uint8_t *p_nonce)
 
 }
 
+#define RSHIFT_16(a,b) ((uint16_t)(((uint16_t)(a)) >> ((uint16_t) b)))
+
 void salti_u16_to_bytes(uint8_t *dest, uint16_t size)
 {
-    dest[0] = size & 0xFFU;
-    dest[1] = (size >> 8U) & 0xFFU;
+    dest[0] = RSHIFT_16(size, 0) & 0xFFU;
+    dest[1] = RSHIFT_16(size, 8) & 0xFFU;
 }
+
+#define LSHIFT_16(a,b) ((uint16_t)(((uint16_t)(a)) << ((uint16_t)(b))))
 
 uint16_t salti_bytes_to_u16(uint8_t *src)
 {
-    return ((src[0] & 0x00FFU) | ((src[1] << 8U) & 0xFF00U));
+    return (
+        (LSHIFT_16(src[0], 0) & 0x00FFU) |
+        (LSHIFT_16(src[1], 8) & 0xFF00U)
+    );
 }
 
+#define RSHIFT_32(a, b) ((uint32_t)(((uint32_t)(a)) >> ((uint32_t) b)))
 
 void salti_u32_to_bytes(uint8_t *dest, uint32_t size)
 {
-    dest[0] = size & 0xFFU;
-    dest[1] = (size >> 8U) & 0xFFU;
-    dest[2] = (size >> 16U) & 0xFFU;
-    dest[3] = (size >> 24U) & 0xFFU;
+    dest[0] = RSHIFT_32(size, 0)  & 0xFFU;
+    dest[1] = RSHIFT_32(size, 8)  & 0xFFU;
+    dest[2] = RSHIFT_32(size, 16) & 0xFFU;
+    dest[3] = RSHIFT_32(size, 24) & 0xFFU;
 }
+
+#define LSHIFT_32(a,b) ((uint32_t)(((uint32_t)(a)) << ((uint32_t)(b))))
 
 uint32_t salti_bytes_to_u32(uint8_t *src)
 {
     return (
-               (src[0] & 0x000000FFU) |
-               ((src[1] << 8U) & 0x0000FF00U) |
-               ((src[2] << 16U) & 0x00FF0000U) |
-               ((src[3] << 24U) & 0xFF000000U)
-           );
+        (LSHIFT_32(src[0], 0)  & 0x000000FFU) |
+        (LSHIFT_32(src[1], 8)  & 0x0000FF00U) |
+        (LSHIFT_32(src[2], 16) & 0x00FF0000U) |
+        (LSHIFT_32(src[3], 24) & 0xFF000000U)
+    );
 }
 
 salt_ret_t salti_get_time(salt_channel_t *p_channel, uint32_t *p_time)

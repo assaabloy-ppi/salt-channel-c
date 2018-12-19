@@ -172,7 +172,7 @@ int test_api_crypto_box_afternm(void)
     VERIFY(memcmp(calculated_cipher, expected_cipher, 42) == 0);
 
     uint8_t calculated_clear_text[42];
-    memset(calculated_clear_text, 0x00, api_crypto_box_BOXZEROBYTES);
+    memset(calculated_clear_text, 0x00, sizeof(calculated_clear_text));
 
     ret = api_crypto_box_open_afternm(calculated_clear_text,
                                       calculated_cipher,

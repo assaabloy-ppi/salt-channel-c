@@ -32,7 +32,7 @@ else(LIBSODIUM_LIBRARY)
 endif(LIBSODIUM_LIBRARY)
 
 set(CMAKE_C_FLAGS_DEBUG "-fprofile-arcs -ftest-coverage -std=c99 ${CMAKE_CXX_FLAGS_DEBUG}")
-add_definitions(-O0 -g -ggdb -DSALT_DEBUG=1 -Wall -Werror -Wpedantic -Wshadow -std=c99)
+add_definitions(-O0 -g -ggdb -Wall -Werror -Wpedantic -Wshadow -std=c99)
 
 add_subdirectory(src)
 add_subdirectory(examples)

@@ -31,8 +31,13 @@ else(LIBSODIUM_LIBRARY)
 	add_library(tweetnacl_modified src/external/tweetnacl_modified/tweetnacl_modified.c examples/randombytes_linux.c src/external/tweetnacl_modified/tweetnacl_modified_wrapper.c)
 endif(LIBSODIUM_LIBRARY)
 
-set(CMAKE_C_FLAGS_DEBUG "-fprofile-arcs -ftest-coverage -std=c99 ${CMAKE_CXX_FLAGS_DEBUG}")
-add_definitions(-O0 -g -ggdb -Wall -Werror -Wpedantic -Wshadow -std=c99)
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DSALT_DEBUG=1")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wpedantic -Wshadow -std=c99")
+
+OPTION(COVERAGE "Enable Code Coverage Support" ON)
+if(COVERAGE)
+	set(CMAKE_C_FLAGS_DEBUG "-fprofile-arcs -ftest-coverage")
+endif(COVERAGE)
 
 add_subdirectory(src)
 

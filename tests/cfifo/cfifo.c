@@ -90,7 +90,7 @@ cfifo_ret_t cfifo_write(cfifo_t *p_cfifo,
                         size_t *p_num_items)
 {
     size_t i;
-    uint8_t *p_src = (uint8_t *) p_items;
+    const uint8_t *p_src = (const uint8_t *) p_items;
 
     if (p_cfifo == 0 || p_items == 0 || p_num_items == 0) {
         /* Error, null pointers. */

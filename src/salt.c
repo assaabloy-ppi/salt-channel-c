@@ -688,6 +688,11 @@ salt_ret_t salt_write_execute(salt_channel_t *p_channel,
                          p_msg->write.p_buffer,
                          p_msg->write.buffer_size);
 
+    if (last_msg && (SALT_SUCCESS == ret)) {
+        p_channel->err_code = SALT_ERR_CONNECTION_CLOSED;
+        p_channel->state = SALT_SESSION_CLOSED;
+    }
+
     return ret;
 }
 

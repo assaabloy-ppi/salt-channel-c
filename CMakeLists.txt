@@ -57,11 +57,5 @@ if(UNIX)
     if(BUILD_TESTS)
         enable_testing()
         add_subdirectory(tests)
-        if(UNIX AND NOT APPLE)
-            add_test(java_echo COMMAND
-                sh ${CMAKE_CURRENT_SOURCE_DIR}/test_echo_with_java.sh
-                ${CMAKE_CURRENT_BINARY_DIR}/examples/host_echo
-                ${CMAKE_CURRENT_SOURCE_DIR}/salt-channel-2.5.jar)
-        endif(UNIX AND NOT APPLE)
     endif(BUILD_TESTS)
 endif(UNIX)

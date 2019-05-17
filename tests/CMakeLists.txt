@@ -21,7 +21,7 @@ macro(do_test arg)
     add_sanitizers(${arg})
     add_dependencies(${arg} ${arg} ${ARGN})
     add_test(${arg} ${arg})
-    target_link_libraries(${arg} ${ARGN} ${CMOCKA_LIBRARIES} ${EXTRA_LIBS})
+    target_link_libraries(${arg} ${ARGN} ${CMOCKA_LIBRARIES} crypto_wrapper)
 endmacro(do_test)
 
 include_directories (../src)

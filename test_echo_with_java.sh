@@ -1,10 +1,10 @@
 #!/bin/sh
 
-./examples/host_echo > /dev/null 2>&1 &
+$1 > lol.txt 2>&1 &
 pid=$!
 
 passed=0
-if java -cp salt-channel-2.5.jar saltchannel.dev.TcpEchoTester > /dev/null ; then
+if java -cp $2 saltchannel.dev.TcpEchoTester > /dev/null ; then
     passed=1
 fi
 

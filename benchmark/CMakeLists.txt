@@ -13,3 +13,4 @@ set(SOURCES
 add_executable(benchmark_test ${SOURCES})
 add_sanitizers(benchmark_test)
 target_link_libraries(benchmark_test salt crypto_wrapper)
+target_compile_options(benchmark_test PRIVATE -Werror -Wall -Wextra -Wpedantic -std=c99)

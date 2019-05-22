@@ -9,3 +9,7 @@ add_sanitizers(salt_test)
 
 target_compile_options(salt PRIVATE -Werror -Wall -Wextra -Wpedantic -Wshadow -Wcast-qual -std=c99)
 target_compile_options(salt_test PRIVATE -Werror -Wall -Wextra -Wpedantic -Wshadow -Wcast-qual -std=c99)
+
+set_target_properties(salt PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}"
+)

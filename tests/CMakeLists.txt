@@ -24,14 +24,14 @@ macro(do_test arg)
     target_link_libraries(${arg} ${ARGN} ${CMOCKA_LIBRARIES} crypto_wrapper)
 endmacro(do_test)
 
-include_directories (../src)
-include_directories (cfifo)
+include_directories(cfifo)
 
 add_library(cfifo cfifo/cfifo.c)
 add_sanitizers(cfifo)
 add_library(test_data test_data.c)
 add_sanitizers(test_data)
 add_library(salt_mock salt_mock.c)
+target_link_libraries(salt_mock salt)
 add_sanitizers(salt_mock)
 
 # Test runners

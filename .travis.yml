@@ -10,7 +10,7 @@ install: make cmake
 compiler:
  - gcc
 script:
- - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug .
+ - cmake -DSANITIZE_ADDRESS=On -DSANITIZE_UNDEFINED=On -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=On -DBUILD_BENCHMARK=On -DBUILD_EXAMPLES=On -DENABLE_COVERAGE=On .
  - make -j
  - ctest
  - sh test_echo_with_java.sh

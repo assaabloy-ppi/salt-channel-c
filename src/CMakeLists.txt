@@ -6,3 +6,6 @@ add_sanitizers(salt)
 
 add_library(salt_test salt_crypto_wrapper_test.c)
 add_sanitizers(salt_test)
+
+target_compile_options(salt PRIVATE -Werror -Wall -Wextra -Wpedantic -Wshadow -Wcast-qual -std=c99)
+target_compile_options(salt_test PRIVATE -Werror -Wall -Wextra -Wpedantic -Wshadow -Wcast-qual -std=c99)

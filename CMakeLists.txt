@@ -5,56 +5,57 @@ enable_language(C)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 find_package(Sanitizers)
+include(cmake/coverage.cmake)
 
-find_path(LIBSODIUM_INCLUDE_DIR
-	NAMES sodium.h
-	PATHS ${LIBSODIUM_ROOT_DIR}/include)
 
-find_library(LIBSODIUM_LIBRARY
-    NAMES sodium
-    PATHS ${LIBSODIUM_ROOT_DIR}/lib)
+OPTION(BUILD_EXAMPLES "Build examples" OFF)
+OPTION(BUILD_BENCHMARK "Build benchmark" OFF)
+option(BUILD_TESTS "Build tests" OFF)
 
-if(LIBSODIUM_LIBRARY)
-	message("Using libsodium as crypto native.")
-	include_directories("${PROJECT_SOURCE_DIR}/src")
-	include_directories(${LIBSODIUM_INCLUDE_DIR})
-	add_library(sodium_wrapper src/external/libsodium/libsodium_wrapper.c)
-	add_sanitizers(sodium_wrapper)
-	target_link_libraries(sodium_wrapper ${LIBSODIUM_LIBRARY})
-	set(EXTRA_LIBS ${EXTRA_LIBS} sodium_wrapper)
-else(LIBSODIUM_LIBRARY)
-	message("Using TweetNaCl as crypto native, this is not recommended.")
-	include_directories ("${PROJECT_SOURCE_DIR}/src/external/tweetnacl_modified")
-	include_directories ("${PROJECT_SOURCE_DIR}/src")
-	set(EXTRA_LIBS ${EXTRA_LIBS} tweetnacl_modified)
-	set_source_files_properties(src/external/tweetnacl_modified/tweetnacl_modified.c PROPERTIES COMPILE_FLAGS -Wno-sign-compare)
-	add_library(tweetnacl_modified src/external/tweetnacl_modified/tweetnacl_modified.c examples/randombytes_linux.c src/external/tweetnacl_modified/tweetnacl_modified_wrapper.c)
-endif(LIBSODIUM_LIBRARY)
+if(UNIX AND (BUILD_EXAMPLES OR BUILD_BENCHMARK OR BUILD_TESTS))
 
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DSALT_DEBUG=1")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wpedantic -Wshadow -std=c99")
+    # Cryptographic library used for examples, tests and benchmark
+    find_path(LIBSODIUM_INCLUDE_DIR
+        NAMES sodium.h
+        PATHS ${LIBSODIUM_ROOT_DIR}/include)
 
-OPTION(COVERAGE "Enable Code Coverage Support" ON)
-if(COVERAGE)
-	set(CMAKE_C_FLAGS_DEBUG "-fprofile-arcs -ftest-coverage")
-endif(COVERAGE)
+    find_library(LIBSODIUM_LIBRARY
+        NAMES sodium
+        PATHS ${LIBSODIUM_ROOT_DIR}/lib)
+
+    if(LIBSODIUM_LIBRARY)
+        message("Using libsodium as crypto native.")
+        include_directories(${LIBSODIUM_INCLUDE_DIR})
+        add_library(crypto_wrapper src/external/libsodium/libsodium_wrapper.c)
+        add_sanitizers(crypto_wrapper)
+        target_link_libraries(crypto_wrapper ${LIBSODIUM_LIBRARY})
+        target_include_directories(crypto_wrapper PRIVATE src)
+    else(LIBSODIUM_LIBRARY)
+        message("Using TweetNaCl as crypto native, this is not recommended.")
+        set_source_files_properties(src/external/tweetnacl_modified/tweetnacl_modified.c
+            PROPERTIES
+            COMPILE_FLAGS
+            -Wno-sign-compare)
+        add_library(crypto_wrapper
+            src/external/tweetnacl_modified/tweetnacl_modified.c 
+            examples/randombytes_linux.c src/external/tweetnacl_modified/tweetnacl_modified_wrapper.c)
+        target_include_directories(crypto_wrapper PRIVATE src)
+    endif(LIBSODIUM_LIBRARY)
+endif(UNIX AND (BUILD_EXAMPLES OR BUILD_BENCHMARK OR BUILD_TESTS))
 
 add_subdirectory(src)
 
-OPTION(BUILD_EXAMPLES "Build examples" ON)
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif(BUILD_EXAMPLES)
+if(UNIX)
+    if(BUILD_EXAMPLES)
+        add_subdirectory(examples)
+    endif(BUILD_EXAMPLES)
 
-OPTION(BUILD_BENCHMARK "Build benchmark" ON)
-if(BUILD_BENCHMARK)
-    add_subdirectory(benchmark)
-endif(BUILD_BENCHMARK)
+    if(BUILD_BENCHMARK)
+        add_subdirectory(benchmark)
+    endif(BUILD_BENCHMARK)
 
-option(BUILD_TESTS "Build tests" ON)
-
-if(BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif(BUILD_TESTS)
-
+    if(BUILD_TESTS)
+        enable_testing()
+        add_subdirectory(tests)
+    endif(BUILD_TESTS)
+endif(UNIX)

@@ -523,8 +523,6 @@ salt_err_t salt_read_init(uint8_t type,
             p_msg->read.messages_left--;
 
             return SALT_ERR_NONE;
-
-            break;
         default:
             return SALT_ERR_BAD_PROTOCOL;
     }

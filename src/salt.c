@@ -29,7 +29,7 @@
 /*======= Local variable declarations =========================================*/
 
 /* Salt-channel v2 protocol, ASCII "SCv2------" */
-static uint8_t sc2protocol[10] = "SCv2------";
+static uint8_t sc2protocol[10] = {'S','C','v','2','-','-','-','-','-','-'};
 
 /*======= Local function prototypes ===========================================*/
 
